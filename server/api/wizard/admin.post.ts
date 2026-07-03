@@ -1,6 +1,8 @@
 import { z } from 'zod'
 
 export default eventHandler(async (event) => {
+  await requireFirstLaunch(event)
+
   const db = useDB()
   const { email, password, username } = await readValidatedBody(
     event,

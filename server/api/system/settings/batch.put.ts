@@ -25,7 +25,7 @@ import { useDB, tables, eq } from '~~/server/utils/db'
  * }
  */
 export default eventHandler(async (event) => {
-  const session = await requireUserSession(event)
+  const session = await requireAdminSession(event)
   if (!session || !session.user.isAdmin) {
     throw createError({
       statusCode: 403,

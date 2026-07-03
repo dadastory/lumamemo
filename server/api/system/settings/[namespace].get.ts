@@ -10,7 +10,7 @@ export default eventHandler(async (event) => {
     }).parse,
   )
 
-  const session = await requireUserSession(event)
+  const session = await requireAdminSession(event)
   if (!session || !session.user.isAdmin) {
     throw createError({
       statusCode: 403,

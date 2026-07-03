@@ -1,4 +1,11 @@
-import { useDB, tables, eq, or, and } from '~~/server/utils/db'
+import { or } from 'drizzle-orm'
+import { useDB, tables, eq, and } from '~~/server/utils/db'
+
+const PUBLIC_SETTINGS_DENYLIST = new Set([
+  'map:mapbox.token',
+  'map:maplibre.token',
+  'location:mapbox.token',
+])
 
 /**
  * 获取所有公开设置
@@ -27,6 +34,10 @@ export default eventHandler(async () => {
   const grouped: Record<string, Record<string, any>> = {}
 
   for (const setting of allSettings) {
+    if (PUBLIC_SETTINGS_DENYLIST.has(`${setting.namespace}:${setting.key}`)) {
+      continue
+    }
+
     if (!grouped[setting.namespace]) {
       grouped[setting.namespace] = {}
     }

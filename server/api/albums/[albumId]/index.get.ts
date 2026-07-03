@@ -13,6 +13,8 @@ export default eventHandler(async (event) => {
   )
 
   const db = useDB()
+  const session = await getUserSession(event)
+  const isAdmin = isAdminUser(session.user)
 
   const album = db
     .select()
@@ -28,18 +30,15 @@ export default eventHandler(async (event) => {
   }
 
   // 检查相册是否隐藏，如果隐藏则需要用户登录才能访问
-  if (album.isHidden) {
-    const session = await getUserSession(event)
-    if (!session.user) {
-      throw createError({
-        statusCode: 404,
-        statusMessage: 'Album not found',
-      })
-    }
+  if (album.isHidden && !isAdmin) {
+    throw createError({
+      statusCode: 404,
+      statusMessage: 'Album not found',
+    })
   }
 
   // 获取相册中的照片
-  const photos = await db
+  const albumPhotos = await db
     // all fields from tables.photos
     .select({
       ...getTableColumns(tables.photos),
@@ -52,18 +51,42 @@ export default eventHandler(async (event) => {
     .where(eq(tables.albumPhotos.albumId, albumId))
     .orderBy(asc(tables.albumPhotos.position))
     .all()
+  const hiddenPhotoIds = isAdmin ? [] : await getHiddenPhotoIds()
+  const photos = albumPhotos.filter(
+    (photo) => isAdmin || !hiddenPhotoIds.includes(photo.id),
+  )
 
   // 验证相册数据完整性
   if (!photos || !Array.isArray(photos)) {
     // 空相册也是合法的，只需要返回空数组
+    const serializedAlbum = isAdmin ? album : serializePublicAlbum(album)
+    if (
+      !isAdmin &&
+      serializedAlbum.coverPhotoId &&
+      hiddenPhotoIds.includes(serializedAlbum.coverPhotoId)
+    ) {
+      serializedAlbum.coverPhotoId = null
+    }
+
     return {
-      ...album,
+      ...serializedAlbum,
       photos: [],
     }
   }
 
+  const serializedAlbum = isAdmin ? album : serializePublicAlbum(album)
+  if (
+    !isAdmin &&
+    serializedAlbum.coverPhotoId &&
+    hiddenPhotoIds.includes(serializedAlbum.coverPhotoId)
+  ) {
+    serializedAlbum.coverPhotoId = null
+  }
+
   return {
-    ...album,
-    photos,
+    ...serializedAlbum,
+    photos: isAdmin
+      ? photos.map(serializeAdminPhoto)
+      : photos.map(serializePublicPhoto),
   }
 })

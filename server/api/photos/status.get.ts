@@ -1,7 +1,7 @@
 import { photos } from '~~/server/database/schema'
 
 export default eventHandler(async (event) => {
-  await requireUserSession(event)
+  await requireAdminSession(event)
 
   const method = getMethod(event)
 

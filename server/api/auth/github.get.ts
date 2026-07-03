@@ -38,7 +38,7 @@ async function onGithubOAuthSuccess(event: any, { user }: { user: any }) {
   } else {
     await setUserSession(
       event,
-      { user: userFromEmail },
+      { user: sanitizeSessionUser(userFromEmail) },
       {
         cookie: {
           // secure: !useRuntimeConfig().allowInsecureCookie,

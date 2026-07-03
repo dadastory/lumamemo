@@ -3,7 +3,7 @@ import { logger } from '~~/server/utils/logger'
 import { settingsManager } from '~~/server/services/settings/settingsManager'
 
 export default eventHandler(async (event) => {
-  await requireUserSession(event)
+  await requireAdminSession(event)
 
   const { storageProvider } = useStorageProvider(event)
   const key = getQuery(event).key as string | undefined

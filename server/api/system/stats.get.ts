@@ -118,7 +118,7 @@ function mapSystemInfo(distribution: string): string {
 }
 
 export default eventHandler(async (event) => {
-  await requireUserSession(event)
+  await requireAdminSession(event)
 
   // 获取基础统计
   const totalPhotos = await useDB()

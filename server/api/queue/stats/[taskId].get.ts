@@ -1,7 +1,7 @@
 import z from 'zod'
 
 export default defineEventHandler(async (event) => {
-  await requireUserSession(event)
+  await requireAdminSession(event)
 
   try {
     const { taskId } = await getValidatedRouterParams(

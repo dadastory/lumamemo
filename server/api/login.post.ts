@@ -31,7 +31,7 @@ export default eventHandler(async (event) => {
 
   await setUserSession(
     event,
-    { user },
+    { user: sanitizeSessionUser(user) },
     {
       cookie: {
         // secure: !useRuntimeConfig().allowInsecureCookie,

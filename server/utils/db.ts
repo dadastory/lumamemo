@@ -1,10 +1,11 @@
 import { drizzle } from 'drizzle-orm/better-sqlite3'
 import Database from 'better-sqlite3'
+import { eq, and } from 'drizzle-orm'
 
 import * as schema from '../database/schema'
 
 export const tables = schema
-export { eq, and, or, inArray } from 'drizzle-orm'
+export { eq, and }
 
 // 创建单例数据库连接
 let dbInstance: ReturnType<typeof drizzle> | null = null

@@ -6,6 +6,8 @@ export default eventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Invalid key' })
   }
 
+  await authorizePhotoStorageKey(event, key)
+
   const photo = await storageProvider.get(key)
   if (!photo) {
     throw createError({ statusCode: 404, statusMessage: 'Photo not found' })

@@ -13,8 +13,18 @@ export default defineEventHandler(async (event) => {
 
   // 支持单个或多个 ID
   const ids = Array.isArray(photoIds) ? photoIds : [photoIds]
+  const visibleIds = (
+    await Promise.all(
+      ids.map(async (id) => ({
+        id: id as string,
+        visible: await isPhotoVisibleToRequest(event, id as string),
+      })),
+    )
+  )
+    .filter((item) => item.visible)
+    .map((item) => item.id)
 
-  if (ids.length === 0) {
+  if (visibleIds.length === 0) {
     return {}
   }
 
@@ -28,14 +38,14 @@ export default defineEventHandler(async (event) => {
       count: sql<number>`count(*)`,
     })
     .from(tables.photoReactions)
-    .where(inArray(tables.photoReactions.photoId, ids as string[]))
+    .where(inArray(tables.photoReactions.photoId, visibleIds))
     .groupBy(tables.photoReactions.photoId, tables.photoReactions.reactionType)
     .all()
 
   const result: Record<string, Record<string, number>> = {}
 
-  ids.forEach((id) => {
-    result[id as string] = {
+  visibleIds.forEach((id) => {
+    result[id] = {
       like: 0,
       love: 0,
       amazing: 0,

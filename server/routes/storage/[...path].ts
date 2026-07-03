@@ -52,6 +52,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Invalid path' })
   }
 
+  await authorizePhotoStorageKey(event, relPath)
+
   const basePath = (provider as any).config.basePath as string
   const absolute = path.resolve(basePath, relPath)
 

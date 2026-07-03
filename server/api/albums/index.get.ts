@@ -1,8 +1,13 @@
-export default eventHandler(async (_event) => {
+export default eventHandler(async (event) => {
   const db = useDB()
+  const session = await getUserSession(event)
+  const isAdmin = isAdminUser(session.user)
+  const hiddenPhotoIds = isAdmin ? [] : await getHiddenPhotoIds()
 
-  // 获取所有相册，按创建时间倒序
-  const albums = await db.select().from(tables.albums)
+  const albumsQuery = db.select().from(tables.albums)
+  const albums = isAdmin
+    ? await albumsQuery
+    : await albumsQuery.where(eq(tables.albums.isHidden, false))
 
   // 为每个相册获取照片 ID 列表（避免循环引用）
   const albumsWithPhotoIds = await Promise.all(
@@ -16,10 +21,23 @@ export default eventHandler(async (_event) => {
         .where(eq(tables.albumPhotos.albumId, album.id))
         .orderBy(tables.albumPhotos.position)
 
+      const visiblePhotoIds = photoIds
+        .map((p) => p.photoId)
+        .filter((photoId) => isAdmin || !hiddenPhotoIds.includes(photoId))
+
+      const serializedAlbum = isAdmin ? album : serializePublicAlbum(album)
+      if (
+        !isAdmin &&
+        serializedAlbum.coverPhotoId &&
+        hiddenPhotoIds.includes(serializedAlbum.coverPhotoId)
+      ) {
+        serializedAlbum.coverPhotoId = null
+      }
+
       return {
-        ...album,
+        ...serializedAlbum,
         // 即使是空相册，也返回空数组而不是 undefined
-        photoIds: photoIds.length > 0 ? photoIds.map((p) => p.photoId) : [],
+        photoIds: visiblePhotoIds,
       }
     }),
   )

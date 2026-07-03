@@ -4,6 +4,8 @@ import { getSettingUIConfig } from '~~/server/services/settings/ui-config'
 import type { FieldDescriptor } from '~~/shared/types/settings'
 
 export default eventHandler(async (event) => {
+  await requireFirstLaunch(event)
+
   const query = await getValidatedQuery(
     event,
     z.object({
@@ -16,7 +18,7 @@ export default eventHandler(async (event) => {
     // Use env variables for default values if configured
     const defaultUsername = process.env.CFRAME_ADMIN_NAME || 'admin'
     const defaultEmail = process.env.CFRAME_ADMIN_EMAIL || ''
-    const defaultPassword = process.env.CFRAME_ADMIN_PASSWORD || ''
+    const defaultPassword = ''
 
     const fields: FieldDescriptor[] = [
       {

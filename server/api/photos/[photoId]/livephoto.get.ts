@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 
 export default eventHandler(async (event) => {
-  await requireUserSession(event)
+  await requireAdminSession(event)
 
   const photoId = getRouterParam(event, 'photoId')
 

@@ -7,7 +7,7 @@ import {
 } from '~~/server/services/storage'
 
 export default eventHandler(async (event) => {
-  const session = await requireUserSession(event)
+  const session = await requireAdminSession(event)
   if (!session.user.isAdmin) {
     throw createError({
       statusCode: 403,

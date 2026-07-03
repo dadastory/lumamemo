@@ -1,3 +1,3 @@
 export default eventHandler(async (event) => {
-  return (await getUserSession(event)).user
+  return (await getSafeUserSession(event)).user
 })

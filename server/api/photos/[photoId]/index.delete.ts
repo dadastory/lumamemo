@@ -1,7 +1,7 @@
 const HEIC_EXTENSIONS = ['.heic', '.heif', '.hif']
 
 export default eventHandler(async (event) => {
-  await requireUserSession(event)
+  await requireAdminSession(event)
   const { storageProvider } = useStorageProvider(event)
   const photoId = getRouterParam(event, 'photoId')
 

@@ -16,6 +16,8 @@ export default eventHandler(async (event) => {
   )
 
   if (event.method === 'GET') {
+    await requireAdminSession(event)
+
     try {
       const value = await settingsManager.get(namespace, key)
       return { namespace, key, value }
@@ -28,7 +30,7 @@ export default eventHandler(async (event) => {
   }
 
   if (event.method === 'PUT') {
-    const session = await requireUserSession(event)
+    const session = await requireAdminSession(event)
     if (!session || !session.user.isAdmin) {
       throw createError({
         statusCode: 403,

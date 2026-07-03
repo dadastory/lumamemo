@@ -154,7 +154,6 @@ export const DEFAULT_SETTINGS = [
     defaultValue: '',
     label: 'settings.map.mapbox.token.label',
     description: 'settings.map.mapbox.token.description',
-    isPublic: true,
   },
   {
     namespace: 'map',
@@ -172,7 +171,6 @@ export const DEFAULT_SETTINGS = [
     defaultValue: '',
     label: 'settings.map.maplibre.token.label',
     description: 'settings.map.maplibre.token.description',
-    isPublic: true,
   },
   {
     namespace: 'map',
@@ -201,7 +199,6 @@ export const DEFAULT_SETTINGS = [
     defaultValue: '',
     label: 'settings.location.mapbox.token.label',
     description: 'settings.location.mapbox.token.description',
-    isPublic: true,
   },
   {
     namespace: 'location',

@@ -4,6 +4,8 @@ import { storageConfigSchema } from '~~/shared/types/storage'
 import { useDB, tables, eq } from '~~/server/utils/db'
 
 export default eventHandler(async (event) => {
+  await requireFirstLaunch(event)
+
   const body = await readValidatedBody(
     event,
     z.object({
@@ -105,7 +107,7 @@ export default eventHandler(async (event) => {
   if (adminUser) {
     await setUserSession(
       event,
-      { user: adminUser },
+      { user: sanitizeSessionUser(adminUser) },
       {
         cookie: {
           secure: false,

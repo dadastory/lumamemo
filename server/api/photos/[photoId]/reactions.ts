@@ -61,6 +61,13 @@ export default defineEventHandler(async (event) => {
 
   const db = useDB()
   const method = event.method
+  const isVisible = await isPhotoVisibleToRequest(event, photoId)
+  if (!isVisible) {
+    throw createError({
+      statusCode: 404,
+      message: 'Photo not found',
+    })
+  }
 
   // GET: 获取照片的表态统计
   if (method === 'GET') {
