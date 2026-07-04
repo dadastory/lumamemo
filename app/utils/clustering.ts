@@ -105,6 +105,9 @@ export function photosToMarkers(photos: Photo[]): PhotoMarker[] {
       thumbnailHash: photo.thumbnailHash || undefined,
       dateTaken: photo.dateTaken || undefined,
       city: photo.city || undefined,
+      country: photo.country || undefined,
+      locationName: photo.locationName || undefined,
       exif: photo.exif || undefined,
+      owner: photo.owner || undefined,
     }))
 }

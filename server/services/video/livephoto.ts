@@ -40,6 +40,7 @@ export const processLivePhotoVideo = async (
         .from(tables.photos)
         .where(eq(tables.photos.storageKey, photoKey))
         .limit(1)
+        .all()
 
       if (photos.length > 0) {
         matchedPhoto = photos[0]
@@ -67,6 +68,7 @@ export const processLivePhotoVideo = async (
         livePhotoVideoKey: videoKey,
       })
       .where(eq(tables.photos.id, matchedPhoto.id))
+      .run()
 
     logger.chrono.success(
       `Successfully processed LivePhoto: ${matchedPhoto.id}, video: ${videoKey}`,

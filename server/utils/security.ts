@@ -1,3 +1,5 @@
+import { normalizeStorageKey } from './storage-key.ts'
+
 type AnyRecord = Record<string, any>
 
 const PUBLIC_EXIF_KEYS = [
@@ -78,18 +80,40 @@ const serializePublicExif = (exif: AnyRecord | null | undefined) => {
 export const sanitizeSessionUser = (user: AnyRecord | null | undefined) => {
   if (!user) return null
 
+  const role = user.role || (user.isAdmin ? 'admin' : 'user')
+
   return {
     id: user.id,
     email: user.email,
     username: user.username,
+    publicId: user.publicId ?? null,
+    displayName: user.displayName ?? user.username,
+    profileTitle: user.profileTitle ?? null,
+    profileSlogan: user.profileSlogan ?? null,
+    profileBio: user.profileBio ?? null,
+    homepageVisibility: user.homepageVisibility ?? 'private',
     avatar: user.avatar ?? null,
-    isAdmin: Boolean(user.isAdmin),
+    role,
+    isAdmin: role === 'admin',
+    disabledAt: user.disabledAt ?? null,
     createdAt: user.createdAt,
   }
 }
 
 const encodeStorageKeyPath = (key: string | null | undefined) =>
   key ? `/image/${key.split('/').map(encodeURIComponent).join('/')}` : null
+
+const serializeOwner = (record: AnyRecord) => {
+  const id = record.ownerId ?? record.ownerUserId
+  const username = record.ownerUsername ?? record.owner?.username
+  if (id == null || !username) return null
+
+  return {
+    id,
+    username,
+    avatar: record.ownerAvatar ?? record.owner?.avatar ?? null,
+  }
+}
 
 export const serializePublicPhoto = (photo: AnyRecord) => ({
   id: photo.id,
@@ -114,9 +138,17 @@ export const serializePublicPhoto = (photo: AnyRecord) => ({
   isLivePhoto: photo.isLivePhoto,
   livePhotoVideoUrl:
     encodeStorageKeyPath(photo.livePhotoVideoKey) ?? photo.livePhotoVideoUrl,
+  owner: serializeOwner(photo),
 })
 
-export const serializeAdminPhoto = (photo: AnyRecord) => ({ ...photo })
+export const serializeAdminPhoto = (photo: AnyRecord) => ({
+  ...photo,
+  originalUrl: encodeStorageKeyPath(photo.storageKey) ?? photo.originalUrl,
+  thumbnailUrl: encodeStorageKeyPath(photo.thumbnailKey) ?? photo.thumbnailUrl,
+  livePhotoVideoUrl:
+    encodeStorageKeyPath(photo.livePhotoVideoKey) ?? photo.livePhotoVideoUrl,
+  owner: serializeOwner(photo),
+})
 
 export const serializePublicAlbum = (album: AnyRecord) => ({
   id: album.id,
@@ -130,10 +162,140 @@ export const serializePublicAlbum = (album: AnyRecord) => ({
 })
 
 export const isAdminUser = (user: AnyRecord | null | undefined) =>
-  Boolean(user?.isAdmin)
+  user?.role ? user.role === 'admin' : Boolean(user?.isAdmin)
+
+export const isDisabledUser = (user: AnyRecord | null | undefined) =>
+  Boolean(user?.disabledAt)
+
+export const canManageOwnedResource = (
+  user: AnyRecord | null | undefined,
+  ownerUserId: number | null | undefined,
+) => {
+  if (!user || isDisabledUser(user)) return false
+  if (isAdminUser(user)) return true
+  return ownerUserId != null && Number(user.id) === Number(ownerUserId)
+}
+
+export const isSameUserId = (
+  left: number | string | null | undefined,
+  right: number | string | null | undefined,
+) => {
+  if (left == null || right == null) return false
+  const leftNumber = Number(left)
+  const rightNumber = Number(right)
+  if (Number.isFinite(leftNumber) && Number.isFinite(rightNumber)) {
+    return leftNumber === rightNumber
+  }
+  return String(left) === String(right)
+}
+
+export const getUserDeletionRestrictions = (
+  currentUser: AnyRecord | null | undefined,
+  targetUser: AnyRecord | null | undefined,
+  activeAdminCount: number,
+) => ({
+  isSelf: isSameUserId(currentUser?.id, targetUser?.id),
+  isLastActiveAdmin: isAdminUser(targetUser) && activeAdminCount <= 1,
+})
+
+export const isPhotoPublic = (photo: AnyRecord | null | undefined) =>
+  photo?.visibility === 'public'
+
+export const isStorageKeyInUserNamespace = (
+  storageKey: string | null | undefined,
+  userId: number | string,
+) => {
+  const normalized = normalizeStorageKey(storageKey)
+  if (!normalized) return false
+
+  if (
+    storageKey?.startsWith('/') &&
+    !normalized.startsWith('users/') &&
+    !normalized.startsWith('photos/users/')
+  ) {
+    return false
+  }
+
+  const namespace = `users/${userId}/`
+  return (
+    normalized.startsWith(namespace) || normalized.includes(`/${namespace}`)
+  )
+}
+
+export const getStorageKeyOwnerUserId = (
+  storageKey: string | null | undefined,
+) => {
+  const normalized = normalizeStorageKey(storageKey)
+  if (!normalized) return null
+  const match = normalized.match(/(?:^|\/)users\/([1-9]\d*)(?:\/|$)/)
+  if (!match) return null
+
+  const userId = Number(match[1])
+  return Number.isSafeInteger(userId) ? userId : null
+}
+
+const normalizeOwnerUserId = (value: unknown) => {
+  if (value === null || value === undefined || value === '') return null
+  const userId = Number(value)
+  return Number.isSafeInteger(userId) && userId > 0 ? userId : null
+}
+
+export const resolvePhotoTaskOwnerUserId = ({
+  storageKey,
+  existingOwnerUserId,
+}: {
+  storageKey: string | null | undefined
+  existingOwnerUserId?: unknown
+  explicitOwnerUserId?: unknown
+}) => {
+  const existingOwner = normalizeOwnerUserId(existingOwnerUserId)
+  if (existingOwner !== null) return existingOwner
+  return getStorageKeyOwnerUserId(storageKey)
+}
+
+const getCurrentSessionUser = async (user: AnyRecord | null | undefined) => {
+  if (!user?.id) return null
+  const { useDB, tables, eq } = await import('./db.ts')
+
+  return await useDB()
+    .select()
+    .from(tables.users)
+    .where(eq(tables.users.id, user.id))
+    .get()
+}
+
+const clearInvalidSession = async (event: any) => {
+  await clearUserSession(event)
+}
+
+export async function requireActiveUserSession(event: any) {
+  const session = await requireUserSession(event)
+  const currentUser = await getCurrentSessionUser(session.user)
+
+  if (!currentUser) {
+    await clearInvalidSession(event)
+    throw createError({
+      statusCode: 401,
+      statusMessage: 'Session user no longer exists',
+    })
+  }
+
+  if (isDisabledUser(currentUser)) {
+    await clearInvalidSession(event)
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'User is disabled',
+    })
+  }
+
+  return {
+    ...session,
+    user: sanitizeSessionUser(currentUser),
+  }
+}
 
 export async function requireAdminSession(event: any) {
-  const session = await requireUserSession(event)
+  const session = await requireActiveUserSession(event)
 
   if (!isAdminUser(session.user)) {
     throw createError({
@@ -150,17 +312,24 @@ export async function requireAdminSession(event: any) {
 
 export async function getSafeUserSession(event: any) {
   const session = await getUserSession(event)
+  const currentUser = await getCurrentSessionUser(session.user)
+
+  if (session.user && (!currentUser || isDisabledUser(currentUser))) {
+    await clearInvalidSession(event)
+  }
+
   return {
     ...session,
-    user: sanitizeSessionUser(session.user),
+    user: sanitizeSessionUser(currentUser),
   }
 }
 
 export async function isFirstLaunch() {
-  const { settingsManager } = await import(
-    '../services/settings/settingsManager'
+  const { settingsManager } =
+    await import('../services/settings/settingsManager')
+  return Boolean(
+    await settingsManager.get('system', 'firstLaunch' as any, true),
   )
-  return Boolean(await settingsManager.get('system', 'firstLaunch' as any, true))
 }
 
 export async function requireFirstLaunch(event: any) {
@@ -178,42 +347,62 @@ export async function requireFirstLaunch(event: any) {
 export async function getHiddenPhotoIds() {
   const { useDB, tables, eq } = await import('./db')
   const db = useDB()
-  return db
-    .select({
-      photoId: tables.albumPhotos.photoId,
-    })
-    .from(tables.albumPhotos)
-    .innerJoin(tables.albums, eq(tables.albumPhotos.albumId, tables.albums.id))
-    .where(eq(tables.albums.isHidden, true))
-    .all()
-    .map((row: { photoId: string }) => row.photoId)
+  return (
+    await db
+      .select({
+        photoId: tables.albumPhotos.photoId,
+      })
+      .from(tables.albumPhotos)
+      .innerJoin(
+        tables.albums,
+        eq(tables.albumPhotos.albumId, tables.albums.id),
+      )
+      .where(eq(tables.albums.isHidden, true))
+      .all()
+  ).map((row: { photoId: string }) => row.photoId)
 }
 
 export async function getVisiblePhotos() {
-  const { useDB, tables } = await import('./db')
-  const { desc, notInArray } = await import('drizzle-orm')
+  const { useDB, tables, eq, and } = await import('./db')
+  const { desc, getTableColumns, notInArray } = await import('drizzle-orm')
   const db = useDB()
   const hiddenPhotoIds = await getHiddenPhotoIds()
+  const selectColumns = {
+    ...getTableColumns(tables.photos),
+    ownerId: tables.users.id,
+    ownerUsername: tables.users.username,
+    ownerAvatar: tables.users.avatar,
+  }
 
   if (hiddenPhotoIds.length > 0) {
-    return db
-      .select()
+    return await db
+      .select(selectColumns)
       .from(tables.photos)
-      .where(notInArray(tables.photos.id, hiddenPhotoIds))
+      .leftJoin(tables.users, eq(tables.photos.ownerUserId, tables.users.id))
+      .where(
+        and(
+          eq(tables.photos.visibility, 'public'),
+          notInArray(tables.photos.id, hiddenPhotoIds),
+        ),
+      )
       .orderBy(desc(tables.photos.dateTaken))
       .all()
   }
 
-  return db
-    .select()
+  return await db
+    .select(selectColumns)
     .from(tables.photos)
+    .leftJoin(tables.users, eq(tables.photos.ownerUserId, tables.users.id))
+    .where(eq(tables.photos.visibility, 'public'))
     .orderBy(desc(tables.photos.dateTaken))
     .all()
 }
 
-export async function getVisiblePhotoByStorageKey(key: string) {
-  const visiblePhotos = await getVisiblePhotos()
-  return visiblePhotos.find(
+export async function getPhotoByStorageKey(key: string) {
+  const { useDB, tables } = await import('./db')
+  const db = useDB()
+  const photos = await db.select().from(tables.photos).all()
+  return photos.find(
     (photo: AnyRecord) =>
       photo.storageKey === key ||
       photo.thumbnailKey === key ||
@@ -224,18 +413,37 @@ export async function getVisiblePhotoByStorageKey(key: string) {
   )
 }
 
-export async function isPhotoVisibleToRequest(event: any, photoId: string) {
-  const session = await getUserSession(event)
-  if (isAdminUser(session.user)) return true
-
-  const visiblePhotos = await getVisiblePhotos()
-  return visiblePhotos.some((photo: AnyRecord) => photo.id === photoId)
+export async function getVisiblePhotoByStorageKey(key: string) {
+  const photo = await getPhotoByStorageKey(key)
+  return photo && isPhotoPublic(photo) ? photo : null
 }
 
-export function storagePathMatches(url: string | null | undefined, key: string) {
+export async function isPhotoVisibleToRequest(event: any, photoId: string) {
+  const session = await getSafeUserSession(event)
+  if (isDisabledUser(session.user)) return false
+  if (isAdminUser(session.user)) return true
+
+  const { useDB, tables, eq } = await import('./db')
+  const db = useDB()
+  const photo = await db
+    .select()
+    .from(tables.photos)
+    .where(eq(tables.photos.id, photoId))
+    .get()
+
+  if (!photo) return false
+  if (canManageOwnedResource(session.user, photo.ownerUserId)) return true
+  return isPhotoPublic(photo)
+}
+
+export function storagePathMatches(
+  url: string | null | undefined,
+  key: string,
+) {
   if (!url) return false
 
-  const normalizedKey = key.replace(/^\/+/, '')
+  const normalizedKey = normalizeStorageKey(key)
+  if (!normalizedKey) return false
   const decodedUrl = decodeURIComponent(url)
   return (
     decodedUrl === key ||
@@ -245,14 +453,58 @@ export function storagePathMatches(url: string | null | undefined, key: string) 
 }
 
 export async function authorizePhotoStorageKey(event: any, key: string) {
-  const session = await getUserSession(event)
+  const session = await getSafeUserSession(event)
+  if (isDisabledUser(session.user)) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'User is disabled',
+    })
+  }
   if (isAdminUser(session.user)) return
 
-  const photo = await getVisiblePhotoByStorageKey(key)
-  if (photo) return
+  const photo = await getPhotoByStorageKey(key)
+  if (
+    photo &&
+    (isPhotoPublic(photo) ||
+      canManageOwnedResource(session.user, photo.ownerUserId))
+  ) {
+    return
+  }
 
   throw createError({
     statusCode: 404,
     statusMessage: 'Photo not found',
   })
+}
+
+export async function syncPhotoVisibility(photoIds: string[]) {
+  const ids = [...new Set(photoIds.filter(Boolean))]
+  if (ids.length === 0) return
+
+  const { useDB, tables, eq, and } = await import('./db')
+  const db = useDB()
+
+  for (const photoId of ids) {
+    const publicAlbum = await db
+      .select({ id: tables.albums.id })
+      .from(tables.albumPhotos)
+      .innerJoin(
+        tables.albums,
+        eq(tables.albumPhotos.albumId, tables.albums.id),
+      )
+      .where(
+        and(
+          eq(tables.albumPhotos.photoId, photoId),
+          eq(tables.albums.isHidden, false),
+        ),
+      )
+      .limit(1)
+      .get()
+
+    await db
+      .update(tables.photos)
+      .set({ visibility: publicAlbum ? 'public' : 'private' })
+      .where(eq(tables.photos.id, photoId))
+      .run()
+  }
 }

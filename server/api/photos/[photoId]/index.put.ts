@@ -45,7 +45,7 @@ const normalizeTags = (tags: string[] | undefined) => {
 }
 
 export default eventHandler(async (event) => {
-  await requireAdminSession(event)
+  const session = await requireActiveUserSession(event)
 
   const t = await useTranslation(event)
   const { photoId } = paramsSchema.parse(event.context.params ?? {})
@@ -75,6 +75,13 @@ export default eventHandler(async (event) => {
     throw createError({
       statusCode: 404,
       statusMessage: t('dashboard.photos.messages.photoNotFound'),
+    })
+  }
+
+  if (!canManageOwnedResource(session.user, photo.ownerUserId)) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Cannot update another user photo',
     })
   }
 
@@ -221,6 +228,7 @@ export default eventHandler(async (event) => {
       .update(tables.photos)
       .set(updateData)
       .where(eq(tables.photos.id, photoId))
+      .run()
 
     const updatedPhoto = await db
       .select()

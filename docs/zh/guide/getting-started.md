@@ -57,8 +57,9 @@ NUXT_PUBLIC_APP_SLOGAN=
 NUXT_PUBLIC_APP_AUTHOR=
 NUXT_PUBLIC_APP_AVATAR_URL=
 
-# 地图提供器 (maplibre/mapbox)
-NUXT_PUBLIC_MAP_PROVIDER=maplibre
+# 地图提供器 (mapbox/maplibre)
+NUXT_PUBLIC_MAP_PROVIDER=mapbox
+NUXT_PUBLIC_MAP_MAPBOX_STYLE=mapbox://styles/mapbox/standard
 # 使用 MapLibre 需要 MapTiler 访问令牌
 NUXT_PUBLIC_MAP_MAPLIBRE_TOKEN=
 # 使用 Mapbox 需要 Mapbox 访问令牌

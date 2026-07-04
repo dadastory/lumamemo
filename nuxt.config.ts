@@ -28,26 +28,24 @@ export default defineNuxtConfig({
 
   components: [{ path: '~/components/ui', pathPrefix: false }, '~/components'],
 
+  fonts: {
+    provider: 'local',
+  },
+
   runtimeConfig: {
     public: {
       VERSION: pkg.version,
       mapbox: {
         accessToken: '',
       },
-      app: {
-        title: 'ChronoFrame',
-        slogan: '',
-        author: '',
-        avatarUrl: '',
-      },
       map: {
         provider: 'maplibre' as 'mapbox' | 'maplibre',
         mapbox: {
-          style: '',
+          style: 'mapbox://styles/mapbox/standard',
         },
         maplibre: {
           token: '',
-          style: '',
+          style: '/maps/style.json?v=global',
         },
       },
       analytics: {
@@ -59,6 +57,9 @@ export default defineNuxtConfig({
       } satisfies AnalyticsConfig,
       oauth: {
         github: {
+          enabled: false,
+        },
+        oidc: {
           enabled: false,
         },
       },
@@ -127,6 +128,20 @@ export default defineNuxtConfig({
     },
     /** @deprecated Defaults to allow insecure cookies now */
     allowInsecureCookie: false,
+    oauth: {
+      github: {
+        clientId: '',
+        clientSecret: '',
+      },
+      oidc: {
+        label: 'OIDC',
+        issuer: '',
+        clientId: '',
+        clientSecret: '',
+        scope: 'openid email profile',
+        clientAuthMethod: 'client_secret_post',
+      },
+    },
   },
 
   nitro: {

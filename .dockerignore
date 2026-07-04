@@ -4,7 +4,8 @@ node_modules
 
 # 数据目录
 .data
-data
+data/
+third-party/middleware/data/
 
 # 开发工具
 .vscode

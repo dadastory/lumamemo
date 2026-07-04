@@ -49,6 +49,7 @@ export default defineEventHandler(async (event) => {
         createdAt: new Date(), // 更新创建时间以便重新调度
       })
       .where(eq(tables.pipelineQueue.id, taskId))
+      .run()
 
     return {
       success: true,

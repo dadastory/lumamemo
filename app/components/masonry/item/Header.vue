@@ -1,16 +1,36 @@
 <script lang="ts" setup>
 import { motion, AnimatePresence } from 'motion-v'
 
-defineProps<{
-  stats?: {
-    total: number
-    dateRange: {
-      start: string | undefined
-      end: string | undefined
-    } | null
-  }
-  dateRangeText: string
-}>()
+interface HeaderProfile {
+  title?: string | null
+  slogan?: string | null
+  avatarUrl?: string | null
+  author?: string | null
+}
+
+const props = withDefaults(
+  defineProps<{
+    stats?: {
+      total: number
+      dateRange: {
+        start: string | undefined
+        end: string | undefined
+      } | null
+    }
+    dateRangeText: string
+    profile?: HeaderProfile
+    albumRoute?: string
+    globeRoute?: string
+    loginRoute?: string
+    dashboardRoute?: string
+  }>(),
+  {
+    albumRoute: '/albums',
+    globeRoute: '/globe',
+    loginRoute: '/signin',
+    dashboardRoute: '/dashboard',
+  },
+)
 
 const router = useRouter()
 // const config = useRuntimeConfig()
@@ -26,7 +46,11 @@ const isDark = computed({
 })
 
 const handleOpenLogin = () => {
-  router.push('/signin')
+  router.push(props.loginRoute)
+}
+
+const handleOpenDashboard = () => {
+  window.location.assign(props.dashboardRoute)
 }
 
 const { hasActiveFilters, selectedCounts } = usePhotoFilters()
@@ -47,6 +71,22 @@ const totalSelectedFilters = computed(() => {
 })
 
 const isRepoLinkHovering = ref(false)
+
+const displayTitle = computed(
+  () => props.profile?.title || getSetting('app:title') || 'ChronoFrame',
+)
+const displaySlogan = computed(
+  () => props.profile?.slogan ?? getSetting('app:slogan'),
+)
+const displayAuthor = computed(
+  () => props.profile?.author || getSetting('app:author') || displayTitle.value,
+)
+const displayAvatarUrl = computed(
+  () =>
+    props.profile?.avatarUrl ||
+    (getSetting('app:avatarUrl') as string) ||
+    '/web-app-manifest-192x192.png',
+)
 </script>
 
 <template>
@@ -54,7 +94,7 @@ const isRepoLinkHovering = ref(false)
     <div
       class="absolute inset-0 -z-10 blur-3xl scale-110 bg-cover bg-center opacity-35"
       :style="{
-        backgroundImage: `url(${getSetting('app:avatarUrl') || '/web-app-manifest-192x192.png'})`,
+        backgroundImage: `url(${displayAvatarUrl})`,
       }"
     ></div>
     <div
@@ -72,10 +112,7 @@ const isRepoLinkHovering = ref(false)
                 <Icon name="tabler:star-filled" />
               </div>
               <img
-                :src="
-                  (getSetting('app:avatarUrl') as string) ||
-                  '/web-app-manifest-192x192.png'
-                "
+                :src="displayAvatarUrl"
                 class="size-16 rounded-full object-cover"
                 :class="!loggedIn && 'cursor-pointer'"
                 :alt="$t('ui.photo.avatarAlt')"
@@ -85,7 +122,7 @@ const isRepoLinkHovering = ref(false)
             <h1
               class="text-2xl font-bold text-neutral-900 dark:text-white/90 mb-2"
             >
-              {{ getSetting('app:title') }}
+              {{ displayTitle }}
             </h1>
           </div>
           <div
@@ -109,10 +146,10 @@ const isRepoLinkHovering = ref(false)
               {{ $t('ui.stats.noPhotosTip') }}
             </p>
             <p
-              v-if="getSetting('app:slogan')"
+              v-if="displaySlogan"
               class="font-[Pacifico]"
             >
-              {{ getSetting('app:slogan') }}
+              {{ displaySlogan }}
             </p>
           </div>
           <div
@@ -125,7 +162,7 @@ const isRepoLinkHovering = ref(false)
                 class="bg-transparent rounded-full cursor-pointer"
                 icon="tabler:map-pin-2"
                 size="sm"
-                to="/globe"
+                :to="globeRoute"
               />
             </UTooltip>
             <UTooltip :text="$t('title.albums')">
@@ -135,7 +172,7 @@ const isRepoLinkHovering = ref(false)
                 class="bg-transparent rounded-full cursor-pointer"
                 icon="tabler:photo"
                 size="sm"
-                to="/albums"
+                :to="albumRoute"
               />
             </UTooltip>
             <UPopover>
@@ -230,7 +267,7 @@ const isRepoLinkHovering = ref(false)
                 variant="soft"
                 class="bg-transparent rounded-full cursor-pointer"
                 icon="tabler:dashboard"
-                to="/dashboard"
+                @click="handleOpenDashboard"
               />
             </UTooltip>
             <UTooltip
@@ -252,11 +289,11 @@ const isRepoLinkHovering = ref(false)
         class="w-full px-2 pb-1 pt-1.5 bg-neutral-200/50 dark:bg-neutral-900/50 flex justify-between items-center gap-2"
       >
         <div
-          v-if="getSetting('app:author') || getSetting('app:title')"
+          v-if="displayAuthor"
           class="text-xs text-neutral-500/80 dark:text-neutral-500 font-medium truncate"
         >
           © {{ $dayjs().format('YYYY') }}
-          {{ getSetting('app:author') || getSetting('app:title') }}
+          {{ displayAuthor }}
         </div>
         <div
           class="text-xs text-neutral-500/60 dark:text-neutral-500/80 font-medium inline-flex justify-center items-center gap-0.5"

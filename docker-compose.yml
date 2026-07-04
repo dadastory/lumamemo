@@ -1,26 +1,39 @@
+include:
+  - path: third-party/middleware/docker-compose.yml
+    project_directory: .
+
 services:
   chronoframe:
-    image: ghcr.io/hoshinosuzumi/chronoframe:latest
+    image: ${CFRAME_IMAGE:-chronoframe:latest}
     container_name: chronoframe
     restart: unless-stopped
-    ports:
-      - '3000:3000'
+    expose:
+      - '3000'
     volumes:
-      - ./data:/app/data
+      - ./data/app:/app/data
+      - ./data/storage:/app/data/storage
     env_file:
       - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      minio-init:
+        condition: service_completed_successfully
+      nominatim:
+        condition: service_started
 
-  # database:
-  #   image: postgres:15-alpine
-  #   container_name: chronoframe_db
-  #   environment:
-  #     POSTGRES_DB: chronoframe
-  #     POSTGRES_USER: chronoframe
-  #     POSTGRES_PASSWORD: your-password
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   ports:
-  #     - "5432:5432"
-
-# volumes:
-#   postgres_data:
+  gateway:
+    image: ${GATEWAY_IMAGE:-nginx:alpine}
+    container_name: chronoframe_gateway
+    restart: unless-stopped
+    ports:
+      - '${GATEWAY_PORT:-3000}:80'
+    volumes:
+      - ./third-party/middleware/gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      chronoframe:
+        condition: service_started
+      nominatim:
+        condition: service_started

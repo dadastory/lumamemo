@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { or, eq, sql } from 'drizzle-orm'
+import { and, or, eq, lt } from 'drizzle-orm'
 
 /**
  * 清理非进行中的任务（已完成和失败的任务）
@@ -55,12 +55,14 @@ export default defineEventHandler(async (event) => {
         })
       }
 
-      const thresholdTimestamp = Math.floor(
-        (Date.now() - daysThreshold * 24 * 60 * 60 * 1000) / 1000,
+      const thresholdDate = new Date(
+        Date.now() - daysThreshold * 24 * 60 * 60 * 1000,
       )
-      const timeCondition = sql`${tables.pipelineQueue.createdAt} < ${thresholdTimestamp}`
 
-      whereCondition = sql`(${whereCondition}) AND ${timeCondition}`
+      whereCondition = and(
+        whereCondition,
+        lt(tables.pipelineQueue.createdAt, thresholdDate),
+      )
     }
 
     // 首先查询要删除的任务以便返回统计信息
@@ -73,6 +75,7 @@ export default defineEventHandler(async (event) => {
       })
       .from(tables.pipelineQueue)
       .where(whereCondition)
+      .all()
 
     if (tasksToDelete.length === 0) {
       return {
@@ -87,7 +90,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // 执行删除操作
-    await db.delete(tables.pipelineQueue).where(whereCondition)
+    await db.delete(tables.pipelineQueue).where(whereCondition).run()
 
     // 统计删除的任务
     const breakdown = tasksToDelete.reduce(

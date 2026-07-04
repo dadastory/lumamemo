@@ -18,6 +18,7 @@ export default eventHandler(async (event) => {
         .from(tables.photos)
         .where(eq(tables.photos.id, photoId))
         .limit(1)
+        .all()
         .then((rows) => rows[0])
 
       if (!photo) {
@@ -60,6 +61,7 @@ export default eventHandler(async (event) => {
           thumbnailKey: `${storageProvider.config?.prefix?.replace(/\/$/, '')}/thumbnails/${photoId}.webp`,
         })
         .where(eq(tables.photos.id, photoId))
+        .run()
 
       logger.chrono.success(`Successfully reindexed EXIF for photo ${photoId}`)
 
@@ -87,6 +89,7 @@ export default eventHandler(async (event) => {
               inArray(tables.photos.id, photoIds),
             ),
           )
+          .all()
       } else {
         // 处理所有照片
         photos = await useDB()
@@ -96,6 +99,7 @@ export default eventHandler(async (event) => {
           })
           .from(tables.photos)
           .where(isNotNull(tables.photos.storageKey))
+          .all()
       }
 
       if (photos.length === 0) {
@@ -158,6 +162,7 @@ export default eventHandler(async (event) => {
               thumbnailKey: `${storageProvider.config?.prefix?.replace(/\/$/, '')}/thumbnails/${photo.id}.webp`,
             })
             .where(eq(tables.photos.id, photo.id))
+            .run()
 
           updated++
 

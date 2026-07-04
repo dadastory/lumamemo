@@ -6,11 +6,21 @@ export default eventHandler(async (event) => {
 
   const body = await readValidatedBody(
     event,
-    z.object({
-      provider: z.enum(['mapbox', 'maplibre']),
-      token: z.string().min(1),
-      style: z.string().optional(),
-    }).parse,
+    z
+      .object({
+        provider: z.enum(['mapbox', 'maplibre']),
+        token: z.string().optional().default(''),
+        style: z.string().optional(),
+      })
+      .superRefine((map, ctx) => {
+        if (map.provider === 'mapbox' && !map.token) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['token'],
+            message: 'Mapbox token is required',
+          })
+        }
+      }).parse,
   )
 
   await settingsManager.set('map', 'provider', body.provider)
@@ -19,7 +29,7 @@ export default eventHandler(async (event) => {
     await settingsManager.set('map', 'mapbox.token', body.token)
     if (body.style) await settingsManager.set('map', 'mapbox.style', body.style)
   } else {
-    await settingsManager.set('map', 'maplibre.token', body.token)
+    await settingsManager.set('map', 'maplibre.token', body.token || '')
     if (body.style)
       await settingsManager.set('map', 'maplibre.style', body.style)
   }

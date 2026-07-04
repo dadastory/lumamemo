@@ -136,7 +136,7 @@ export class SettingsManager {
       }
 
       // Check if setting exists
-      const existing = db
+      const existing = await db
         .select()
         .from(tables.settings)
         .where(
@@ -149,7 +149,8 @@ export class SettingsManager {
 
       // If not exists and has default value, insert it
       if (!existing) {
-        db.insert(tables.settings)
+        await db
+          .insert(tables.settings)
           .values({
             namespace: config.namespace,
             key: config.key,
@@ -183,7 +184,7 @@ export class SettingsManager {
 
     // If not in cache, fetch from database
     const db = useDB()
-    const setting = db
+    const setting = await db
       .select()
       .from(tables.settings)
       .where(
@@ -219,7 +220,7 @@ export class SettingsManager {
     const db = useDB()
     const cacheKey = this.getCacheKey(namespace, key)
 
-    const existing = db
+    const existing = await db
       .select()
       .from(tables.settings)
       .where(
@@ -253,7 +254,8 @@ export class SettingsManager {
 
     const serializedValue = this.serialize(value)
 
-    db.update(tables.settings)
+    await db
+      .update(tables.settings)
       .set({
         value: serializedValue,
         updatedAt: new Date(),
@@ -350,7 +352,7 @@ export class SettingsManager {
     namespace: SettingNamespace,
   ): Promise<Record<string, SettingValue>> {
     const db = useDB()
-    const settings = db
+    const settings = await db
       .select()
       .from(tables.settings)
       .where(eq(tables.settings.namespace, namespace))
@@ -366,7 +368,7 @@ export class SettingsManager {
 
   async getSchema(): Promise<SettingConfig[]> {
     const db = useDB()
-    const settings = db.select().from(tables.settings).all()
+    const settings = await db.select().from(tables.settings).all()
 
     return settings.map((setting) => ({
       namespace: setting.namespace,
@@ -389,7 +391,7 @@ export class SettingsManager {
   public storage = {
     async getProviders(): Promise<SettingStorageProvider[]> {
       const db = useDB()
-      const providers = db
+      const providers = await db
         .select()
         .from(tables.settings_storage_providers)
         .all()
@@ -398,7 +400,7 @@ export class SettingsManager {
 
     async getProviderById(id: number): Promise<SettingStorageProvider | null> {
       const db = useDB()
-      const provider = db
+      const provider = await db
         .select()
         .from(tables.settings_storage_providers)
         .where(eq(tables.settings_storage_providers.id, id))
@@ -421,14 +423,15 @@ export class SettingsManager {
       providerConfig: NewSettingStorageProvider,
     ): Promise<number> {
       const db = useDB()
-      const result = db
+      const result = await db
         .insert(tables.settings_storage_providers)
         .values({
           name: providerConfig.name,
           provider: providerConfig.provider,
           config: providerConfig.config,
         })
-        .run()
+        .returning({ id: tables.settings_storage_providers.id })
+        .get()
 
       // If no active provider and this is the only provider, set this as active
       const currentActiveProvider = await settingsManager.get<number>(
@@ -439,10 +442,10 @@ export class SettingsManager {
         await settingsManager.set(
           'storage',
           'provider',
-          result.lastInsertRowid as number,
+          result.id,
         )
       }
-      return result.lastInsertRowid as number
+      return result.id
     },
 
     async updateProvider(
@@ -450,7 +453,8 @@ export class SettingsManager {
       providerConfig: Partial<NewSettingStorageProvider['config']>,
     ): Promise<void> {
       const db = useDB()
-      db.update(tables.settings_storage_providers)
+      await db
+        .update(tables.settings_storage_providers)
         .set({
           ...providerConfig,
         })
@@ -460,7 +464,8 @@ export class SettingsManager {
 
     async deleteProvider(id: number): Promise<void> {
       const db = useDB()
-      db.delete(tables.settings_storage_providers)
+      await db
+        .delete(tables.settings_storage_providers)
         .where(eq(tables.settings_storage_providers.id, id))
         .run()
     },

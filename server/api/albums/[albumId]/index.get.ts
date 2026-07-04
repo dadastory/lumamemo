@@ -13,10 +13,9 @@ export default eventHandler(async (event) => {
   )
 
   const db = useDB()
-  const session = await getUserSession(event)
-  const isAdmin = isAdminUser(session.user)
+  const session = await requireActiveUserSession(event)
 
-  const album = db
+  const album = await db
     .select()
     .from(tables.albums)
     .where(eq(tables.albums.id, albumId))
@@ -29,11 +28,11 @@ export default eventHandler(async (event) => {
     })
   }
 
-  // 检查相册是否隐藏，如果隐藏则需要用户登录才能访问
-  if (album.isHidden && !isAdmin) {
+  const canManageAlbum = canManageOwnedResource(session.user, album.ownerUserId)
+  if (!canManageAlbum) {
     throw createError({
-      statusCode: 404,
-      statusMessage: 'Album not found',
+      statusCode: 403,
+      statusMessage: 'Cannot access another user album',
     })
   }
 
@@ -42,50 +41,33 @@ export default eventHandler(async (event) => {
     // all fields from tables.photos
     .select({
       ...getTableColumns(tables.photos),
+      ownerId: tables.users.id,
+      ownerUsername: tables.users.username,
+      ownerAvatar: tables.users.avatar,
     })
     .from(tables.photos)
     .innerJoin(
       tables.albumPhotos,
       eq(tables.photos.id, tables.albumPhotos.photoId),
     )
+    .leftJoin(tables.users, eq(tables.photos.ownerUserId, tables.users.id))
     .where(eq(tables.albumPhotos.albumId, albumId))
     .orderBy(asc(tables.albumPhotos.position))
     .all()
-  const hiddenPhotoIds = isAdmin ? [] : await getHiddenPhotoIds()
-  const photos = albumPhotos.filter(
-    (photo) => isAdmin || !hiddenPhotoIds.includes(photo.id),
-  )
+  const photos = albumPhotos
 
   // 验证相册数据完整性
   if (!photos || !Array.isArray(photos)) {
     // 空相册也是合法的，只需要返回空数组
-    const serializedAlbum = isAdmin ? album : serializePublicAlbum(album)
-    if (
-      !isAdmin &&
-      serializedAlbum.coverPhotoId &&
-      hiddenPhotoIds.includes(serializedAlbum.coverPhotoId)
-    ) {
-      serializedAlbum.coverPhotoId = null
-    }
-
     return {
-      ...serializedAlbum,
+      ...album,
       photos: [],
     }
   }
 
-  const serializedAlbum = isAdmin ? album : serializePublicAlbum(album)
-  if (
-    !isAdmin &&
-    serializedAlbum.coverPhotoId &&
-    hiddenPhotoIds.includes(serializedAlbum.coverPhotoId)
-  ) {
-    serializedAlbum.coverPhotoId = null
-  }
-
   return {
-    ...serializedAlbum,
-    photos: isAdmin
+    ...album,
+    photos: canManageAlbum
       ? photos.map(serializeAdminPhoto)
       : photos.map(serializePublicPhoto),
   }

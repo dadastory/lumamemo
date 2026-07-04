@@ -19,7 +19,7 @@
       "filter": {
         "empty": {
           "cameras": "没有相机信息",
-          "cities": "没有城市信息",
+          "cities": "没有位置信息",
           "lenses": "没有镜头信息",
           "tags": "没有标签"
         },
@@ -29,7 +29,7 @@
         },
         "tabs": {
           "cameras": "相机",
-          "cities": "城市",
+          "cities": "位置",
           "lenses": "镜头",
           "ratings": "评分",
           "tags": "标签"
@@ -238,6 +238,7 @@
     "artist": "艺术家",
     "software": "软件",
     "tz": "时区",
+    "location": "位置",
     "country": "国家",
     "city": "城市",
     "gps": {
@@ -392,6 +393,8 @@
     "queue": "队列管理",
     "logs": "系统日志",
     "albums": "相簿",
+    "users": "用户管理",
+    "profile": "个人资料",
     "siteAdministration": "站点设置",
     "generalSettings": "基本设置",
     "appearanceSettings": "外观设置",
@@ -426,6 +429,31 @@
         "title": "登录失败",
         "description": "发生未知错误，请重试。"
       }
+    },
+    "providers": {
+      "oidc": "OIDC"
+    }
+  },
+  "invite": {
+    "title": "接受邀请",
+    "subtitle": "为 {email} 创建账号",
+    "invalid": {
+      "title": "邀请不可用",
+      "description": "该邀请无效、已过期、已撤销或已被使用。"
+    },
+    "form": {
+      "email": "邮箱",
+      "username": "用户名",
+      "password": "密码",
+      "submit": "创建账号",
+      "errors": {
+        "username": "用户名至少需要 2 个字符",
+        "password": "密码至少需要 6 个字符"
+      }
+    },
+    "messages": {
+      "accepted": "账号已创建",
+      "failed": "接受邀请失败"
     }
   },
   "common": {
@@ -471,6 +499,9 @@
       "reset": "重置",
       "cancel": "取消",
       "continue": "继续",
+      "create": "创建",
+      "add": "添加",
+      "remove": "移除",
       "delete": "删除"
     },
     "unknownError": "未知错误"
@@ -585,6 +616,7 @@
           },
           "id": "照片ID",
           "title": "照片标题",
+          "owner": "上传者",
           "tags": "关键词",
           "rating": "评分",
           "isLivePhoto": "Live Photo",
@@ -598,6 +630,7 @@
         },
         "cells": {
           "noTags": "无标签",
+          "noOwner": "无上传者",
           "noRating": "未评分",
           "noGps": "无 GPS 信息",
           "unknown": "未知",
@@ -1032,6 +1065,7 @@
         "deleteSuccess": "任务删除成功",
         "batchRetrySuccess": "批量重试成功",
         "clearSuccess": "清理完成",
+        "clearEmpty": "没有可清理的非活跃任务",
         "operationFailed": "操作失败",
         "clearSuccessDescription": "清除了 {count} 个任务",
         "clearFailed": "清理任务失败",
@@ -1062,11 +1096,125 @@
         "levelPlaceholder": "过滤级别",
         "tagPlaceholder": "筛选 Tag"
       },
+      "actions": {
+        "autoScroll": "跟随最新日志",
+        "downloadRaw": "下载原始日志"
+      },
       "countLabel": "总条数/展示: {total}/{shown}",
       "tagCount": "Tag: {count}",
       "empty": {
         "waiting": "等待日志数据...",
         "noMatch": "没有匹配的日志条目"
+      }
+    },
+    "users": {
+      "createButton": "新建用户",
+      "inviteButton": "邀请用户",
+      "createTitle": "新建用户",
+      "editTitle": "编辑用户",
+      "inviteTitle": "邀请用户",
+      "sections": {
+        "users": "用户",
+        "invitations": "邀请"
+      },
+      "roles": {
+        "admin": "管理员",
+        "user": "普通用户"
+      },
+      "status": {
+        "enabled": "启用中",
+        "disabled": "已禁用"
+      },
+      "table": {
+        "user": "用户",
+        "email": "邮箱",
+        "role": "角色",
+        "status": "状态",
+        "actions": "操作"
+      },
+      "form": {
+        "username": "用户名",
+        "email": "邮箱",
+        "password": "密码",
+        "resetPassword": "重置密码",
+        "role": "角色",
+        "disabled": "禁用此用户"
+      },
+      "actions": {
+        "edit": "编辑用户",
+        "deleteUser": "删除用户",
+        "deleteInvite": "删除邀请记录",
+        "revokeInvite": "撤销邀请"
+      },
+      "messages": {
+        "created": "用户已创建",
+        "updated": "用户已更新",
+        "saveFailed": "保存用户失败",
+        "inviteCreated": "邀请已创建",
+        "inviteFailed": "创建邀请失败",
+        "inviteCopied": "邀请链接已复制",
+        "inviteRevoked": "邀请已撤销",
+        "inviteDeleted": "邀请记录已删除",
+        "userDeleted": "用户已删除",
+        "deleteUserFailed": "删除用户失败"
+      },
+      "invites": {
+        "email": "邮箱",
+        "expiresAt": "过期时间",
+        "createdTitle": "邀请链接已创建"
+      },
+      "inviteStatus": {
+        "pending": "待使用",
+        "accepted": "已接受",
+        "expired": "已过期",
+        "revoked": "已撤销"
+      },
+      "delete": {
+        "title": "删除用户",
+        "description": "这会永久删除 {username} 及其相册、照片和存储文件。",
+        "confirmLabel": "输入 {username} 确认删除",
+        "confirm": "删除用户",
+        "restrictions": {
+          "self": "不能删除当前登录账户。",
+          "lastAdmin": "不能删除最后一个启用中的管理员。"
+        },
+        "counts": {
+          "albums": "相册",
+          "photos": "照片",
+          "files": "存储文件",
+          "skippedFiles": "跳过的文件",
+          "invitations": "邀请记录"
+        }
+      }
+    },
+    "profile": {
+      "title": "个人资料",
+      "description": "管理你的公开主页和展示信息。",
+      "form": {
+        "displayName": "展示名称",
+        "profileTitle": "主页标题",
+        "profileSlogan": "主页标语",
+        "avatar": "头像 URL",
+        "profileBio": "个人简介",
+        "visibility": "主页可见性"
+      },
+      "visibility": {
+        "private": "私有",
+        "public": "公开"
+      },
+      "publicLink": {
+        "title": "公开主页链接",
+        "enabled": "任何拥有此链接的人都可以访问你的主页。",
+        "disabled": "你的主页当前是私有状态。"
+      },
+      "actions": {
+        "copyLink": "复制公开链接",
+        "openLink": "打开公开链接"
+      },
+      "messages": {
+        "saved": "个人资料已保存",
+        "saveFailed": "保存个人资料失败",
+        "linkCopied": "公开链接已复制"
       }
     },
     "access": {
@@ -1158,6 +1306,40 @@
           "clientSecret": {
             "label": "GitHub Client Secret",
             "description": "GitHub OAuth 应用的 Client Secret"
+          }
+        },
+        "oidc": {
+          "enabled": {
+            "label": "启用 OIDC 登录",
+            "description": "是否启用通用 OpenID Connect 登录提供商"
+          },
+          "label": {
+            "label": "OIDC 按钮文案",
+            "description": "登录页 OIDC 按钮的显示文案"
+          },
+          "issuer": {
+            "label": "OIDC Issuer",
+            "description": "用于 OpenID Connect discovery 的 Issuer URL"
+          },
+          "clientId": {
+            "label": "OIDC Client ID",
+            "description": "OIDC 应用的 Client ID"
+          },
+          "clientSecret": {
+            "label": "OIDC Client Secret",
+            "description": "OIDC 应用的 Client Secret"
+          },
+          "scope": {
+            "label": "OIDC Scope",
+            "description": "OIDC 登录时请求的 scope"
+          },
+          "clientAuthMethod": {
+            "label": "OIDC Client 认证方式",
+            "description": "ChronoFrame 请求 token endpoint 时使用的客户端认证方式",
+            "options": {
+              "post": "Client secret post",
+              "basic": "Client secret basic"
+            }
           }
         }
       },
@@ -1540,9 +1722,20 @@
       "toggle": "启用/关闭时间回溯",
       "playPause": "播放/暂停时间回溯",
       "title": "时间回溯"
+    },
+    "localMapCoverage": {
+      "title": "离线地图覆盖范围有限",
+      "description": "照片位置不在当前本地 PMTiles 地图包范围内。照片标记仍可使用，但需要添加对应地区或全球地图数据后才会显示完整底图。",
+      "action": "查看本地地图范围"
     }
   },
+  "publicProfile": {
+    "albums": "相册",
+    "photos": "照片",
+    "emptyPhotos": "还没有公开照片。"
+  },
   "photo": {
+    "owner": "上传者",
     "image": {
       "loadError": "图片加载失败"
     }

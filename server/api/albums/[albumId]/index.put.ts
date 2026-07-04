@@ -1,7 +1,8 @@
 import { z } from 'zod'
+import { and, eq } from 'drizzle-orm'
 
 export default eventHandler(async (event) => {
-  await requireAdminSession(event)
+  const session = await requireActiveUserSession(event)
 
   const { albumId } = await getValidatedRouterParams(
     event,
@@ -40,8 +41,48 @@ export default eventHandler(async (event) => {
     })
   }
 
+  if (!canManageOwnedResource(session.user, album.ownerUserId)) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Cannot update another user album',
+    })
+  }
+
+  const previousPhotoIds = (
+    await db
+      .select({ photoId: tables.albumPhotos.photoId })
+      .from(tables.albumPhotos)
+      .where(eq(tables.albumPhotos.albumId, albumId))
+      .all()
+  ).map((row) => row.photoId)
+
+  const nextPhotoIds = new Set(body.photoIds || [])
+  if (body.coverPhotoId) {
+    nextPhotoIds.add(body.coverPhotoId)
+  }
+
+  for (const photoId of nextPhotoIds) {
+    const photo = await db
+      .select()
+      .from(tables.photos)
+      .where(
+        and(
+          eq(tables.photos.id, photoId),
+          eq(tables.photos.ownerUserId, album.ownerUserId),
+        ),
+      )
+      .get()
+
+    if (!photo) {
+      throw createError({
+        statusCode: 403,
+        statusMessage: 'Cannot add another user photo to album',
+      })
+    }
+  }
+
   // 使用事务更新相簿
-  const updatedAlbum = db.transaction((tx) => {
+  const updatedAlbum = await db.transaction(async (tx) => {
     // 更新基本信息
     const updateData: Record<string, any> = {
       updatedAt: new Date(),
@@ -62,7 +103,8 @@ export default eventHandler(async (event) => {
       updateData.isHidden = body.isHidden
     }
 
-    tx.update(tables.albums)
+    await tx
+      .update(tables.albums)
       .set(updateData)
       .where(eq(tables.albums.id, albumId))
       .run()
@@ -70,7 +112,8 @@ export default eventHandler(async (event) => {
     // 如果提供了新的照片列表，替换现有照片
     if (body.photoIds !== undefined) {
       // 删除现有的相簌-照片关系
-      tx.delete(tables.albumPhotos)
+      await tx
+        .delete(tables.albumPhotos)
         .where(eq(tables.albumPhotos.albumId, albumId))
         .run()
 
@@ -85,7 +128,8 @@ export default eventHandler(async (event) => {
       if (photoIds.size > 0) {
         let pos = 1000000
         for (const photoId of photoIds) {
-          tx.insert(tables.albumPhotos)
+          await tx
+            .insert(tables.albumPhotos)
             .values({
               albumId,
               photoId,
@@ -97,12 +141,14 @@ export default eventHandler(async (event) => {
       }
     }
 
-    return tx
+    return await tx
       .select()
       .from(tables.albums)
       .where(eq(tables.albums.id, albumId))
       .get()
   })
+
+  await syncPhotoVisibility([...previousPhotoIds, ...nextPhotoIds])
 
   return updatedAlbum
 })

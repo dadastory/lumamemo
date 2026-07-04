@@ -6,25 +6,35 @@ export default defineNuxtPlugin((_nuxtApp) => {
     config.public.analytics.matomo.url &&
     config.public.analytics.matomo.siteId
   ) {
-    const matomoUrl = config.public.analytics.matomo.url.replace(/\/$/, '') // 移除末尾斜杠
-    const siteId = config.public.analytics.matomo.siteId
+    let matomoBase: URL
+    try {
+      matomoBase = new URL(config.public.analytics.matomo.url)
+    } catch {
+      return
+    }
+
+    if (!['http:', 'https:'].includes(matomoBase.protocol)) {
+      return
+    }
+
+    if (!matomoBase.pathname.endsWith('/')) {
+      matomoBase.pathname = `${matomoBase.pathname}/`
+    }
+
+    const trackerUrl = new URL('matomo.php', matomoBase).toString()
+    const scriptUrl = new URL('matomo.js', matomoBase).toString()
+    const siteId = String(config.public.analytics.matomo.siteId)
+    const paq = ((window as any)._paq = (window as any)._paq || [])
+    paq.push(['trackPageView'])
+    paq.push(['enableLinkTracking'])
+    paq.push(['setTrackerUrl', trackerUrl])
+    paq.push(['setSiteId', siteId])
 
     useHead({
       script: [
         {
-          innerHTML: `
-            var _paq = window._paq = window._paq || [];
-            _paq.push(['trackPageView']);
-            _paq.push(['enableLinkTracking']);
-            (function() {
-              var u="${matomoUrl}/";
-              _paq.push(['setTrackerUrl', u+'matomo.php']);
-              _paq.push(['setSiteId', '${siteId}']);
-              var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
-              g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
-            })();
-          `.trim(),
-          type: 'text/javascript',
+          src: scriptUrl,
+          async: true,
           tagPosition: 'head',
         },
       ],

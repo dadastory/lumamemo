@@ -1,7 +1,19 @@
 import { z } from 'zod'
 
+const resolvePayloadOwnerUserId = async (payload: {
+  storageKey: string
+  ownerUserId?: number | null
+}) => {
+  const existingPhoto = await getPhotoByStorageKey(payload.storageKey)
+  return resolvePhotoTaskOwnerUserId({
+    storageKey: payload.storageKey,
+    existingOwnerUserId: existingPhoto?.ownerUserId,
+    explicitOwnerUserId: payload.ownerUserId,
+  })
+}
+
 export default defineEventHandler(async (event) => {
-  await requireAdminSession(event)
+  const session = await requireActiveUserSession(event)
 
   try {
     const payloadSchema = z.discriminatedUnion('type', [
@@ -9,10 +21,12 @@ export default defineEventHandler(async (event) => {
         type: z.literal('photo'),
         storageKey: z.string().nonempty(),
         eraseLocation: z.boolean().optional(),
+        ownerUserId: z.number().nullable().optional(),
       }),
       z.object({
         type: z.literal('live-photo-video'),
         storageKey: z.string().nonempty(),
+        ownerUserId: z.number().nullable().optional(),
       }),
       z.object({
         type: z.literal('photo-reverse-geocoding'),
@@ -34,6 +48,51 @@ export default defineEventHandler(async (event) => {
         maxAttempts: z.number().min(1).max(5).optional().default(3),
       }).parse,
     )
+
+    if (!isAdminUser(session.user)) {
+      if (
+        (payload.type === 'photo' || payload.type === 'live-photo-video') &&
+        !isStorageKeyInUserNamespace(payload.storageKey, session.user.id)
+      ) {
+        throw createError({
+          statusCode: 403,
+          statusMessage: 'Cannot process another user upload',
+        })
+      }
+
+      if (
+        payload.type === 'photo-reverse-geocoding' ||
+        payload.type === 'photo-erase-location'
+      ) {
+        const photo = await useDB()
+          .select()
+          .from(tables.photos)
+          .where(eq(tables.photos.id, payload.photoId))
+          .get()
+
+        if (!canManageOwnedResource(session.user, photo?.ownerUserId)) {
+          throw createError({
+            statusCode: 403,
+            statusMessage: 'Cannot process another user photo',
+          })
+        }
+      }
+    }
+
+    if (payload.type === 'photo' || payload.type === 'live-photo-video') {
+      const ownerUserId = isAdminUser(session.user)
+        ? await resolvePayloadOwnerUserId(payload)
+        : session.user.id
+
+      if (ownerUserId === null) {
+        throw createError({
+          statusCode: 400,
+          statusMessage: 'Unable to resolve upload owner',
+        })
+      }
+
+      payload.ownerUserId = ownerUserId
+    }
 
     const workerPool = globalThis.__workerPool
 

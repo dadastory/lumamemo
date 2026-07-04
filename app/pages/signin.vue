@@ -21,6 +21,21 @@ const githubOauthEnabled = computed(() => {
   return Boolean(config.public.oauth.github.enabled)
 })
 
+const oidcOauthEnabled = computed(() => {
+  const settingsValue = settingsStore.getSetting('system:auth.oidc.enabled')
+  if (typeof settingsValue === 'boolean') {
+    return settingsValue
+  }
+
+  return Boolean(config.public.oauth.oidc.enabled)
+})
+
+const oidcOauthLabel = computed(
+  () =>
+    settingsStore.getSetting('system:auth.oidc.label')?.toString() ||
+    $t('auth.providers.oidc'),
+)
+
 const onAuthSubmit = async (event: any) => {
   isLoading.value = true
   await $fetch('/api/login', {
@@ -51,7 +66,7 @@ const onAuthSubmit = async (event: any) => {
   >
     <AuthForm
       :title="$t('auth.form.signin.title')"
-      :subtitle="$t('auth.form.signin.subtitle', [config.public.app.title])"
+      :subtitle="$t('auth.form.signin.subtitle', [$t('title.gallery')])"
       :loading="isLoading"
       :providers="[
         githubOauthEnabled && {
@@ -62,6 +77,16 @@ const onAuthSubmit = async (event: any) => {
           block: true,
           label: 'GitHub',
           to: '/api/auth/github',
+          external: true,
+        },
+        oidcOauthEnabled && {
+          icon: 'tabler:key',
+          size: 'lg',
+          color: 'neutral',
+          variant: 'subtle',
+          block: true,
+          label: oidcOauthLabel,
+          to: '/api/auth/oidc',
           external: true,
         },
       ]"

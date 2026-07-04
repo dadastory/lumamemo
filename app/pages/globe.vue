@@ -1,6 +1,52 @@
 <script lang="ts" setup>
 import { motion } from 'motion-v'
 import { clusterMarkers, photosToMarkers } from '~/utils/clustering'
+import {
+  getGlobeMapViewState,
+} from '~/utils/map-view-state'
+import { buildLegacyProfileEntryRoute } from '~/utils/profile-entry-redirects'
+
+const props = withDefaults(
+  defineProps<{
+    backRoute?: string
+    redirectLegacyEntry?: boolean
+  }>(),
+  {
+    backRoute: '/',
+    redirectLegacyEntry: true,
+  },
+)
+
+interface SessionProfile {
+  publicId?: string | null
+}
+
+const { loggedIn, user } = useUserSession()
+
+const getOwnPublicId = async () => {
+  if (user.value?.publicId) {
+    return user.value.publicId
+  }
+
+  try {
+    const profile = await $fetch<SessionProfile>('/api/me/profile')
+    return profile.publicId || null
+  } catch {
+    return null
+  }
+}
+
+if (props.redirectLegacyEntry) {
+  if (!loggedIn.value) {
+    await navigateTo('/signin', { replace: true })
+  } else {
+    const publicId = await getOwnPublicId()
+    await navigateTo(
+      publicId ? buildLegacyProfileEntryRoute(publicId, 'globe') : '/signin',
+      { replace: true },
+    )
+  }
+}
 
 useHead({
   title: () => $t('title.globe'),
@@ -54,7 +100,8 @@ const timelineRange = computed(() => {
   }
 
   const first = datedPhotosWithLocation.value[0]!
-  const last = datedPhotosWithLocation.value[datedPhotosWithLocation.value.length - 1]!
+  const last =
+    datedPhotosWithLocation.value[datedPhotosWithLocation.value.length - 1]!
   return {
     min: first.timestamp,
     max: last.timestamp,
@@ -237,32 +284,35 @@ const analysisMode = ref<'none' | 'focalLength' | 'shutterSpeed' | 'altitude'>(
 )
 const parameterAnnotationOpen = ref(false)
 
-const analysisModeOptions = computed(() => [
-  {
-    value: 'none',
-    label: $t('globe.analysis.mode.none.label'),
-    icon: 'tabler:circle-off',
-    description: $t('globe.analysis.mode.none.description'),
-  },
-  {
-    value: 'focalLength',
-    label: $t('globe.analysis.mode.focalLength.label'),
-    icon: 'tabler:zoom-scan',
-    description: $t('globe.analysis.mode.focalLength.description'),
-  },
-  {
-    value: 'shutterSpeed',
-    label: $t('globe.analysis.mode.shutterSpeed.label'),
-    icon: 'tabler:clock-hour-4',
-    description: $t('globe.analysis.mode.shutterSpeed.description'),
-  },
-  {
-    value: 'altitude',
-    label: $t('globe.analysis.mode.altitude.label'),
-    icon: 'tabler:mountain',
-    description: $t('globe.analysis.mode.altitude.description'),
-  },
-] as const)
+const analysisModeOptions = computed(
+  () =>
+    [
+      {
+        value: 'none',
+        label: $t('globe.analysis.mode.none.label'),
+        icon: 'tabler:circle-off',
+        description: $t('globe.analysis.mode.none.description'),
+      },
+      {
+        value: 'focalLength',
+        label: $t('globe.analysis.mode.focalLength.label'),
+        icon: 'tabler:zoom-scan',
+        description: $t('globe.analysis.mode.focalLength.description'),
+      },
+      {
+        value: 'shutterSpeed',
+        label: $t('globe.analysis.mode.shutterSpeed.label'),
+        icon: 'tabler:clock-hour-4',
+        description: $t('globe.analysis.mode.shutterSpeed.description'),
+      },
+      {
+        value: 'altitude',
+        label: $t('globe.analysis.mode.altitude.label'),
+        icon: 'tabler:mountain',
+        description: $t('globe.analysis.mode.altitude.description'),
+      },
+    ] as const,
+)
 
 const analysisLegend = computed(() => {
   if (analysisMode.value === 'focalLength') {
@@ -370,52 +420,16 @@ watch(filteredPhotosWithLocation, (currentPhotos) => {
     return
   }
 
-  const exists = currentPhotos.some((photo) => photo.id === currentClusterPointId.value)
+  const exists = currentPhotos.some(
+    (photo) => photo.id === currentClusterPointId.value,
+  )
   if (!exists) {
     currentClusterPointId.value = null
   }
 })
 
 const mapViewState = computed(() => {
-  if (photosWithLocation.value.length === 0) {
-    return {
-      longitude: -122.4,
-      latitude: 37.8,
-      zoom: 2,
-    }
-  }
-
-  const latitudes = photosWithLocation.value.map((photo) => photo.latitude!)
-  const longitudes = photosWithLocation.value.map((photo) => photo.longitude!)
-
-  const minLat = Math.min(...latitudes)
-  const maxLat = Math.max(...latitudes)
-  const minLng = Math.min(...longitudes)
-  const maxLng = Math.max(...longitudes)
-
-  const centerLat = (minLat + maxLat) / 2
-  const centerLng = (minLng + maxLng) / 2
-
-  const latDiff = maxLat - minLat
-  const lngDiff = maxLng - minLng
-  const maxDiff = Math.max(latDiff, lngDiff)
-
-  let zoom = 8
-  if (maxDiff < 0.005) zoom = 16
-  else if (maxDiff < 0.02) zoom = 14
-  else if (maxDiff < 0.05) zoom = 12
-  else if (maxDiff < 0.2) zoom = 10
-  else if (maxDiff < 1) zoom = 8
-  else if (maxDiff < 5) zoom = 6
-  else if (maxDiff < 20) zoom = 5
-  else if (maxDiff < 50) zoom = 4
-  else zoom = 2
-
-  return {
-    longitude: centerLng,
-    latitude: centerLat,
-    zoom,
-  }
+  return getGlobeMapViewState(photosWithLocation.value)
 })
 
 const onMarkerPinClick = (clusterPoint: any) => {
@@ -461,8 +475,33 @@ const onMarkerPinClose = () => {
   currentClusterPointId.value = null
 }
 
+const applyGlobeProjection = (map: any) => {
+  map.setProjection?.({ type: 'globe' })
+}
+
+const applyGlobeAtmosphere = (map: any) => {
+  map.setFog?.({
+    range: [0.35, 8.5],
+    color: '#bfdbfe',
+    'horizon-blend': 0.34,
+    'high-color': '#60a5fa',
+    'space-color': '#01030a',
+    'star-intensity': 0.62,
+  })
+  map.setSky?.({
+    'sky-color': '#01030a',
+    'horizon-color': '#2563eb',
+    'fog-color': '#020617',
+    'sky-horizon-blend': 0.72,
+    'horizon-fog-blend': 0.78,
+    'fog-ground-blend': 0.42,
+  })
+}
+
 const onMapLoaded = (map: any) => {
   mapInstance.value = map
+  applyGlobeProjection(map)
+  applyGlobeAtmosphere(map)
 
   const { photoId } = route.query
   if (photoId && typeof photoId === 'string') {
@@ -524,10 +563,7 @@ const generateRandomKey = () => {
 onBeforeRouteLeave(() => {
   stopTimelineDragging()
   stopTimelinePlayback()
-  if (mapInstance.value) {
-    mapInstance.value.remove()
-    mapInstance.value = null
-  }
+  mapInstance.value = null
 })
 
 onBeforeUnmount(() => {
@@ -537,11 +573,13 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="w-full h-svh relative overflow-hidden">
+  <div class="globe-shell w-full h-svh relative overflow-hidden">
+    <MapThreeStarfieldBackground class="absolute inset-0 z-0" />
+
     <GlassButton
       class="absolute top-4 left-4 z-10"
       icon="tabler:home"
-      @click="$router.push('/')"
+      @click="$router.push(props.backRoute)"
     />
 
     <div class="absolute top-4 right-4 z-10 flex flex-col items-end">
@@ -701,7 +739,9 @@ onBeforeUnmount(() => {
           >
             <GlassButton
               size="sm"
-              :icon="isTimelinePlaying ? 'tabler:player-pause' : 'tabler:player-play'"
+              :icon="
+                isTimelinePlaying ? 'tabler:player-pause' : 'tabler:player-play'
+              "
               :class="
                 !hasTimelineData || !isTimelineEnabled
                   ? 'opacity-40 pointer-events-none'
@@ -714,7 +754,9 @@ onBeforeUnmount(() => {
             <div class="flex items-center justify-between gap-2 text-[11px]">
               <span class="font-medium">{{ $t('globe.timeline.title') }}</span>
               <span class="text-neutral-600 dark:text-white/60">
-                {{ filteredPhotosWithLocation.length }}/{{ photosWithLocation.length }}
+                {{ filteredPhotosWithLocation.length }}/{{
+                  photosWithLocation.length
+                }}
               </span>
             </div>
             <div
@@ -757,7 +799,7 @@ onBeforeUnmount(() => {
       :initial="{ opacity: 0, scale: 1.08 }"
       :animate="{ opacity: 1, scale: 1 }"
       :transition="{ duration: 0.6, delay: 0.1 }"
-      class="w-full h-full"
+      class="relative z-[1] w-full h-full"
     >
       <ClientOnly>
         <!-- mapbox://styles/hoshinosuzumi/cmev0eujf01dw01pje3g9cmlg -->
@@ -813,12 +855,37 @@ onBeforeUnmount(() => {
   </div>
 </template>
 
-<style>
-.mapboxgl-ctrl-logo {
+<style scoped>
+.globe-shell {
+  background:
+    radial-gradient(circle at 20% 18%, rgba(96, 165, 250, 0.18), transparent 24%),
+    radial-gradient(circle at 80% 22%, rgba(34, 211, 238, 0.12), transparent 20%),
+    radial-gradient(circle at 50% 110%, rgba(30, 64, 175, 0.3), transparent 42%),
+    #020617;
+}
+
+.globe-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.55;
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.8) 0 1px, transparent 1.5px),
+    radial-gradient(circle, rgba(147, 197, 253, 0.7) 0 1px, transparent 1.5px);
+  background-position:
+    0 0,
+    36px 28px;
+  background-size:
+    94px 94px,
+    132px 132px;
+}
+
+.globe-shell :deep(.mapboxgl-ctrl-logo) {
   display: none !important;
 }
 
-.mapboxgl-ctrl-attrib {
+.globe-shell :deep(.mapboxgl-ctrl-attrib) {
   display: none !important;
 }
 </style>

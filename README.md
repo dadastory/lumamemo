@@ -76,8 +76,9 @@ NUXT_PUBLIC_APP_SLOGAN=
 NUXT_PUBLIC_APP_AUTHOR=
 NUXT_PUBLIC_APP_AVATAR_URL=
 
-# Map provider (maplibre/mapbox)
-NUXT_PUBLIC_MAP_PROVIDER=maplibre
+# Map provider (mapbox/maplibre)
+NUXT_PUBLIC_MAP_PROVIDER=mapbox
+NUXT_PUBLIC_MAP_MAPBOX_STYLE=mapbox://styles/mapbox/standard
 # MapTiler access token for MapLibre
 NUXT_PUBLIC_MAP_MAPLIBRE_TOKEN=
 # Mapbox access token for Mapbox

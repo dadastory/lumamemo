@@ -1,6 +1,7 @@
 import { sql, gte } from 'drizzle-orm'
 import * as si from 'systeminformation'
 import { readFileSync } from 'node:fs'
+import { normalizeStatsNumber } from '~~/server/utils/stats'
 
 async function getQueueStats() {
   const workerPool = globalThis.__workerPool
@@ -222,18 +223,20 @@ export default eventHandler(async (event) => {
     runningOn: systemInfo,
     memory: (await getMemoryStats()) || { used: 0, total: 0 },
     photos: {
-      total: totalPhotos?.count || 0,
-      today: todayPhotos?.count || 0,
-      thisWeek: weekPhotos?.count || 0,
-      thisMonth: monthPhotos?.count || 0,
+      total: normalizeStatsNumber(totalPhotos?.count),
+      today: normalizeStatsNumber(todayPhotos?.count),
+      thisWeek: normalizeStatsNumber(weekPhotos?.count),
+      thisMonth: normalizeStatsNumber(monthPhotos?.count),
     },
     workerPool: (await getQueueStats()) || null,
     storage: {
-      totalSize: storageStats?.totalSize || 0,
-      averageSize: storageStats?.avgSize || 0,
-      maxSize: storageStats?.maxSize || 0,
+      totalSize: normalizeStatsNumber(storageStats?.totalSize),
+      averageSize: normalizeStatsNumber(storageStats?.avgSize),
+      maxSize: normalizeStatsNumber(storageStats?.maxSize),
     },
-    trends: trendData.toReversed(),
+    trends: trendData
+      .toReversed()
+      .map((item) => ({ ...item, count: normalizeStatsNumber(item.count) })),
     timestamp: new Date().toISOString(),
   }
 })

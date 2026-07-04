@@ -1,4 +1,8 @@
 import { z } from 'zod'
+import {
+  ensureUserPublicProfile,
+  prepareNewUserRecord,
+} from '~~/server/utils/users'
 
 export default eventHandler(async (event) => {
   await requireFirstLaunch(event)
@@ -14,7 +18,7 @@ export default eventHandler(async (event) => {
   )
 
   // Check if any user exists
-  const existingUser = db.select().from(tables.users).limit(1).get()
+  const existingUser = await db.select().from(tables.users).limit(1).get()
   if (existingUser) {
     // If users exist, we might want to update the admin or throw error
     // For wizard, let's assume we are setting up the first user.
@@ -28,10 +32,18 @@ export default eventHandler(async (event) => {
         .set({
           password: await hashPassword(password),
           username,
+          displayName: username,
           isAdmin: 1,
+          role: 'admin',
         })
         .where(eq(tables.users.id, existingUser.id))
         .run()
+      const updatedUser = await db
+        .select()
+        .from(tables.users)
+        .where(eq(tables.users.id, existingUser.id))
+        .get()
+      await ensureUserPublicProfile(db, updatedUser)
       return { success: true }
     }
 
@@ -41,16 +53,21 @@ export default eventHandler(async (event) => {
     })
   }
 
-  await db
+  const user = await db
     .insert(tables.users)
-    .values({
-      email,
-      username,
-      password: await hashPassword(password),
-      isAdmin: 1,
-      createdAt: new Date(),
-    })
-    .run()
+    .values(
+      await prepareNewUserRecord(db, {
+        email,
+        username,
+        password: await hashPassword(password),
+        isAdmin: 1,
+        role: 'admin',
+        createdAt: new Date(),
+      }),
+    )
+    .returning()
+    .get()
+  await ensureUserPublicProfile(db, user)
 
   return { success: true }
 })

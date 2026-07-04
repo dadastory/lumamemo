@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { formatCameraInfo } from '~/utils/camera'
+import { formatPhotoLocation } from '~/utils/photo-location'
 import { motion, useDomRef } from 'motion-v'
 
 interface Props {
@@ -40,6 +41,7 @@ const resizeObserverRef = ref<ResizeObserver | null>(null)
 const intersectionObserverRef = ref<IntersectionObserver | null>(null)
 
 const processingState = getProcessingState(props.photo.id)
+const displayLocation = computed(() => formatPhotoLocation(props.photo))
 
 const aspectRatio = computed(() => {
   // Priority 1: Use aspectRatio from photo data if available
@@ -589,16 +591,41 @@ onUnmounted(() => {
               {{ photo.description }}
             </p>
             <p
-              v-if="photo.dateTaken || photo.city"
-              class="text-xs font-medium opacity-80"
+              v-if="photo.dateTaken || displayLocation"
+              class="flex min-w-0 items-center gap-1 text-xs font-medium opacity-80"
             >
-              <span v-if="photo.dateTaken">
+              <span
+                v-if="photo.dateTaken"
+                class="shrink-0 whitespace-nowrap"
+              >
                 {{ $dayjs(photo.dateTaken).format('YYYY-MM-DD') }}
               </span>
-              <span v-if="photo.city">
-                <span v-if="photo.dateTaken"> · </span>{{ photo.city }}
+              <span
+                v-if="photo.dateTaken && displayLocation"
+                class="shrink-0 whitespace-nowrap"
+              >·</span>
+              <span
+                v-if="displayLocation"
+                class="min-w-0 flex-1 truncate"
+                :title="displayLocation"
+              >
+                {{ displayLocation }}
               </span>
             </p>
+            <div
+              v-if="photo.owner"
+              class="mt-1 flex items-center gap-1.5 text-xs font-medium text-white/85"
+            >
+              <UAvatar
+                :src="photo.owner.avatar || undefined"
+                :alt="photo.owner.username"
+                icon="tabler:user"
+                size="3xs"
+              />
+              <span class="truncate">
+                {{ photo.owner.username }}
+              </span>
+            </div>
           </div>
           <div
             v-if="photo.tags?.length"

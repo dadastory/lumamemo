@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { getAuthCookieOptions } from '~~/server/utils/auth-cookie'
 
 const _invalidCredentialsError = createError({
   statusCode: 401,
@@ -15,7 +16,7 @@ export default eventHandler(async (event) => {
     }).parse,
   )
 
-  const user = db
+  const user = await db
     .select()
     .from(tables.users)
     .where(eq(tables.users.email, email))
@@ -23,6 +24,13 @@ export default eventHandler(async (event) => {
 
   if (!user) {
     throw _invalidCredentialsError
+  }
+
+  if (isDisabledUser(user)) {
+    throw createError({
+      statusCode: 403,
+      message: 'User is disabled',
+    })
   }
 
   if (!(await verifyPassword(user.password || '', password))) {
@@ -34,8 +42,7 @@ export default eventHandler(async (event) => {
     { user: sanitizeSessionUser(user) },
     {
       cookie: {
-        // secure: !useRuntimeConfig().allowInsecureCookie,
-        secure: false,
+        ...getAuthCookieOptions(event),
       },
     },
   )

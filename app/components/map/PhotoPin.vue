@@ -3,6 +3,7 @@ import { motion } from 'motion-v'
 import ThumbImage from '../ui/ThumbImage.vue'
 import { twMerge } from 'tailwind-merge'
 import type { ClusterPoint } from '~~/shared/types/map'
+import { formatPhotoLocation } from '~/utils/photo-location'
 
 const props = withDefaults(
   defineProps<{
@@ -25,6 +26,7 @@ const emit = defineEmits<{
 
 const dayjs = useDayjs()
 const marker = computed(() => props.clusterPoint.properties.marker!)
+const displayLocation = computed(() => formatPhotoLocation(marker.value))
 const hoverOpen = ref(false)
 
 const parseExifNumber = (value: unknown): number | null => {
@@ -414,17 +416,41 @@ const onClick = () => {
                   <!-- Metadata -->
                   <div class="space-y-1">
                     <div
-                      v-if="marker.city || marker.exif?.DateTimeOriginal"
-                      class="flex items-center gap-1 text-xs text-neutral-600 dark:text-muted font-medium mb-2"
+                      v-if="marker.owner"
+                      class="flex items-center gap-1.5 text-xs text-neutral-700 dark:text-neutral-200"
                     >
-                      <div v-if="marker.city">
-                        <span class="truncate">
-                          {{ marker.city }}
+                      <UAvatar
+                        :src="marker.owner.avatar || undefined"
+                        :alt="marker.owner.username"
+                        icon="tabler:user"
+                        size="3xs"
+                      />
+                      <span class="truncate">
+                        {{ marker.owner.username }}
+                      </span>
+                    </div>
+                    <div
+                      v-if="displayLocation || marker.exif?.DateTimeOriginal"
+                      class="flex min-w-0 items-center gap-1 text-xs text-neutral-600 dark:text-muted font-medium mb-2"
+                    >
+                      <div
+                        v-if="displayLocation"
+                        class="min-w-0 flex-1"
+                        :title="displayLocation"
+                      >
+                        <span class="block truncate">
+                          {{ displayLocation }}
                         </span>
                       </div>
-                      <span v-if="marker.city">·</span>
-                      <div v-if="marker.exif?.DateTimeOriginal">
-                        <span class="truncate">
+                      <span
+                        v-if="displayLocation"
+                        class="shrink-0"
+                      >·</span>
+                      <div
+                        v-if="marker.exif?.DateTimeOriginal"
+                        class="shrink-0 whitespace-nowrap"
+                      >
+                        <span>
                           {{ dayjs(marker.exif.DateTimeOriginal).format('ll') }}
                         </span>
                       </div>
@@ -432,13 +458,13 @@ const onClick = () => {
                     <!-- Camera -->
                     <div
                       v-if="marker.exif?.Make || marker.exif?.Model"
-                      class="flex items-center gap-1 text-xs text-neutral-600 dark:text-muted"
+                      class="flex min-w-0 items-center gap-1 text-xs text-neutral-600 dark:text-muted"
                     >
                       <Icon
                         name="tabler:camera"
-                        class="size-4"
+                        class="size-4 shrink-0"
                       />
-                      <span class="truncate">
+                      <span class="min-w-0 flex-1 truncate">
                         {{
                           [marker.exif?.Make, marker.exif?.Model]
                             .filter(Boolean)
@@ -451,13 +477,13 @@ const onClick = () => {
                       v-if="
                         marker.exif?.GPSLatitude || marker.exif?.GPSLongitude
                       "
-                      class="flex items-center gap-1 text-xs text-neutral-600 dark:text-muted"
+                      class="flex min-w-0 items-center gap-1 text-xs text-neutral-600 dark:text-muted"
                     >
                       <Icon
                         name="tabler:map-pin"
-                        class="size-4"
+                        class="size-4 shrink-0"
                       />
-                      <span class="truncate font-mono">
+                      <span class="min-w-0 flex-1 truncate font-mono">
                         {{
                           marker.exif?.GPSLatitude
                             ? `${Math.abs(Number(marker.exif?.GPSLatitude)).toFixed(4)}°${marker.exif?.GPSLatitudeRef}`
@@ -473,13 +499,13 @@ const onClick = () => {
                     <!-- Altitude -->
                     <div
                       v-if="marker.exif?.GPSAltitude"
-                      class="flex items-center gap-1 text-xs text-neutral-600 dark:text-muted"
+                      class="flex min-w-0 items-center gap-1 text-xs text-neutral-600 dark:text-muted"
                     >
                       <Icon
                         name="tabler:mountain"
-                        class="size-4"
+                        class="size-4 shrink-0"
                       />
-                      <span class="truncate font-mono">
+                      <span class="min-w-0 flex-1 truncate font-mono">
                         {{
                           `${marker.exif.GPSAltitudeRef === 'Below Sea Level' ? '-' : ''}${Math.abs(Number(marker.exif.GPSAltitude)).toFixed(1)}m`
                         }}

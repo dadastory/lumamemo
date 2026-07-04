@@ -1,3 +1,5 @@
+import { formatPhotoLocation } from '~/utils/photo-location'
+
 interface FilterOptions {
   tags: string[]
   cameras: string[]
@@ -65,9 +67,13 @@ export function usePhotoFilters() {
         stats.lenses.set(lens, (stats.lenses.get(lens) || 0) + 1)
       }
 
-      // 城市统计
-      if (photo.city) {
-        stats.cities.set(photo.city, (stats.cities.get(photo.city) || 0) + 1)
+      // 位置统计。内部状态仍沿用 cities，避免影响已有筛选状态。
+      const photoLocation = formatPhotoLocation(photo)
+      if (photoLocation) {
+        stats.cities.set(
+          photoLocation,
+          (stats.cities.get(photoLocation) || 0) + 1,
+        )
       }
 
       // 评分统计 (从 EXIF Rating 获取)
@@ -179,9 +185,13 @@ export function usePhotoFilters() {
         }
       }
 
-      // 城市筛选
+      // 位置筛选。内部状态仍沿用 cities，避免影响已有筛选状态。
       if (activeFilters.value.cities.length > 0) {
-        if (!photo.city || !activeFilters.value.cities.includes(photo.city)) {
+        const photoLocation = formatPhotoLocation(photo)
+        if (
+          !photoLocation ||
+          !activeFilters.value.cities.includes(photoLocation)
+        ) {
           return false
         }
       }

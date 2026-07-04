@@ -5,13 +5,13 @@ import type {
   StorageObject,
   StorageProvider,
 } from '../interfaces'
+import { requireSafeStorageKey } from '../../../utils/storage-key.ts'
 
 const ensureDir = async (dirPath: string) => {
   await fs.mkdir(dirPath, { recursive: true })
 }
 
-const sanitizeKey = (key: string) =>
-  key.replace(/\\/g, '/').replace(/\/+/g, '/').replace(/^\/+/, '')
+const sanitizeKey = (key: string) => requireSafeStorageKey(key)
 
 const combinePrefixAndKey = (prefix: string | undefined, key: string) => {
   const cleanPrefix = (prefix || '').replace(/\/+$/, '')
@@ -34,7 +34,15 @@ export class LocalStorageProvider implements StorageProvider {
   private resolveAbsoluteKey(key: string): { absFile: string; relKey: string } {
     const relKey = sanitizeKey(combinePrefixAndKey(this.config.prefix, key))
     const absFile = path.resolve(this.config.basePath, relKey)
+    this.assertInsideBasePath(absFile)
     return { absFile, relKey }
+  }
+
+  private assertInsideBasePath(absFile: string) {
+    const basePath = path.resolve(this.config.basePath)
+    if (absFile !== basePath && !absFile.startsWith(basePath + path.sep)) {
+      throw new Error('Invalid storage key')
+    }
   }
 
   async create(key: string, fileBuffer: Buffer): Promise<StorageObject> {
@@ -124,6 +132,7 @@ export class LocalStorageProvider implements StorageProvider {
     // Fallback: try without adding prefix (in case key already contains it or was stored raw)
     const rawRel = sanitizeKey(key)
     const rawAbs = path.resolve(this.config.basePath, rawRel)
+    this.assertInsideBasePath(rawAbs)
     try {
       const stat = await fs.stat(rawAbs)
       if (!stat.isFile()) return null

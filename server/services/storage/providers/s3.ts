@@ -47,6 +47,18 @@ const convertToStorageObject = (s3object: _Object): StorageObject => {
   }
 }
 
+const sanitizeKey = (key: string) =>
+  key.replace(/\\/g, '/').replace(/\/+/g, '/').replace(/^\/+/, '')
+
+export const resolveS3ObjectKey = (prefix: string | undefined, key: string) => {
+  const cleanPrefix = (prefix || '').replace(/^\/+|\/+$/g, '')
+  const cleanKey = sanitizeKey(key)
+  if (!cleanPrefix) return cleanKey
+  return cleanKey.startsWith(`${cleanPrefix}/`)
+    ? cleanKey
+    : `${cleanPrefix}/${cleanKey}`
+}
+
 export class S3StorageProvider implements StorageProvider {
   config: S3StorageConfig
   private logger?: Logger['storage']
@@ -64,11 +76,7 @@ export class S3StorageProvider implements StorageProvider {
     contentType?: string,
   ): Promise<StorageObject> {
     try {
-      const absoluteKey =
-        `${(this.config.prefix || '').replace(/\/+$/, '')}/${key}`.replace(
-          /^\/+/,
-          '',
-        )
+      const absoluteKey = resolveS3ObjectKey(this.config.prefix, key)
       const cmd = new PutObjectCommand({
         Bucket: this.config.bucket,
         Key: absoluteKey,
@@ -146,33 +154,12 @@ export class S3StorageProvider implements StorageProvider {
   }
 
   getPublicUrl(key: string): string {
-    const { cdnUrl, bucket, region, endpoint } = this.config
-
-    // CDN URL
+    const { cdnUrl } = this.config
     if (cdnUrl) {
       return `${cdnUrl.replace(/\/$/, '')}/${key}`
     }
 
-    // Default AWS S3 endpoint
-    if (!endpoint) {
-      return `https://${bucket}.s3.${region}.amazonaws.com/${key}`
-    } else if (endpoint.includes('amazonaws.com')) {
-      return `https://${bucket}.s3.${region}.amazonaws.com/${key}`
-    }
-
-    // Alibaba Cloud OSS
-    if (endpoint.includes('aliyuncs.com')) {
-      const baseUrl = endpoint.replace(/\/$/, '')
-      if (baseUrl.indexOf('//') === -1) {
-        throw new Error('Invalid endpoint URL')
-      }
-      const protocol = baseUrl.split('//')[0]
-      const remainder = baseUrl.split('//')[1]
-      return `${protocol}//${bucket}.${remainder}/${key}`
-    }
-
-    // Custom endpoint
-    return `${endpoint.replace(/\/$/, '')}/${bucket}/${key}`
+    return `/image/${key.split('/').map(encodeURIComponent).join('/')}`
   }
 
   async getSignedUrl(
@@ -180,9 +167,10 @@ export class S3StorageProvider implements StorageProvider {
     expiresIn: number = 3600,
     options?: UploadOptions,
   ): Promise<string> {
+    const absoluteKey = resolveS3ObjectKey(this.config.prefix, key)
     const cmd = new PutObjectCommand({
       Bucket: this.config.bucket,
-      Key: key,
+      Key: absoluteKey,
       ContentType: options?.contentType || 'application/octet-stream',
     })
 

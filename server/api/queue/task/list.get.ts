@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { desc, sql, eq, and } from 'drizzle-orm'
+import { desc, eq } from 'drizzle-orm'
 
 /**
  * 获取所有队列任务记录列表
@@ -34,14 +34,7 @@ export default defineEventHandler(async (event) => {
       conditions.push(eq(tables.pipelineQueue.status, status))
     }
 
-    if (type) {
-      conditions.push(
-        eq(sql`json_extract(${tables.pipelineQueue.payload}, '$.type')`, type),
-      )
-    }
-
-    const whereCondition =
-      conditions.length > 0 ? and(...conditions) : undefined
+    const whereCondition = conditions.length > 0 ? conditions[0] : undefined
 
     // 构建查询
     const queryBuilder = db
@@ -60,15 +53,14 @@ export default defineEventHandler(async (event) => {
       .from(tables.pipelineQueue)
       .orderBy(desc(tables.pipelineQueue.createdAt))
 
-    if (whereCondition) {
-      queryBuilder.where(whereCondition)
-    }
-
-    const tasks = await queryBuilder
+    const tasks = await (whereCondition
+      ? queryBuilder.where(whereCondition)
+      : queryBuilder
+    ).all()
 
     return {
       success: true,
-      data: tasks,
+      data: type ? tasks.filter((task) => task.payload?.type === type) : tasks,
     }
   } catch (error) {
     console.error('Failed to fetch task list:', error)

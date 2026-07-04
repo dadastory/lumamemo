@@ -68,10 +68,19 @@ const clearNonActiveTasks = async () => {
         includeFailed: 'true',
       },
     })
+    const hasDeletedTasks = result.deletedCount > 0
 
     toast.add({
-      title: $t('dashboard.queue.messages.clearSuccess'),
-      description: $t('dashboard.queue.messages.clearSuccessDescription', { count: result.deletedCount }),
+      title: $t(
+        hasDeletedTasks
+          ? 'dashboard.queue.messages.clearSuccess'
+          : 'dashboard.queue.messages.clearEmpty',
+      ),
+      description: hasDeletedTasks
+        ? $t('dashboard.queue.messages.clearSuccessDescription', {
+            count: result.deletedCount,
+          })
+        : undefined,
       color: 'success',
     })
 
@@ -140,10 +149,10 @@ const retryAllFailedTasks = async () => {
   }
 }
 
-// 删除单个任务（仅适用于失败任务）
+// 删除单个任务（仅适用于非活跃任务）
 const deleteTask = async (taskId: number) => {
   try {
-    await $fetch(`/api/queue/failed/${taskId}`, {
+    await $fetch(`/api/queue/task/${taskId}`, {
       method: 'DELETE',
     })
 
@@ -448,7 +457,10 @@ onBeforeUnmount(() => {
                     {{ $t('dashboard.queue.buttons.retry') }}
                   </UButton>
                   <UButton
-                    v-if="row.original.status !== 'in-stage'"
+                    v-if="
+                      row.original.status === 'completed' ||
+                      row.original.status === 'failed'
+                    "
                     icon="tabler:trash"
                     size="xs"
                     variant="soft"

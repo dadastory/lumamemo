@@ -1,5 +1,17 @@
 import { z } from 'zod'
 
+const resolvePayloadOwnerUserId = async (payload: {
+  storageKey: string
+  ownerUserId?: number | null
+}) => {
+  const existingPhoto = await getPhotoByStorageKey(payload.storageKey)
+  return resolvePhotoTaskOwnerUserId({
+    storageKey: payload.storageKey,
+    existingOwnerUserId: existingPhoto?.ownerUserId,
+    explicitOwnerUserId: payload.ownerUserId,
+  })
+}
+
 export default defineEventHandler(async (event) => {
   await requireAdminSession(event)
 
@@ -9,10 +21,12 @@ export default defineEventHandler(async (event) => {
         type: z.literal('photo'),
         storageKey: z.string().nonempty(),
         eraseLocation: z.boolean().optional(),
+        ownerUserId: z.number().nullable().optional(),
       }),
       z.object({
         type: z.literal('live-photo-video'),
         storageKey: z.string().nonempty(),
+        ownerUserId: z.number().nullable().optional(),
       }),
       z.object({
         type: z.literal('photo-reverse-geocoding'),
@@ -61,6 +75,18 @@ export default defineEventHandler(async (event) => {
       const task = tasks[i]
 
       try {
+        if (
+          task.payload.type === 'photo' ||
+          task.payload.type === 'live-photo-video'
+        ) {
+          const ownerUserId = await resolvePayloadOwnerUserId(task.payload)
+          if (ownerUserId === null) {
+            throw new Error('Unable to resolve upload owner')
+          }
+
+          task.payload.ownerUserId = ownerUserId
+        }
+
         const taskId = await workerPool.addTask(task.payload, {
           priority: task.priority ?? defaultPriority,
           maxAttempts: task.maxAttempts ?? defaultMaxAttempts,

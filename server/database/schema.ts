@@ -14,10 +14,12 @@ type PipelineQueuePayload =
       type: 'photo'
       storageKey: string
       eraseLocation?: boolean
+      ownerUserId?: number | null
     }
   | {
       type: 'live-photo-video'
       storageKey: string
+      ownerUserId?: number | null
     }
   | {
       type: 'photo-reverse-geocoding'
@@ -35,9 +37,44 @@ export const users = sqliteTable('users', {
   username: text('name').notNull().unique(),
   email: text('email').notNull().unique(),
   password: text('password'),
+  publicId: text('public_id').unique(),
+  displayName: text('display_name'),
+  profileTitle: text('profile_title'),
+  profileSlogan: text('profile_slogan'),
+  profileBio: text('profile_bio'),
+  homepageVisibility: text('homepage_visibility', {
+    enum: ['private', 'public'],
+  })
+    .default('private')
+    .notNull(),
   avatar: text('avatar'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   isAdmin: integer('is_admin').default(0).notNull(),
+  role: text('role', { enum: ['admin', 'user'] })
+    .default('user')
+    .notNull(),
+  disabledAt: integer('disabled_at', { mode: 'timestamp' }),
+})
+
+export const userInvites = sqliteTable('user_invites', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  email: text('email').notNull(),
+  tokenHash: text('token_hash').notNull().unique(),
+  role: text('role', { enum: ['admin', 'user'] })
+    .default('user')
+    .notNull(),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+  acceptedAt: integer('accepted_at', { mode: 'timestamp' }),
+  acceptedByUserId: integer('accepted_by_user_id').references(() => users.id, {
+    onDelete: 'set null',
+  }),
+  createdByUserId: integer('created_by_user_id').references(() => users.id, {
+    onDelete: 'set null',
+  }),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  revokedAt: integer('revoked_at', { mode: 'timestamp' }),
 })
 
 export const photos = sqliteTable('photos', {
@@ -67,6 +104,12 @@ export const photos = sqliteTable('photos', {
   isLivePhoto: integer('is_live_photo').default(0).notNull(),
   livePhotoVideoUrl: text('live_photo_video_url'),
   livePhotoVideoKey: text('live_photo_video_key'),
+  ownerUserId: integer('owner_user_id').references(() => users.id, {
+    onDelete: 'set null',
+  }),
+  visibility: text('visibility', { enum: ['private', 'public'] })
+    .default('private')
+    .notNull(),
 })
 
 export const pipelineQueue = sqliteTable('pipeline_queue', {
@@ -137,6 +180,9 @@ export const albums = sqliteTable('albums', {
   title: text('title').notNull(),
   description: text('description'),
   coverPhotoId: text('cover_photo_id').references(() => photos.id, {
+    onDelete: 'set null',
+  }),
+  ownerUserId: integer('owner_user_id').references(() => users.id, {
     onDelete: 'set null',
   }),
   isHidden: integer('is_hidden', { mode: 'boolean' }).default(false).notNull(),

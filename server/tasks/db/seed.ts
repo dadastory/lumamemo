@@ -1,3 +1,8 @@
+import {
+  ensureUserPublicProfile,
+  prepareNewUserRecord,
+} from '~~/server/utils/users'
+
 export default defineTask({
   meta: {
     name: 'db:seed',
@@ -8,21 +13,29 @@ export default defineTask({
     const db = useDB()
 
     log.info('Seeding database with default admin user...')
-    const users = await db.select().from(tables.users)
+    const users = await db.select().from(tables.users).all()
 
     if (users.length > 0) {
       log.info('User already exists, skipping seeding.')
     } else {
       log.info('No users found, creating default admin user...')
-      await db.insert(tables.users).values({
-        username: process.env.CFRAME_ADMIN_NAME || 'chronoframe',
-        email: process.env.CFRAME_ADMIN_EMAIL || 'admin@chronoframe.com',
-        password: await hashPassword(
-          process.env.CFRAME_ADMIN_PASSWORD || 'CF1234@!',
-        ),
-        createdAt: new Date(),
-        isAdmin: 1,
-      })
+      const user = await db
+        .insert(tables.users)
+        .values(
+          await prepareNewUserRecord(db, {
+            username: process.env.CFRAME_ADMIN_NAME || 'chronoframe',
+            email: process.env.CFRAME_ADMIN_EMAIL || 'admin@chronoframe.com',
+            password: await hashPassword(
+              process.env.CFRAME_ADMIN_PASSWORD || 'CF1234@!',
+            ),
+            createdAt: new Date(),
+            isAdmin: 1,
+            role: 'admin',
+          }),
+        )
+        .returning()
+        .get()
+      await ensureUserPublicProfile(db, user)
       log.success('Default admin user created.')
     }
 

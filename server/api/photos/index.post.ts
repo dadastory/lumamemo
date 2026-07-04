@@ -1,8 +1,12 @@
 import path from 'path'
 import { useStorageProvider } from '~~/server/utils/useStorageProvider'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { generateSafePhotoId } from '~~/server/utils/file-utils'
 import { settingsManager } from '~~/server/services/settings/settingsManager'
+import {
+  buildInternalUploadTarget,
+  shouldUseBrowserDirectUpload,
+} from '~~/server/utils/upload-target'
 
 const VIDEO_EXTENSIONS = new Set(['.mov', '.mp4'])
 
@@ -42,7 +46,7 @@ const isLikelyImageKey = (storageKey?: string | null): boolean => {
 }
 
 export default eventHandler(async (event) => {
-  await requireAdminSession(event)
+  const session = await requireActiveUserSession(event)
   const { storageProvider } = useStorageProvider(event)
   const t = await useTranslation(event)
 
@@ -58,14 +62,21 @@ export default eventHandler(async (event) => {
   }
 
   try {
-    const objectKey = `${(storageProvider.config?.prefix || '').replace(/\/+$/, '')}/${fileName}`
+    const prefix = (storageProvider.config?.prefix || '').replace(
+      /^\/+|\/+$/g,
+      '',
+    )
+    const userPrefix = `users/${session.user.id}`
+    const objectKey = [prefix, userPrefix, fileName].filter(Boolean).join('/')
 
     // 重复文件检测
     const duplicateCheckEnabled =
       ((await settingsManager.get<boolean>(
         'system',
         'upload.duplicateCheck.enabled',
-      )) ?? true) && !skipDuplicateCheck
+      )) ??
+        true) &&
+      !skipDuplicateCheck
     let existingPhoto = null
 
     if (duplicateCheckEnabled) {
@@ -82,7 +93,12 @@ export default eventHandler(async (event) => {
           dateTaken: tables.photos.dateTaken,
         })
         .from(tables.photos)
-        .where(eq(tables.photos.id, photoId))
+        .where(
+          and(
+            eq(tables.photos.id, photoId),
+            eq(tables.photos.ownerUserId, session.user.id),
+          ),
+        )
         .get()
 
       if (
@@ -131,8 +147,7 @@ export default eventHandler(async (event) => {
       }
     }
 
-    // 若存储提供商支持预签名 URL，返回外部直传地址
-    if (storageProvider.getSignedUrl) {
+    if (shouldUseBrowserDirectUpload(storageProvider)) {
       const signedUrl = await storageProvider.getSignedUrl(objectKey, 3600, {
         contentType: contentType || 'application/octet-stream',
       })
@@ -161,13 +176,7 @@ export default eventHandler(async (event) => {
       return response
     }
 
-    // 否则回退到内部直传端点（需会话）
-    const internalUploadUrl = `/api/photos/upload?key=${encodeURIComponent(objectKey)}`
-    const response: any = {
-      signedUrl: internalUploadUrl,
-      fileKey: objectKey,
-      expiresIn: 3600,
-    }
+    const response: any = buildInternalUploadTarget(objectKey, 3600)
 
     if (existingPhoto) {
       response.duplicate = true

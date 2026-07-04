@@ -12,14 +12,14 @@
           "tags": "Tags",
           "cameras": "Cameras",
           "lenses": "Lenses",
-          "cities": "Cities",
+          "cities": "Locations",
           "ratings": "Ratings"
         },
         "empty": {
           "tags": "No tags",
           "cameras": "No camera information",
           "lenses": "No lens information",
-          "cities": "No city information"
+          "cities": "No location information"
         },
         "rating": {
           "showAll": "Show all photos",
@@ -242,6 +242,7 @@
     "artist": "Artist",
     "software": "Software",
     "tz": "Time Zone",
+    "location": "Location",
     "country": "Country",
     "city": "City",
     "gps": {
@@ -392,6 +393,8 @@
     "queue": "Queue Management",
     "logs": "System Logs",
     "albums": "Albums",
+    "users": "Users",
+    "profile": "Profile",
     "siteAdministration": "Site settings",
     "location": "Location services",
     "generalSettings": "General Settings",
@@ -426,6 +429,31 @@
         "title": "Login Failed",
         "description": "An unexpected error occurred. Please try again."
       }
+    },
+    "providers": {
+      "oidc": "OIDC"
+    }
+  },
+  "invite": {
+    "title": "Accept Invitation",
+    "subtitle": "Create an account for {email}",
+    "invalid": {
+      "title": "Invitation unavailable",
+      "description": "This invitation is invalid, expired, revoked, or already used."
+    },
+    "form": {
+      "email": "Email",
+      "username": "Username",
+      "password": "Password",
+      "submit": "Create Account",
+      "errors": {
+        "username": "Username must be at least 2 characters",
+        "password": "Password must be at least 6 characters"
+      }
+    },
+    "messages": {
+      "accepted": "Account created",
+      "failed": "Failed to accept invitation"
     }
   },
   "common": {
@@ -471,6 +499,9 @@
       "reset": "Reset",
       "cancel": "Cancel",
       "continue": "Continue",
+      "create": "Create",
+      "add": "Add",
+      "remove": "Remove",
       "delete": "Delete"
     },
     "unknownError": "Unknown error"
@@ -585,6 +616,7 @@
           },
           "id": "Photo ID",
           "title": "Photo Title",
+          "owner": "Uploader",
           "tags": "Keywords",
           "rating": "Rating",
           "isLivePhoto": "Live Photo",
@@ -598,6 +630,7 @@
         },
         "cells": {
           "noTags": "No tags",
+          "noOwner": "No uploader",
           "noRating": "No rating",
           "noGps": "No GPS info",
           "unknown": "Unknown",
@@ -1032,6 +1065,7 @@
         "deleteSuccess": "Task deleted successfully",
         "batchRetrySuccess": "Batch retry successful",
         "clearSuccess": "Clear completed",
+        "clearEmpty": "No non-active tasks to clear",
         "operationFailed": "Operation failed",
         "clearSuccessDescription": "Cleared {count} tasks",
         "clearFailed": "Failed to clear tasks",
@@ -1062,11 +1096,125 @@
         "levelPlaceholder": "Filter level",
         "tagPlaceholder": "Filter Tag"
       },
+      "actions": {
+        "autoScroll": "Follow latest log",
+        "downloadRaw": "Download raw log"
+      },
       "countLabel": "Total/Shown: {total}/{shown}",
       "tagCount": "Tags: {count}",
       "empty": {
         "waiting": "Waiting for log data...",
         "noMatch": "No matching log entries"
+      }
+    },
+    "users": {
+      "createButton": "New User",
+      "inviteButton": "Invite User",
+      "createTitle": "New User",
+      "editTitle": "Edit User",
+      "inviteTitle": "Invite User",
+      "sections": {
+        "users": "Users",
+        "invitations": "Invitations"
+      },
+      "roles": {
+        "admin": "Admin",
+        "user": "User"
+      },
+      "status": {
+        "enabled": "Enabled",
+        "disabled": "Disabled"
+      },
+      "table": {
+        "user": "User",
+        "email": "Email",
+        "role": "Role",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "form": {
+        "username": "Username",
+        "email": "Email",
+        "password": "Password",
+        "resetPassword": "Reset Password",
+        "role": "Role",
+        "disabled": "Disable this user"
+      },
+      "actions": {
+        "edit": "Edit user",
+        "deleteUser": "Delete user",
+        "deleteInvite": "Delete invitation record",
+        "revokeInvite": "Revoke invitation"
+      },
+      "messages": {
+        "created": "User created",
+        "updated": "User updated",
+        "saveFailed": "Failed to save user",
+        "inviteCreated": "Invitation created",
+        "inviteFailed": "Failed to create invitation",
+        "inviteCopied": "Invitation link copied",
+        "inviteRevoked": "Invitation revoked",
+        "inviteDeleted": "Invitation record deleted",
+        "userDeleted": "User deleted",
+        "deleteUserFailed": "Failed to delete user"
+      },
+      "invites": {
+        "email": "Email",
+        "expiresAt": "Expires At",
+        "createdTitle": "Invitation link created"
+      },
+      "inviteStatus": {
+        "pending": "Pending",
+        "accepted": "Accepted",
+        "expired": "Expired",
+        "revoked": "Revoked"
+      },
+      "delete": {
+        "title": "Delete user",
+        "description": "This permanently deletes {username}, their albums, photos, and stored files.",
+        "confirmLabel": "Type {username} to confirm",
+        "confirm": "Delete user",
+        "restrictions": {
+          "self": "You cannot delete your own account.",
+          "lastAdmin": "You cannot delete the last active administrator."
+        },
+        "counts": {
+          "albums": "Albums",
+          "photos": "Photos",
+          "files": "Storage files",
+          "skippedFiles": "Skipped files",
+          "invitations": "Invitations"
+        }
+      }
+    },
+    "profile": {
+      "title": "Profile",
+      "description": "Manage your public homepage and display information.",
+      "form": {
+        "displayName": "Display name",
+        "profileTitle": "Homepage title",
+        "profileSlogan": "Homepage slogan",
+        "avatar": "Avatar URL",
+        "profileBio": "Bio",
+        "visibility": "Homepage visibility"
+      },
+      "visibility": {
+        "private": "Private",
+        "public": "Public"
+      },
+      "publicLink": {
+        "title": "Public homepage link",
+        "enabled": "Your homepage is visible to anyone with this link.",
+        "disabled": "Your homepage is currently private."
+      },
+      "actions": {
+        "copyLink": "Copy public link",
+        "openLink": "Open public link"
+      },
+      "messages": {
+        "saved": "Profile saved",
+        "saveFailed": "Failed to save profile",
+        "linkCopied": "Public link copied"
       }
     },
     "access": {
@@ -1158,6 +1306,40 @@
           "clientSecret": {
             "label": "GitHub Client Secret",
             "description": "Client Secret of your GitHub OAuth app"
+          }
+        },
+        "oidc": {
+          "enabled": {
+            "label": "Enable OIDC login",
+            "description": "Whether to enable a generic OpenID Connect login provider"
+          },
+          "label": {
+            "label": "OIDC Button Label",
+            "description": "Display label for the OIDC login button"
+          },
+          "issuer": {
+            "label": "OIDC Issuer",
+            "description": "Issuer URL used for OpenID Connect discovery"
+          },
+          "clientId": {
+            "label": "OIDC Client ID",
+            "description": "Client ID of your OIDC application"
+          },
+          "clientSecret": {
+            "label": "OIDC Client Secret",
+            "description": "Client secret of your OIDC application"
+          },
+          "scope": {
+            "label": "OIDC Scope",
+            "description": "Scopes requested during OIDC login"
+          },
+          "clientAuthMethod": {
+            "label": "OIDC Client Auth Method",
+            "description": "How ChronoFrame authenticates to the token endpoint",
+            "options": {
+              "post": "Client secret post",
+              "basic": "Client secret basic"
+            }
           }
         }
       },
@@ -1540,9 +1722,20 @@
       "toggle": "Enable/Disable Timeline",
       "playPause": "Play/Pause Timeline",
       "title": "Timeline"
+    },
+    "localMapCoverage": {
+      "title": "Offline map coverage is limited",
+      "description": "Your photo locations are outside the current local PMTiles package. Pins still work, but the base map may look empty until you add regional or global map data.",
+      "action": "View local map area"
     }
   },
+  "publicProfile": {
+    "albums": "Albums",
+    "photos": "Photos",
+    "emptyPhotos": "No public photos yet."
+  },
   "photo": {
+    "owner": "Uploader",
     "image": {
       "loadError": "Failed to load image"
     }

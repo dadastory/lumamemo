@@ -24,6 +24,10 @@ import { settingsManager } from '../settings/settingsManager'
 import { findLivePhotoVideoForImage } from '../video/livephoto'
 import { processMotionPhotoFromXmp } from '../video/motion-photo'
 import { getStorageManager } from '~~/server/plugins/3.storage'
+import {
+  isSameUserId,
+  isStorageKeyInUserNamespace,
+} from '~~/server/utils/security'
 
 const EXIF_LOCATION_KEYS = [
   'GPSAltitude',
@@ -121,7 +125,7 @@ export class QueueManager {
     options?: Partial<NewPipelineQueueItem>,
   ): Promise<number> {
     const db = useDB()
-    const result = db
+    const result = await db
       .insert(tables.pipelineQueue)
       .values({
         payload,
@@ -154,9 +158,8 @@ export class QueueManager {
   async getNextTask(): Promise<PipelineQueueItem | null> {
     const db = useDB()
 
-    // 使用同步事务防止竞态条件
-    const task = db.transaction((tx) => {
-      const highestPriorityPendingTask = tx
+    const task = await db.transaction(async (tx) => {
+      const highestPriorityPendingTask = await tx
         .select()
         .from(tables.pipelineQueue)
         .where(eq(tables.pipelineQueue.status, 'pending'))
@@ -171,7 +174,8 @@ export class QueueManager {
       if (!highestPriorityPendingTask) return null
 
       const task = highestPriorityPendingTask
-      tx.update(tables.pipelineQueue)
+      await tx
+        .update(tables.pipelineQueue)
         .set({ status: 'in-stages' })
         .where(eq(tables.pipelineQueue.id, task.id))
         .run()
@@ -196,6 +200,7 @@ export class QueueManager {
       .update(tables.pipelineQueue)
       .set({ statusStage: stage })
       .where(eq(tables.pipelineQueue.id, taskId))
+      .run()
   }
 
   /**
@@ -208,9 +213,10 @@ export class QueueManager {
       .update(tables.pipelineQueue)
       .set({
         status: 'completed',
-        completedAt: sql`(unixepoch())`,
+        completedAt: new Date(),
       })
       .where(eq(tables.pipelineQueue.id, taskId))
+      .run()
   }
 
   /**
@@ -250,6 +256,7 @@ export class QueueManager {
           : {}),
       })
       .where(eq(tables.pipelineQueue.id, taskId))
+      .run()
 
     if (shouldRetry) {
       this.logger.warn(
@@ -424,6 +431,32 @@ export class QueueManager {
             }
           }
 
+          const ownerUserId = Number(payload.ownerUserId)
+          if (!Number.isSafeInteger(ownerUserId) || ownerUserId <= 0) {
+            throw new Error('Photo task is missing a resolved owner')
+          }
+
+          const db = useDB()
+          const existingPhoto = await db
+            .select({ ownerUserId: tables.photos.ownerUserId })
+            .from(tables.photos)
+            .where(eq(tables.photos.id, photoId))
+            .get()
+
+          if (
+            existingPhoto?.ownerUserId != null &&
+            !isSameUserId(existingPhoto.ownerUserId, ownerUserId)
+          ) {
+            throw new Error('Photo task owner does not match existing photo')
+          }
+
+          if (
+            existingPhoto?.ownerUserId == null &&
+            !isStorageKeyInUserNamespace(storageKey, ownerUserId)
+          ) {
+            throw new Error('Photo task owner does not match storage namespace')
+          }
+
           // 构建最终的 Photo 对象
           const result: Photo = {
             id: photoId,
@@ -467,13 +500,18 @@ export class QueueManager {
               motionPhotoInfo?.livePhotoVideoKey ||
               livePhotoInfo?.livePhotoVideoKey ||
               null,
+            ownerUserId,
+            visibility: 'private',
           }
 
-          const db = useDB()
-          await db.insert(tables.photos).values(result).onConflictDoUpdate({
-            target: tables.photos.id,
-            set: result,
-          })
+          await db
+            .insert(tables.photos)
+            .values(result)
+            .onConflictDoUpdate({
+              target: tables.photos.id,
+              set: result,
+            })
+            .run()
 
           if (shouldAutoEraseLocationOnUpload) {
             try {
@@ -570,6 +608,7 @@ export class QueueManager {
                 locationName: null,
               })
               .where(eq(tables.photos.id, photoId))
+              .run()
             throw new Error(`Missing coordinates for photo ${photoId}`)
           }
 
@@ -594,6 +633,7 @@ export class QueueManager {
               locationName: locationInfo.locationName ?? null,
             })
             .where(eq(tables.photos.id, photoId))
+            .run()
 
           this.logger.success(
             `[${taskId}:reverse-geocoding] updated location for photo ${photoId}`,
@@ -691,6 +731,7 @@ export class QueueManager {
               locationName: null,
             })
             .where(eq(tables.photos.id, payload.photoId))
+            .run()
 
           this.logger.success(
             `[${taskId}:location-erase] erased location info for photo ${payload.photoId}`,
@@ -751,6 +792,7 @@ export class QueueManager {
               .from(tables.photos)
               .where(eq(tables.photos.storageKey, photoKey))
               .limit(1)
+              .all()
 
             const matched = photos[0]
             if (matched) {
@@ -780,6 +822,7 @@ export class QueueManager {
               livePhotoVideoKey: videoKey,
             })
             .where(eq(tables.photos.id, matchedPhoto.id))
+            .run()
 
           this.logger.success(
             `LivePhoto detection task ${taskId} processed successfully, updated photo ${matchedPhoto.id}`,
@@ -913,6 +956,7 @@ export class QueueManager {
       })
       .from(tables.pipelineQueue)
       .groupBy(tables.pipelineQueue.status)
+      .all()
 
     return stats.reduce(
       (acc, stat) => {

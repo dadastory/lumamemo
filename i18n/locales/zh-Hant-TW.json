@@ -19,7 +19,7 @@
       "filter": {
         "empty": {
           "cameras": "沒有相機資訊",
-          "cities": "沒有城市資訊",
+          "cities": "沒有位置資訊",
           "lenses": "沒有鏡頭資訊",
           "tags": "沒有標籤"
         },
@@ -29,7 +29,7 @@
         },
         "tabs": {
           "cameras": "相機",
-          "cities": "城市",
+          "cities": "位置",
           "lenses": "鏡頭",
           "ratings": "評分",
           "tags": "標籤"
@@ -239,6 +239,7 @@
     "artist": "攝影師",
     "software": "軟體",
     "tz": "時區",
+    "location": "位置",
     "country": "國家",
     "city": "城市",
     "gps": {
@@ -392,6 +393,8 @@
     "queue": "佇列管理",
     "logs": "系統日誌",
     "albums": "相簿",
+    "users": "使用者管理",
+    "profile": "個人資料",
     "siteAdministration": "站點設置",
     "generalSettings": "基本設置",
     "appearanceSettings": "外觀設置",
@@ -426,6 +429,31 @@
         "title": "登入失敗",
         "description": "發生未預期錯誤，請稍後再試。"
       }
+    },
+    "providers": {
+      "oidc": "OIDC"
+    }
+  },
+  "invite": {
+    "title": "接受邀請",
+    "subtitle": "為 {email} 建立帳號",
+    "invalid": {
+      "title": "邀請不可用",
+      "description": "此邀請無效、已過期、已撤銷或已被使用。"
+    },
+    "form": {
+      "email": "電子郵箱",
+      "username": "使用者名稱",
+      "password": "密碼",
+      "submit": "建立帳號",
+      "errors": {
+        "username": "使用者名稱至少需要 2 個字元",
+        "password": "密碼至少需要 6 個字元"
+      }
+    },
+    "messages": {
+      "accepted": "帳號已建立",
+      "failed": "接受邀請失敗"
     }
   },
   "common": {
@@ -471,6 +499,9 @@
       "reset": "重設",
       "cancel": "取消",
       "continue": "繼續",
+      "create": "建立",
+      "add": "新增",
+      "remove": "移除",
       "delete": "刪除"
     },
     "unknownError": "未知錯誤"
@@ -511,6 +542,7 @@
           },
           "id": "照片 ID",
           "title": "照片標題",
+          "owner": "上傳者",
           "tags": "關鍵字",
           "rating": "評分",
           "isLivePhoto": "原況照片",
@@ -524,6 +556,7 @@
         },
         "cells": {
           "noTags": "無標籤",
+          "noOwner": "無上傳者",
           "noRating": "未評分",
           "noGps": "沒有 GPS 資訊",
           "unknown": "未知",
@@ -958,6 +991,7 @@
         "deleteSuccess": "任務刪除成功",
         "batchRetrySuccess": "批次重試成功",
         "clearSuccess": "清理完成",
+        "clearEmpty": "沒有可清理的非活躍任務",
         "operationFailed": "操作失敗",
         "clearSuccessDescription": "已清除 {count} 個任務",
         "clearFailed": "清理任務失敗",
@@ -988,11 +1022,125 @@
         "levelPlaceholder": "篩選等級",
         "tagPlaceholder": "篩選 Tag"
       },
+      "actions": {
+        "autoScroll": "跟隨最新日誌",
+        "downloadRaw": "下載原始日誌"
+      },
       "countLabel": "總筆數/顯示: {total}/{shown}",
       "tagCount": "Tag: {count}",
       "empty": {
         "waiting": "等待日誌資料...",
         "noMatch": "沒有符合的日誌條目"
+      }
+    },
+    "users": {
+      "createButton": "新增使用者",
+      "inviteButton": "邀請使用者",
+      "createTitle": "新增使用者",
+      "editTitle": "編輯使用者",
+      "inviteTitle": "邀請使用者",
+      "sections": {
+        "users": "使用者",
+        "invitations": "邀請"
+      },
+      "roles": {
+        "admin": "管理員",
+        "user": "一般使用者"
+      },
+      "status": {
+        "enabled": "啟用中",
+        "disabled": "已停用"
+      },
+      "table": {
+        "user": "使用者",
+        "email": "電子郵箱",
+        "role": "角色",
+        "status": "狀態",
+        "actions": "操作"
+      },
+      "form": {
+        "username": "使用者名稱",
+        "email": "電子郵箱",
+        "password": "密碼",
+        "resetPassword": "重設密碼",
+        "role": "角色",
+        "disabled": "停用此使用者"
+      },
+      "actions": {
+        "edit": "編輯使用者",
+        "deleteUser": "刪除使用者",
+        "deleteInvite": "刪除邀請記錄",
+        "revokeInvite": "撤銷邀請"
+      },
+      "messages": {
+        "created": "使用者已建立",
+        "updated": "使用者已更新",
+        "saveFailed": "儲存使用者失敗",
+        "inviteCreated": "邀請已建立",
+        "inviteFailed": "建立邀請失敗",
+        "inviteCopied": "邀請連結已複製",
+        "inviteRevoked": "邀請已撤銷",
+        "inviteDeleted": "邀請記錄已刪除",
+        "userDeleted": "使用者已刪除",
+        "deleteUserFailed": "刪除使用者失敗"
+      },
+      "invites": {
+        "email": "電子郵箱",
+        "expiresAt": "過期時間",
+        "createdTitle": "邀請連結已建立"
+      },
+      "inviteStatus": {
+        "pending": "待使用",
+        "accepted": "已接受",
+        "expired": "已過期",
+        "revoked": "已撤銷"
+      },
+      "delete": {
+        "title": "刪除使用者",
+        "description": "這會永久刪除 {username} 及其相簿、相片和儲存檔案。",
+        "confirmLabel": "輸入 {username} 確認刪除",
+        "confirm": "刪除使用者",
+        "restrictions": {
+          "self": "不能刪除目前登入帳戶。",
+          "lastAdmin": "不能刪除最後一個啟用中的管理員。"
+        },
+        "counts": {
+          "albums": "相簿",
+          "photos": "相片",
+          "files": "儲存檔案",
+          "skippedFiles": "已略過檔案",
+          "invitations": "邀請記錄"
+        }
+      }
+    },
+    "profile": {
+      "title": "個人資料",
+      "description": "管理你的公開首頁和顯示資訊。",
+      "form": {
+        "displayName": "顯示名稱",
+        "profileTitle": "首頁標題",
+        "profileSlogan": "首頁標語",
+        "avatar": "頭像 URL",
+        "profileBio": "個人簡介",
+        "visibility": "首頁可見性"
+      },
+      "visibility": {
+        "private": "私有",
+        "public": "公開"
+      },
+      "publicLink": {
+        "title": "公開首頁連結",
+        "enabled": "任何擁有此連結的人都可以訪問你的首頁。",
+        "disabled": "你的首頁目前是私有狀態。"
+      },
+      "actions": {
+        "copyLink": "複製公開連結",
+        "openLink": "開啟公開連結"
+      },
+      "messages": {
+        "saved": "個人資料已儲存",
+        "saveFailed": "儲存個人資料失敗",
+        "linkCopied": "公開連結已複製"
       }
     },
     "access": {
@@ -1084,6 +1232,40 @@
           "clientSecret": {
             "label": "GitHub Client Secret",
             "description": "GitHub OAuth 應用的 Client Secret"
+          }
+        },
+        "oidc": {
+          "enabled": {
+            "label": "啟用 OIDC 登入",
+            "description": "是否啟用通用 OpenID Connect 登入提供者"
+          },
+          "label": {
+            "label": "OIDC 按鈕文字",
+            "description": "登入頁 OIDC 按鈕的顯示文字"
+          },
+          "issuer": {
+            "label": "OIDC Issuer",
+            "description": "用於 OpenID Connect discovery 的 Issuer URL"
+          },
+          "clientId": {
+            "label": "OIDC Client ID",
+            "description": "OIDC 應用的 Client ID"
+          },
+          "clientSecret": {
+            "label": "OIDC Client Secret",
+            "description": "OIDC 應用的 Client Secret"
+          },
+          "scope": {
+            "label": "OIDC Scope",
+            "description": "OIDC 登入時請求的 scope"
+          },
+          "clientAuthMethod": {
+            "label": "OIDC Client 認證方式",
+            "description": "ChronoFrame 請求 token endpoint 時使用的 client 認證方式",
+            "options": {
+              "post": "Client secret post",
+              "basic": "Client secret basic"
+            }
           }
         }
       },
@@ -1466,6 +1648,11 @@
       "toggle": "啟用/關閉時間回溯",
       "playPause": "播放/暫停時間回溯",
       "title": "時間回溯"
+    },
+    "localMapCoverage": {
+      "title": "離線地圖覆蓋範圍有限",
+      "description": "照片位置不在目前本機 PMTiles 地圖包範圍內。照片標記仍可使用，但需要加入對應地區或全球地圖資料後才會顯示完整底圖。",
+      "action": "查看本機地圖範圍"
     }
   },
   "upload": {
@@ -1542,7 +1729,13 @@
       "seconds": "{seconds}秒"
     }
   },
+  "publicProfile": {
+    "albums": "相簿",
+    "photos": "相片",
+    "emptyPhotos": "還沒有公開相片。"
+  },
   "photo": {
+    "owner": "上傳者",
     "image": {
       "loadError": "圖片載入失敗"
     }

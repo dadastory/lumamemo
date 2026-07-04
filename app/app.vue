@@ -2,6 +2,7 @@
 import dayjsLocale_zhCN from 'dayjs/locale/zh-cn'
 import dayjsLocale_zhTW from 'dayjs/locale/zh-tw'
 import dayjsLocale_zhHK from 'dayjs/locale/zh-hk'
+import { buildPublicPhotoRoute } from '~/utils/public-profile-routes'
 
 const router = useRouter()
 const dayjs = useDayjs()
@@ -37,7 +38,20 @@ useHead({
 // 登录用户或后台管理页面显示所有照片，未登录用户在前端页面只显示可见照片
 const route = useRoute()
 const { loggedIn } = useUserSession()
+const isPublicProfileRoute = computed(() => route.path.startsWith('/u/'))
+const publicProfileId = computed(() => {
+  if (!isPublicProfileRoute.value) return ''
+  const param = route.params.publicId
+  if (typeof param === 'string') return param
+  if (Array.isArray(param) && typeof param[0] === 'string') return param[0]
+  return route.path.split('/')[2] || ''
+})
 const apiEndpoint = computed(() => {
+  if (isPublicProfileRoute.value) {
+    return publicProfileId.value
+      ? `/api/public/profiles/${publicProfileId.value}/photos`
+      : null
+  }
   // 后台管理页面始终显示所有照片
   if (route.path.startsWith('/dashboard')) {
     return '/api/photos'
@@ -46,7 +60,8 @@ const apiEndpoint = computed(() => {
   return loggedIn.value ? '/api/photos' : '/api/photos/visible'
 })
 const { data, refresh, status } = await useFetch(() => apiEndpoint.value, {
-  watch: [apiEndpoint],
+  immediate: computed(() => Boolean(apiEndpoint.value)),
+  watch: [apiEndpoint, publicProfileId],
 })
 
 const photos = computed(() => (data.value as Photo[]) || [])
@@ -56,6 +71,7 @@ const {
   currentPhotoIndex,
   isViewerOpen,
   returnRoute,
+  globeRoute,
   isDirectAccess,
   scopedPhotos,
 } = storeToRefs(useViewerState())
@@ -66,7 +82,15 @@ const viewerPhotos = computed(() => scopedPhotos.value ?? photos.value)
 
 const handleIndexChange = (newIndex: number) => {
   switchToIndex(newIndex)
-  router.replace(`/${viewerPhotos.value[newIndex]?.id}`)
+  const nextPhotoId = viewerPhotos.value[newIndex]?.id
+  if (!nextPhotoId) return
+
+  if (route.path.startsWith('/u/') && publicProfileId.value) {
+    router.replace(buildPublicPhotoRoute(publicProfileId.value, nextPhotoId))
+    return
+  }
+
+  router.replace(`/${nextPhotoId}`)
 }
 
 const handleClose = () => {
@@ -96,6 +120,12 @@ watchEffect(() => {
   dayjs.locale('zh-Hant-TW', dayjsLocale_zhTW)
   dayjs.locale('zh-Hant-HK', dayjsLocale_zhHK)
   dayjs.locale(localeRef.value)
+})
+
+watch(loggedIn, async () => {
+  if (!isPublicProfileRoute.value) {
+    await refresh()
+  }
 })
 
 // 在全局级别提供筛选功能的状态管理
@@ -129,6 +159,7 @@ provide(
           :photos="viewerPhotos"
           :current-index="currentPhotoIndex"
           :is-open="isViewerOpen"
+          :globe-route="globeRoute"
           @close="handleClose"
           @index-change="handleIndexChange"
         />

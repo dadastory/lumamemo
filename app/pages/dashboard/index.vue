@@ -4,6 +4,14 @@ import type { CalendarItem } from '~/components/ui/CalendarHeatmap/Heatmap'
 
 definePageMeta({
   layout: 'dashboard',
+  middleware: [
+    () => {
+      const { user } = useUserSession()
+      if (user.value && !user.value.isAdmin) {
+        return navigateTo('/dashboard/photos')
+      }
+    },
+  ],
 })
 
 useHead({
@@ -11,7 +19,6 @@ useHead({
 })
 
 const dayjs = useDayjs()
-const config = useRuntimeConfig()
 const { photos } = usePhotos()
 
 const { data: dashboardStats, refresh: refreshStats } =
@@ -128,8 +135,8 @@ const yearOptions = computed(() => {
 const onShareSite = () => {
   const discussionParams = new URLSearchParams({
     category: 'showcases',
-    title: `Show: ${config.public.app.title}`,
-    body: `## Description / Motto\n\n${config.public.app.slogan}\n\n## URL\n\n[${window.location.origin}](${window.location.origin})`,
+    title: `Show: ${$t('title.gallery')}`,
+    body: `## URL\n\n[${window.location.origin}](${window.location.origin})`,
   })
   window.open(
     `https://github.com/HoshinoSuzumi/chronoframe/discussions/new?${discussionParams}`,

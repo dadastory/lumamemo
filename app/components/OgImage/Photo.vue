@@ -19,8 +19,6 @@ const props = withDefaults(
   },
 )
 
-const config = useRuntimeConfig()
-
 const title = computed(() => (props.title || '').slice(0, 60))
 const description = computed(() => (props.description || '').slice(0, 200))
 </script>
@@ -52,7 +50,7 @@ const description = computed(() => (props.description || '').slice(0, 200))
           v-if="headline"
           class="m-0 uppercase text-4xl text-rose-500 mb-2 font-semibold"
         >
-          {{ headline }} · {{ config.public.app.title }}
+          {{ headline }} · {{ $t('title.gallery') }}
         </p>
         <h1
           v-if="title"

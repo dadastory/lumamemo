@@ -12,14 +12,14 @@
           "tags": "タグ",
           "cameras": "カメラ",
           "lenses": "レンズ",
-          "cities": "都市",
+          "cities": "場所",
           "ratings": "評価"
         },
         "empty": {
           "tags": "タグなし",
           "cameras": "カメラ情報なし",
           "lenses": "レンズ情報なし",
-          "cities": "都市情報なし"
+          "cities": "位置情報なし"
         },
         "rating": {
           "showAll": "すべての写真を表示",
@@ -242,6 +242,7 @@
     "artist": "作者",
     "software": "ソフトウェア",
     "tz": "タイムゾーン",
+    "location": "場所",
     "country": "国",
     "city": "都市",
     "gps": {
@@ -392,6 +393,8 @@
     "queue": "キュー管理",
     "logs": "システムログ",
     "albums": "アルバム",
+    "users": "ユーザー管理",
+    "profile": "プロフィール",
     "siteAdministration": "サイト設定",
     "generalSettings": "一般設定",
     "appearanceSettings": "外観設定",
@@ -426,6 +429,31 @@
         "title": "ログインに失敗しました",
         "description": "予期しないエラーが発生しました。もう一度お試しください。"
       }
+    },
+    "providers": {
+      "oidc": "OIDC"
+    }
+  },
+  "invite": {
+    "title": "招待を承認",
+    "subtitle": "{email} のアカウントを作成します",
+    "invalid": {
+      "title": "招待を利用できません",
+      "description": "この招待は無効、期限切れ、取り消し済み、または使用済みです。"
+    },
+    "form": {
+      "email": "メール",
+      "username": "ユーザー名",
+      "password": "パスワード",
+      "submit": "アカウントを作成",
+      "errors": {
+        "username": "ユーザー名は2文字以上で入力してください",
+        "password": "パスワードは6文字以上で入力してください"
+      }
+    },
+    "messages": {
+      "accepted": "アカウントを作成しました",
+      "failed": "招待の承認に失敗しました"
     }
   },
   "common": {
@@ -471,6 +499,9 @@
       "reset": "リセット",
       "cancel": "キャンセル",
       "continue": "続行",
+      "create": "作成",
+      "add": "追加",
+      "remove": "削除",
       "delete": "削除"
     },
     "unknownError": "不明なエラー"
@@ -511,6 +542,7 @@
           },
           "id": "写真ID",
           "title": "写真のタイトル",
+          "owner": "アップロード者",
           "tags": "キーワード",
           "rating": "評価",
           "isLivePhoto": "ライブフォト",
@@ -524,6 +556,7 @@
         },
         "cells": {
           "noTags": "タグなし",
+          "noOwner": "アップロード者なし",
           "noRating": "未評価",
           "noGps": "GPS情報なし",
           "unknown": "不明",
@@ -958,6 +991,7 @@
         "deleteSuccess": "タスクの削除が成功しました",
         "batchRetrySuccess": "バッチ再試行が成功しました",
         "clearSuccess": "クリア完了",
+        "clearEmpty": "クリアできる非アクティブなタスクはありません",
         "operationFailed": "操作に失敗しました",
         "clearSuccessDescription": "{count} 件のタスクをクリアしました",
         "clearFailed": "タスクのクリアに失敗しました",
@@ -988,11 +1022,125 @@
         "levelPlaceholder": "レベルで絞り込む",
         "tagPlaceholder": "タグで絞り込む"
       },
+      "actions": {
+        "autoScroll": "最新ログを追従",
+        "downloadRaw": "生ログをダウンロード"
+      },
       "countLabel": "合計/表示: {total}/{shown}",
       "tagCount": "タグ: {count}",
       "empty": {
         "waiting": "ログデータを待機中...",
         "noMatch": "一致するログエントリがありません"
+      }
+    },
+    "users": {
+      "createButton": "ユーザーを追加",
+      "inviteButton": "ユーザーを招待",
+      "createTitle": "ユーザーを追加",
+      "editTitle": "ユーザーを編集",
+      "inviteTitle": "ユーザーを招待",
+      "sections": {
+        "users": "ユーザー",
+        "invitations": "招待"
+      },
+      "roles": {
+        "admin": "管理者",
+        "user": "一般ユーザー"
+      },
+      "status": {
+        "enabled": "有効",
+        "disabled": "無効"
+      },
+      "table": {
+        "user": "ユーザー",
+        "email": "メール",
+        "role": "ロール",
+        "status": "ステータス",
+        "actions": "操作"
+      },
+      "form": {
+        "username": "ユーザー名",
+        "email": "メール",
+        "password": "パスワード",
+        "resetPassword": "パスワードをリセット",
+        "role": "ロール",
+        "disabled": "このユーザーを無効化"
+      },
+      "actions": {
+        "edit": "ユーザーを編集",
+        "deleteUser": "ユーザーを削除",
+        "deleteInvite": "招待記録を削除",
+        "revokeInvite": "招待を取り消す"
+      },
+      "messages": {
+        "created": "ユーザーを作成しました",
+        "updated": "ユーザーを更新しました",
+        "saveFailed": "ユーザーの保存に失敗しました",
+        "inviteCreated": "招待を作成しました",
+        "inviteFailed": "招待の作成に失敗しました",
+        "inviteCopied": "招待リンクをコピーしました",
+        "inviteRevoked": "招待を取り消しました",
+        "inviteDeleted": "招待記録を削除しました",
+        "userDeleted": "ユーザーを削除しました",
+        "deleteUserFailed": "ユーザーの削除に失敗しました"
+      },
+      "invites": {
+        "email": "メール",
+        "expiresAt": "有効期限",
+        "createdTitle": "招待リンクを作成しました"
+      },
+      "inviteStatus": {
+        "pending": "未使用",
+        "accepted": "承認済み",
+        "expired": "期限切れ",
+        "revoked": "取り消し済み"
+      },
+      "delete": {
+        "title": "ユーザーを削除",
+        "description": "{username} とそのアルバム、写真、保存ファイルを完全に削除します。",
+        "confirmLabel": "確認のため {username} と入力してください",
+        "confirm": "ユーザーを削除",
+        "restrictions": {
+          "self": "自分のアカウントは削除できません。",
+          "lastAdmin": "最後の有効な管理者は削除できません。"
+        },
+        "counts": {
+          "albums": "アルバム",
+          "photos": "写真",
+          "files": "保存ファイル",
+          "skippedFiles": "スキップされたファイル",
+          "invitations": "招待"
+        }
+      }
+    },
+    "profile": {
+      "title": "プロフィール",
+      "description": "公開ホームページと表示情報を管理します。",
+      "form": {
+        "displayName": "表示名",
+        "profileTitle": "ホームページタイトル",
+        "profileSlogan": "ホームページスローガン",
+        "avatar": "アバター URL",
+        "profileBio": "自己紹介",
+        "visibility": "ホームページ公開設定"
+      },
+      "visibility": {
+        "private": "非公開",
+        "public": "公開"
+      },
+      "publicLink": {
+        "title": "公開ホームページリンク",
+        "enabled": "このリンクを持つ人はホームページを表示できます。",
+        "disabled": "ホームページは現在非公開です。"
+      },
+      "actions": {
+        "copyLink": "公開リンクをコピー",
+        "openLink": "公開リンクを開く"
+      },
+      "messages": {
+        "saved": "プロフィールを保存しました",
+        "saveFailed": "プロフィールの保存に失敗しました",
+        "linkCopied": "公開リンクをコピーしました"
       }
     },
     "access": {
@@ -1084,6 +1232,40 @@
           "clientSecret": {
             "label": "GitHub Client Secret",
             "description": "GitHub OAuth アプリの Client Secret"
+          }
+        },
+        "oidc": {
+          "enabled": {
+            "label": "OIDC ログインを有効化",
+            "description": "汎用 OpenID Connect ログインプロバイダーを有効にするかどうか"
+          },
+          "label": {
+            "label": "OIDC ボタンラベル",
+            "description": "ログインページの OIDC ボタンに表示するラベル"
+          },
+          "issuer": {
+            "label": "OIDC Issuer",
+            "description": "OpenID Connect discovery に使用する Issuer URL"
+          },
+          "clientId": {
+            "label": "OIDC Client ID",
+            "description": "OIDC アプリケーションの Client ID"
+          },
+          "clientSecret": {
+            "label": "OIDC Client Secret",
+            "description": "OIDC アプリケーションの Client Secret"
+          },
+          "scope": {
+            "label": "OIDC Scope",
+            "description": "OIDC ログイン時に要求する scope"
+          },
+          "clientAuthMethod": {
+            "label": "OIDC Client 認証方式",
+            "description": "ChronoFrame が token endpoint へ認証するときの方式",
+            "options": {
+              "post": "Client secret post",
+              "basic": "Client secret basic"
+            }
           }
         }
       },
@@ -1466,6 +1648,11 @@
       "toggle": "タイムラインの有効/無効",
       "playPause": "タイムライン再生/一時停止",
       "title": "タイムライン"
+    },
+    "localMapCoverage": {
+      "title": "オフライン地図の範囲が限られています",
+      "description": "写真の位置は現在のローカル PMTiles パッケージの範囲外です。ピンは表示できますが、該当地域または全世界の地図データを追加するまで背景地図が空に見える場合があります。",
+      "action": "ローカル地図範囲を表示"
     }
   },
   "upload": {
@@ -1542,7 +1729,13 @@
       "seconds": "{seconds}秒"
     }
   },
+  "publicProfile": {
+    "albums": "アルバム",
+    "photos": "写真",
+    "emptyPhotos": "公開写真はまだありません。"
+  },
   "photo": {
+    "owner": "アップロード者",
     "image": {
       "loadError": "画像の読み込み失敗"
     }

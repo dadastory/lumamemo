@@ -38,6 +38,13 @@ const SYSTEM_SECTION_ORDER: SystemSection[] = [
       'auth.github.enabled',
       'auth.github.clientId',
       'auth.github.clientSecret',
+      'auth.oidc.enabled',
+      'auth.oidc.label',
+      'auth.oidc.issuer',
+      'auth.oidc.clientId',
+      'auth.oidc.clientSecret',
+      'auth.oidc.scope',
+      'auth.oidc.clientAuthMethod',
     ],
   },
   {

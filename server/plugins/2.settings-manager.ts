@@ -1,8 +1,10 @@
 import { DEFAULT_SETTINGS } from '../services/settings/contants'
 import { settingsManager } from '../services/settings/settingsManager'
-import { and, eq, tables, useDB } from '../utils/db'
+import { and, eq, tables, useDB, waitForDatabaseMigrations } from '../utils/db'
 
 export default defineNitroPlugin(async (_nitroApp) => {
+  await waitForDatabaseMigrations()
+
   const _settingsManager = settingsManager
 
   // Mark initialization phase to prevent storage provider switch triggers
@@ -35,35 +37,14 @@ async function migrateRuntimeConfigToSettings() {
   const _logger = logger.dynamic('settings-migration')
 
   try {
-    // Migrate app settings
-    if (config.public.app) {
-      _logger.info('Migrating app settings')
-      const appSettings = {
-        title: config.public.app.title,
-        slogan: config.public.app.slogan,
-        author: config.public.app.author,
-        avatarUrl: config.public.app.avatarUrl,
-      }
-
-      for (const [key, value] of Object.entries(appSettings)) {
-        if (value) {
-          try {
-            await settingsManager.set('app', key as any, value, undefined, true)
-            _logger.debug(`Migrated app.${key}`)
-          } catch (error) {
-            _logger.warn(`Failed to migrate app.${key}:`, error)
-          }
-        }
-      }
-    }
-
     // Migrate map settings
     if (config.public.map) {
       _logger.info('Migrating map settings')
       const mapSettings = {
         provider: config.public.map.provider,
         'mapbox.token': config.mapbox?.accessToken || '',
-        'mapbox.style': config.public.map.mapbox?.style || '',
+        'mapbox.style':
+          config.public.map.mapbox?.style || 'mapbox://styles/mapbox/standard',
         'maplibre.token': config.public.map.maplibre?.token || '',
         'maplibre.style': config.public.map.maplibre?.style || '',
       }
@@ -77,6 +58,30 @@ async function migrateRuntimeConfigToSettings() {
             _logger.warn(`Failed to migrate map.${key}:`, error)
           }
         }
+      }
+    }
+
+    const runtimeNominatimBaseUrl = config.nominatim?.baseUrl || ''
+    const preserveExisting = true
+    if (runtimeNominatimBaseUrl) {
+      try {
+        const existingNominatimBaseUrl = await settingsManager.get<string>(
+          'location',
+          'nominatim.baseUrl',
+        )
+
+        if (!preserveExisting || !existingNominatimBaseUrl) {
+          await settingsManager.set(
+            'location',
+            'nominatim.baseUrl',
+            runtimeNominatimBaseUrl,
+            undefined,
+            true,
+          )
+          _logger.debug('Migrated location.nominatim.baseUrl')
+        }
+      } catch (error) {
+        _logger.warn('Failed to migrate location.nominatim.baseUrl:', error)
       }
     }
 
@@ -103,6 +108,42 @@ async function migrateRuntimeConfigToSettings() {
     }
 
     for (const [key, value] of Object.entries(githubOauthSettings)) {
+      if (typeof value === 'string' && value.length > 0) {
+        try {
+          await settingsManager.set('system', key as any, value, undefined, true)
+          _logger.debug(`Migrated system.${key}`)
+        } catch (error) {
+          _logger.warn(`Failed to migrate system.${key}:`, error)
+        }
+      }
+    }
+
+    const oidcOauthConfig = config.oauth?.oidc || {}
+    if (config.public?.oauth?.oidc?.enabled === true) {
+      try {
+        await settingsManager.set(
+          'system',
+          'auth.oidc.enabled' as any,
+          true,
+          undefined,
+          true,
+        )
+        _logger.debug('Migrated system.auth.oidc.enabled=true')
+      } catch (error) {
+        _logger.warn('Failed to migrate system.auth.oidc.enabled:', error)
+      }
+    }
+
+    const oidcOauthSettings = {
+      'auth.oidc.label': oidcOauthConfig.label || '',
+      'auth.oidc.issuer': oidcOauthConfig.issuer || '',
+      'auth.oidc.clientId': oidcOauthConfig.clientId || '',
+      'auth.oidc.clientSecret': oidcOauthConfig.clientSecret || '',
+      'auth.oidc.scope': oidcOauthConfig.scope || '',
+      'auth.oidc.clientAuthMethod': oidcOauthConfig.clientAuthMethod || '',
+    }
+
+    for (const [key, value] of Object.entries(oidcOauthSettings)) {
       if (typeof value === 'string' && value.length > 0) {
         try {
           await settingsManager.set('system', key as any, value, undefined, true)
@@ -211,7 +252,8 @@ async function syncGithubOAuthEnvFromSettings() {
 async function removeDeprecatedSettings() {
   const db = useDB()
 
-  db.delete(tables.settings)
+  await db
+    .delete(tables.settings)
     .where(
       and(
         eq(tables.settings.namespace, 'app'),

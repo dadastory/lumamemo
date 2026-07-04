@@ -1,5 +1,3 @@
-import { photos } from '~~/server/database/schema'
-
 export default eventHandler(async (event) => {
   await requireAdminSession(event)
 
@@ -9,8 +7,8 @@ export default eventHandler(async (event) => {
     // 获取最新处理完成的照片
     const recentPhotos = await useDB()
       .select()
-      .from(photos)
-      .orderBy(photos.lastModified)
+      .from(tables.photos)
+      .orderBy(tables.photos.lastModified)
       .limit(10)
       .all()
 

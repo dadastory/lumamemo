@@ -4,10 +4,12 @@ import { motion } from 'motion-v'
 import type { NeededExif } from '../../../shared/types/photo'
 import type { KVData } from './KVRenderer.vue'
 import { formatCameraInfo, formatLensInfo } from '~/utils/camera'
+import { formatPhotoLocation } from '~/utils/photo-location'
 
 interface Props {
   currentPhoto: Photo
   exifData?: NeededExif | null
+  globeRoute?: string | null
   onClose?: () => void
 }
 
@@ -119,6 +121,8 @@ const gpsCoordinates = computed(() => {
   return null
 })
 
+const displayLocation = computed(() => formatPhotoLocation(props.currentPhoto))
+
 const formatedExifData = computed<Record<string, KVData[]>>(() => {
   const sections: Record<string, KVData[]> = {}
 
@@ -148,6 +152,13 @@ const formatedExifData = computed<Record<string, KVData[]>>(() => {
               label: $t('exif.resolution'),
               value: `${props.currentPhoto.width} × ${props.currentPhoto.height}`,
               icon: 'tabler:dimensions',
+            }
+          : null,
+        props.currentPhoto.owner
+          ? {
+              label: $t('photo.owner'),
+              value: props.currentPhoto.owner.username,
+              icon: 'tabler:user',
             }
           : null,
         props.currentPhoto.width && props.currentPhoto.height
@@ -190,6 +201,13 @@ const formatedExifData = computed<Record<string, KVData[]>>(() => {
               label: $t('exif.tz'),
               value: props.exifData.tz,
               icon: 'tabler:world',
+            }
+          : null,
+        displayLocation.value
+          ? {
+              label: $t('exif.location'),
+              value: displayLocation.value,
+              icon: 'tabler:map-pin',
             }
           : null,
         props.currentPhoto.country
@@ -442,7 +460,9 @@ const formatedExifData = computed<Record<string, KVData[]>>(() => {
 const isMobile = useMediaQuery('(max-width: 768px)')
 
 const onMinimapClick = (photoId: string) => {
-  window.open(`/globe?photoId=${photoId}`)
+  const baseGlobeRoute = props.globeRoute || '/globe'
+  const query = new URLSearchParams({ photoId })
+  window.open(`${baseGlobeRoute}?${query.toString()}`)
 }
 
 const onTagClick = (tag: string) => {

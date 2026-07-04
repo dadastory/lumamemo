@@ -69,19 +69,18 @@ export const MAP_SETTINGS_UI: Record<string, FieldUIConfig> = {
   },
   'mapbox.style': {
     type: 'input',
-    placeholder: 'mapbox://styles/mapbox/light-v11',
+    placeholder: 'mapbox://styles/mapbox/standard',
     visibleIf: { fieldKey: 'provider', value: 'mapbox' },
   },
   'maplibre.token': {
     type: 'password',
-    placeholder: 'pk.xxxxxx',
-    required: true,
+    placeholder: 'Optional external MapLibre token',
     visibleIf: { fieldKey: 'provider', value: 'maplibre' },
     help: 'settings.map.maplibre.token.help',
   },
   'maplibre.style': {
     type: 'input',
-    placeholder: 'https://example.com/style.json',
+    placeholder: '/maps/style.json?v=global',
     visibleIf: { fieldKey: 'provider', value: 'maplibre' },
   },
 }
@@ -164,6 +163,48 @@ export const SYSTEM_SETTINGS_UI: Record<string, FieldUIConfig> = {
     type: 'password',
     placeholder: 'github_oauth_client_secret',
     visibleIf: { fieldKey: 'auth.github.enabled', value: true },
+  },
+  'auth.oidc.enabled': {
+    type: 'toggle',
+  },
+  'auth.oidc.label': {
+    type: 'input',
+    placeholder: 'OIDC',
+    visibleIf: { fieldKey: 'auth.oidc.enabled', value: true },
+  },
+  'auth.oidc.issuer': {
+    type: 'input',
+    placeholder: 'https://accounts.example.com',
+    visibleIf: { fieldKey: 'auth.oidc.enabled', value: true },
+  },
+  'auth.oidc.clientId': {
+    type: 'input',
+    placeholder: 'chronoframe',
+    visibleIf: { fieldKey: 'auth.oidc.enabled', value: true },
+  },
+  'auth.oidc.clientSecret': {
+    type: 'password',
+    placeholder: 'oidc_client_secret',
+    visibleIf: { fieldKey: 'auth.oidc.enabled', value: true },
+  },
+  'auth.oidc.scope': {
+    type: 'input',
+    placeholder: 'openid email profile',
+    visibleIf: { fieldKey: 'auth.oidc.enabled', value: true },
+  },
+  'auth.oidc.clientAuthMethod': {
+    type: 'select',
+    visibleIf: { fieldKey: 'auth.oidc.enabled', value: true },
+    options: [
+      {
+        label: 'settings.system.auth.oidc.clientAuthMethod.options.post',
+        value: 'client_secret_post',
+      },
+      {
+        label: 'settings.system.auth.oidc.clientAuthMethod.options.basic',
+        value: 'client_secret_basic',
+      },
+    ],
   },
 }
 

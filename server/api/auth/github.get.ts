@@ -1,4 +1,10 @@
 import { settingsManager } from '~~/server/services/settings/settingsManager'
+import {
+  ensureUserPublicProfile,
+  getUniqueUsername,
+  prepareNewUserRecord,
+} from '~~/server/utils/users'
+import { getAuthCookieOptions } from '~~/server/utils/auth-cookie'
 
 const _accessDeniedError = createError({
   statusCode: 403,
@@ -8,7 +14,7 @@ const _accessDeniedError = createError({
 
 async function onGithubOAuthSuccess(event: any, { user }: { user: any }) {
   const db = useDB()
-  const userFromEmail = db
+  const userFromEmail = await db
     .select()
     .from(tables.users)
     .where(eq(tables.users.email, user.email || ''))
@@ -22,18 +28,28 @@ async function onGithubOAuthSuccess(event: any, { user }: { user: any }) {
 
   if (!userFromEmail) {
     // create a new user without admin permission
-    db.insert(tables.users)
-      .values({
-        username: user.name || '',
-        email: user.email || '',
-        avatar: user.avatar_url || null,
-        createdAt: new Date(),
-      })
+    const createdUser = await db
+      .insert(tables.users)
+      .values(
+        await prepareNewUserRecord(db, {
+          username: await getUniqueUsername(
+            db,
+            user.name || user.login || 'user',
+          ),
+          email: user.email || '',
+          avatar: user.avatar_url || null,
+          createdAt: new Date(),
+          role: 'user',
+          isAdmin: 0,
+          disabledAt: new Date(),
+        }),
+      )
       .returning()
       .get()
+    await ensureUserPublicProfile(db, createdUser)
     // then reject login
     throw _accessDeniedError
-  } else if (userFromEmail.isAdmin === 0) {
+  } else if (isDisabledUser(userFromEmail)) {
     throw _accessDeniedError
   } else {
     await setUserSession(
@@ -41,8 +57,7 @@ async function onGithubOAuthSuccess(event: any, { user }: { user: any }) {
       { user: sanitizeSessionUser(userFromEmail) },
       {
         cookie: {
-          // secure: !useRuntimeConfig().allowInsecureCookie,
-          secure: false,
+          ...getAuthCookieOptions(event),
         },
       },
     )

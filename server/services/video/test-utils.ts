@@ -59,12 +59,14 @@ export const batchTestLivePhotoDetection = async (photoIds?: string[]) => {
             inArray(tables.photos.id, photoIds),
           ),
         )
+        .all()
     } else {
       // 获取所有还不是 LivePhoto 的照片
       photos = await db
         .select()
         .from(tables.photos)
         .where(eq(tables.photos.isLivePhoto, 0))
+        .all()
     }
 
     logger.chrono.info(

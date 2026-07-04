@@ -74,6 +74,7 @@ export default eventHandler(async (event) => {
           .from(tables.photos)
           .where(eq(tables.photos.id, photoId))
           .limit(1)
+          .all()
 
         if (photos.length === 0) {
           throw createError({
@@ -100,6 +101,7 @@ export default eventHandler(async (event) => {
               livePhotoVideoKey: livePhotoVideo.videoKey,
             })
             .where(eq(tables.photos.id, photoId))
+            .run()
 
           return {
             message: 'Photo updated to LivePhoto successfully',

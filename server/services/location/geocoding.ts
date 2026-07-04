@@ -240,6 +240,7 @@ export class NominatimGeocodingProvider implements GeocodingProvider {
  * @description 优先使用 Mapbox，如果没有配置则回退到 Nominatim
  */
 async function createGeocodingProvider(): Promise<GeocodingProvider> {
+  const runtimeConfig = useRuntimeConfig() as any
   // const mapboxToken = useRuntimeConfig().mapbox?.accessToken
   const mapboxToken = await settingsManager.get<string>(
     'location',
@@ -251,8 +252,15 @@ async function createGeocodingProvider(): Promise<GeocodingProvider> {
   }
 
   // 回退到 Nominatim 提供者
+  const configuredNominatimBaseUrl = await settingsManager.get<string>(
+    'location',
+    'nominatim.baseUrl',
+  )
+  const runtimeNominatimBaseUrl = runtimeConfig.nominatim?.baseUrl
+
   return new NominatimGeocodingProvider(
-    (await settingsManager.get<string>('location', 'nominatim.baseUrl')) ||
+    configuredNominatimBaseUrl ||
+      runtimeNominatimBaseUrl ||
       undefined,
   )
 }

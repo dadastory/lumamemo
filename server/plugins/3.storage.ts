@@ -4,6 +4,7 @@ import { StorageManager, getGlobalStorageManager } from '../services/storage'
 import { setGlobalStorageManager } from '../services/storage/events'
 import { logger } from '../utils/logger'
 import { settingsManager } from '../services/settings/settingsManager'
+import { waitForDatabaseMigrations } from '../utils/db'
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -61,6 +62,8 @@ function attachStorageManagerEvents(storageManager: StorageManager): void {
 export async function initializeStorageManagerFromActiveProvider(
   reason = 'startup',
 ): Promise<boolean> {
+  await waitForDatabaseMigrations()
+
   if (getGlobalStorageManager()) {
     return true
   }

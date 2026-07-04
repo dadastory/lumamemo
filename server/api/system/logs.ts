@@ -1,23 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-
-const DEFAULT_INITIAL_LINES = 400
-const MAX_INITIAL_LINES = 2000
-const ALL_INITIAL_LINES = 'all'
-
-type InitialLinesMode = number | typeof ALL_INITIAL_LINES
-
-const clampInitialLines = (value: unknown): InitialLinesMode => {
-  if (typeof value === 'string' && value.toLowerCase() === ALL_INITIAL_LINES) {
-    return ALL_INITIAL_LINES
-  }
-
-  const parsed = Number(value)
-  if (!Number.isFinite(parsed)) {
-    return DEFAULT_INITIAL_LINES
-  }
-  return Math.max(0, Math.min(MAX_INITIAL_LINES, Math.floor(parsed)))
-}
+import { clampInitialLines } from '../../utils/log-stream'
 
 const readLastLines = async (
   filePath: string,
@@ -64,23 +47,6 @@ const readLastLines = async (
   } finally {
     await handle.close()
   }
-}
-
-const readAllLines = async (
-  filePath: string,
-): Promise<{ lines: string[]; fileSize: number }> => {
-  const stat = await fs.promises.stat(filePath)
-  if (stat.size <= 0) {
-    return { lines: [], fileSize: stat.size }
-  }
-
-  const content = await fs.promises.readFile(filePath, 'utf-8')
-  const lines = content
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-
-  return { lines, fileSize: stat.size }
 }
 
 const streamNewLines = async (
@@ -134,10 +100,10 @@ export default defineEventHandler(async (event) => {
   setImmediate(async () => {
     try {
       if (fs.existsSync(logFilePath)) {
-        const { lines, fileSize } =
-          initialLines === ALL_INITIAL_LINES
-            ? await readAllLines(logFilePath)
-            : await readLastLines(logFilePath, initialLines)
+        const { lines, fileSize } = await readLastLines(
+          logFilePath,
+          initialLines,
+        )
         for (const line of lines) {
           if (isClosed) {
             return

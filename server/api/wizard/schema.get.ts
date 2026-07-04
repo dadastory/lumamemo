@@ -1,6 +1,10 @@
 import { z } from 'zod'
 import { settingsManager } from '~~/server/services/settings/settingsManager'
 import { getSettingUIConfig } from '~~/server/services/settings/ui-config'
+import {
+  getWizardMapDefaults,
+  getWizardStorageDefaults,
+} from '~~/server/utils/wizard-env-defaults'
 import type { FieldDescriptor } from '~~/shared/types/settings'
 
 export default eventHandler(async (event) => {
@@ -18,7 +22,7 @@ export default eventHandler(async (event) => {
     // Use env variables for default values if configured
     const defaultUsername = process.env.CFRAME_ADMIN_NAME || 'admin'
     const defaultEmail = process.env.CFRAME_ADMIN_EMAIL || ''
-    const defaultPassword = ''
+    const defaultPassword = process.env.CFRAME_ADMIN_PASSWORD || ''
 
     const fields: FieldDescriptor[] = [
       {
@@ -64,152 +68,153 @@ export default eventHandler(async (event) => {
 
   // 2. Storage Schema (Custom for Wizard)
   if (query.namespace === 'storage') {
+    const defaults = getWizardStorageDefaults()
     const storageFields = [
       {
         key: 'provider',
         type: 'string',
-        defaultValue: 'local',
+        defaultValue: defaults.provider,
         label: 'settings.storage.provider.label',
       },
       {
         key: 'name',
         type: 'string',
-        defaultValue: 'Default Storage',
+        defaultValue: defaults.name,
         label: 'settings.storage.name.label',
       },
       // Local
       {
         key: 'local.basePath',
         type: 'string',
-        defaultValue: './data/storage',
+        defaultValue: defaults['local.basePath'],
         label: 'settings.storage.local.basePath.label',
       },
       {
         key: 'local.baseUrl',
         type: 'string',
-        defaultValue: '/storage',
+        defaultValue: defaults['local.baseUrl'],
         label: 'settings.storage.local.baseUrl.label',
       },
       {
         key: 'local.prefix',
         type: 'string',
-        defaultValue: 'photos/',
+        defaultValue: defaults['local.prefix'],
         label: 'settings.storage.local.prefix.label',
       },
       // S3
       {
         key: 's3.endpoint',
         type: 'string',
-        defaultValue: '',
+        defaultValue: defaults['s3.endpoint'],
         label: 'settings.storage.s3.endpoint.label',
       },
       {
         key: 's3.bucket',
         type: 'string',
-        defaultValue: '',
+        defaultValue: defaults['s3.bucket'],
         label: 'settings.storage.s3.bucket.label',
       },
       {
         key: 's3.region',
         type: 'string',
-        defaultValue: 'auto',
+        defaultValue: defaults['s3.region'],
         label: 'settings.storage.s3.region.label',
       },
       {
         key: 's3.accessKeyId',
         type: 'string',
-        defaultValue: '',
+        defaultValue: defaults['s3.accessKeyId'],
         label: 'settings.storage.s3.accessKeyId.label',
       },
       {
         key: 's3.secretAccessKey',
         type: 'string',
-        defaultValue: '',
+        defaultValue: defaults['s3.secretAccessKey'],
         label: 'settings.storage.s3.secretAccessKey.label',
       },
       {
         key: 's3.prefix',
         type: 'string',
-        defaultValue: '/photos',
+        defaultValue: defaults['s3.prefix'],
         label: 'settings.storage.s3.prefix.label',
       },
       {
         key: 's3.cdnUrl',
         type: 'string',
-        defaultValue: '',
+        defaultValue: defaults['s3.cdnUrl'],
         label: 'settings.storage.s3.cdnUrl.label',
       },
       {
         key: 's3.forcePathStyle',
         type: 'boolean',
-        defaultValue: false,
+        defaultValue: defaults['s3.forcePathStyle'],
         label: 'settings.storage.s3.forcePathStyle.label',
       },
       {
         key: 's3.maxKeys',
         type: 'number',
-        defaultValue: 1000,
+        defaultValue: defaults['s3.maxKeys'],
         label: 'settings.storage.s3.maxKeys.label',
       },
       // OpenList
       {
         key: 'openlist.baseUrl',
         type: 'string',
-        defaultValue: '',
+        defaultValue: defaults['openlist.baseUrl'],
         label: 'settings.storage.openlist.baseUrl.label',
       },
       {
         key: 'openlist.rootPath',
         type: 'string',
-        defaultValue: '/photos',
+        defaultValue: defaults['openlist.rootPath'],
         label: 'settings.storage.openlist.rootPath.label',
       },
       {
         key: 'openlist.token',
         type: 'string',
-        defaultValue: '',
+        defaultValue: defaults['openlist.token'],
         label: 'settings.storage.openlist.token.label',
       },
       {
         key: 'openlist.cdnUrl',
         type: 'string',
-        defaultValue: '',
+        defaultValue: defaults['openlist.cdnUrl'],
         label: 'settings.storage.openlist.cdnUrl.label',
       },
       {
         key: 'openlist.uploadEndpoint',
         type: 'string',
-        defaultValue: '/api/fs/put',
+        defaultValue: defaults['openlist.uploadEndpoint'],
         label: 'settings.storage.openlist.uploadEndpoint.label',
       },
       {
         key: 'openlist.downloadEndpoint',
         type: 'string',
-        defaultValue: '',
+        defaultValue: defaults['openlist.downloadEndpoint'],
         label: 'settings.storage.openlist.downloadEndpoint.label',
       },
       {
         key: 'openlist.listEndpoint',
         type: 'string',
-        defaultValue: '',
+        defaultValue: defaults['openlist.listEndpoint'],
         label: 'settings.storage.openlist.listEndpoint.label',
       },
       {
         key: 'openlist.deleteEndpoint',
         type: 'string',
-        defaultValue: '/api/fs/remove',
+        defaultValue: defaults['openlist.deleteEndpoint'],
         label: 'settings.storage.openlist.deleteEndpoint.label',
       },
       {
         key: 'openlist.metaEndpoint',
         type: 'string',
-        defaultValue: '/api/fs/get',
+        defaultValue: defaults['openlist.metaEndpoint'],
         label: 'settings.storage.openlist.metaEndpoint.label',
       },
       {
         key: 'openlist.pathField',
         type: 'string',
-        defaultValue: 'path',
+        defaultValue: defaults['openlist.pathField'],
         label: 'settings.storage.openlist.pathField.label',
       },
     ]
@@ -236,14 +241,25 @@ export default eventHandler(async (event) => {
     const namespaceSettings = schema.filter(
       (s) => s.namespace === query.namespace,
     )
+    const mapDefaults =
+      query.namespace === 'map' ? getWizardMapDefaults() : undefined
 
     const fields = namespaceSettings.map((setting) => {
       const uiConfig = getSettingUIConfig(query.namespace, setting.key)
+      const defaultOverride = mapDefaults?.[setting.key]
+      const mergedSetting =
+        defaultOverride === undefined
+          ? setting
+          : {
+              ...setting,
+              defaultValue: defaultOverride,
+              value: defaultOverride,
+            }
 
       // Patch for Wizard Map Provider to use rich selector
       if (query.namespace === 'map' && setting.key === 'provider') {
         return {
-          ...setting,
+          ...mergedSetting,
           ui: {
             type: 'custom',
             options: [
@@ -265,7 +281,7 @@ export default eventHandler(async (event) => {
       }
 
       return {
-        ...setting,
+        ...mergedSetting,
         ui: uiConfig || {
           type: 'input' as const,
           required: false,

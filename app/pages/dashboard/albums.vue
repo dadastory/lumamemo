@@ -497,7 +497,12 @@ const columns = computed<any[]>(() => [
                 variant="soft"
                 color="neutral"
               >
-                {{ $t('dashboard.albums.photoCount', { count: (row.original as unknown as AlbumItem).photoCount || 0 }) }}
+                {{
+                  $t('dashboard.albums.photoCount', {
+                    count:
+                      (row.original as unknown as AlbumItem).photoCount || 0,
+                  })
+                }}
               </UBadge>
             </template>
 
@@ -1026,7 +1031,11 @@ const columns = computed<any[]>(() => [
                           <p
                             class="truncate text-[10px] font-medium text-white/92"
                           >
-                            {{ photo.title || photo.storageKey || $t('ui.photo.untitled') }}
+                            {{
+                              photo.title ||
+                              photo.storageKey ||
+                              $t('ui.photo.untitled')
+                            }}
                           </p>
                           <p class="truncate text-[9px] text-white/72">
                             {{

@@ -29,7 +29,14 @@ export interface PhotoMarker {
   thumbnailHash?: string
   dateTaken?: string
   city?: string
+  country?: string
+  locationName?: string
   exif?: any
+  owner?: {
+    id: number
+    username: string
+    avatar?: string | null
+  } | null
 }
 
 export interface ClusterPoint {

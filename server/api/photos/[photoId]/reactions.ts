@@ -176,6 +176,7 @@ export default defineEventHandler(async (event) => {
           updatedAt: new Date(),
         })
         .where(eq(tables.photoReactions.id, existingReaction.id))
+        .run()
 
       return {
         success: true,
@@ -184,13 +185,16 @@ export default defineEventHandler(async (event) => {
       }
     } else {
       // 创建新表态
-      await db.insert(tables.photoReactions).values({
-        photoId,
-        reactionType,
-        fingerprint,
-        ipAddress,
-        userAgent,
-      })
+      await db
+        .insert(tables.photoReactions)
+        .values({
+          photoId,
+          reactionType,
+          fingerprint,
+          ipAddress,
+          userAgent,
+        })
+        .run()
 
       return {
         success: true,
@@ -225,6 +229,7 @@ export default defineEventHandler(async (event) => {
     await db
       .delete(tables.photoReactions)
       .where(eq(tables.photoReactions.id, existingReaction.id))
+      .run()
 
     return {
       success: true,

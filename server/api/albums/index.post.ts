@@ -1,7 +1,8 @@
 import z from 'zod'
+import { and, eq } from 'drizzle-orm'
 
 export default eventHandler(async (event) => {
-  await requireAdminSession(event)
+  const session = await requireActiveUserSession(event)
 
   const body = await readValidatedBody(
     event,
@@ -15,30 +16,51 @@ export default eventHandler(async (event) => {
   )
 
   const db = useDB()
+  const photoIds = new Set(body.photoIds || [])
 
-  const album = db.transaction((tx) => {
-    const newAlbum = tx
+  if (body.coverPhotoId) {
+    photoIds.add(body.coverPhotoId)
+  }
+
+  for (const photoId of photoIds) {
+    const photo = await db
+      .select()
+      .from(tables.photos)
+      .where(
+        and(
+          eq(tables.photos.id, photoId),
+          eq(tables.photos.ownerUserId, session.user.id),
+        ),
+      )
+      .get()
+
+    if (!photo) {
+      throw createError({
+        statusCode: 403,
+        statusMessage: 'Cannot add another user photo to album',
+      })
+    }
+  }
+
+  const album = await db.transaction(async (tx) => {
+    const newAlbum = await tx
       .insert(tables.albums)
       .values({
         title: body.title,
         description: body.description || null,
         coverPhotoId: body.coverPhotoId || null,
+        ownerUserId: session.user.id,
         isHidden: body.isHidden || false,
       })
       .returning()
       .get()
 
     const albumId = newAlbum.id
-    const photoIds = new Set(body.photoIds || [])
-
-    if (body.coverPhotoId) {
-      photoIds.add(body.coverPhotoId)
-    }
-
     if (photoIds.size > 0) {
       let pos = 1000000
       for (const photoId of photoIds) {
-        tx.insert(tables.albumPhotos)
+        await tx
+          .insert(tables.albumPhotos)
           .values({
             albumId,
             photoId,
@@ -51,6 +73,8 @@ export default eventHandler(async (event) => {
 
     return newAlbum
   })
+
+  await syncPhotoVisibility([...photoIds])
 
   return album
 })

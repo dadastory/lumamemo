@@ -3,6 +3,16 @@ import { motion } from 'motion-v'
 interface Props {
   photos: Photo[]
   columns?: number | 'auto'
+  headerProfile?: {
+    title?: string | null
+    slogan?: string | null
+    avatarUrl?: string | null
+    author?: string | null
+  }
+  albumRoute?: string
+  globeRoute?: string
+  photoRouteBase?: string
+  returnRoute?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -11,6 +21,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const dayjs = useDayjs()
 const router = useRouter()
+const route = useRoute()
 
 const { filteredPhotos, hasActiveFilters } = usePhotoFilters()
 const { sortedPhotos } = usePhotoSort()
@@ -19,7 +30,9 @@ const displayPhotos = computed(() => {
   return hasActiveFilters.value ? filteredPhotos.value : sortedPhotos.value
 })
 
-const { currentPhotoIndex, isViewerOpen } = storeToRefs(useViewerState())
+const viewerState = useViewerState()
+const { currentPhotoIndex, isViewerOpen } = storeToRefs(viewerState)
+const { openViewer } = viewerState
 
 const FIRST_SCREEN_ITEMS_COUNT = 50
 const MASONRY_GAP = 4
@@ -37,6 +50,7 @@ const processedBatch = ref(new Set<string>())
 const headerRef = ref<HTMLElement>()
 const headerHeight = ref(0)
 const headerColumnWidth = ref(0)
+let masonryMeasureFrame: number | null = null
 
 const columnWidth = computed(() => {
   if (props.columns === 'auto') {
@@ -94,6 +108,26 @@ const updateHeaderWidth = () => {
   headerColumnWidth.value = columnWidth.value
 }
 
+const remeasureMasonryLayout = async () => {
+  if (!import.meta.client) {
+    return
+  }
+
+  await nextTick()
+  updateHeaderWidth()
+
+  if (masonryMeasureFrame !== null) {
+    cancelAnimationFrame(masonryMeasureFrame)
+  }
+
+  masonryMeasureFrame = requestAnimationFrame(() => {
+    masonryMeasureFrame = requestAnimationFrame(() => {
+      updateHeaderWidth()
+      masonryMeasureFrame = null
+    })
+  })
+}
+
 useResizeObserver(masonryWrapper, () => {
   updateHeaderWidth()
 })
@@ -125,9 +159,7 @@ watch([columnWidth, maxColumns, minColumns], () => {
     return
   }
 
-  nextTick(() => {
-    updateHeaderWidth()
-  })
+  remeasureMasonryLayout()
 })
 
 watch(isMobile, (mobile) => {
@@ -136,9 +168,13 @@ watch(isMobile, (mobile) => {
     return
   }
 
-  nextTick(() => {
-    updateHeaderWidth()
-  })
+  remeasureMasonryLayout()
+})
+
+watch([masonryItems, () => route.fullPath], () => {
+  remeasureMasonryLayout()
+}, {
+  flush: 'post',
 })
 
 const photoStats = computed(() => {
@@ -311,9 +347,9 @@ onMounted(() => {
   window.addEventListener('scroll', handleScroll, { passive: true })
   window.addEventListener('resize', updateHeaderWidth)
 
-  nextTick(() => {
-    updateHeaderWidth()
+  remeasureMasonryLayout()
 
+  nextTick(() => {
     if (currentPhotoIndex.value) {
       scrollToPhoto(currentPhotoIndex.value)
     }
@@ -323,10 +359,28 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
   window.removeEventListener('resize', updateHeaderWidth)
+  if (masonryMeasureFrame !== null) {
+    cancelAnimationFrame(masonryMeasureFrame)
+    masonryMeasureFrame = null
+  }
 })
 
+const buildPhotoRoute = (photoId: string) => {
+  const base = props.photoRouteBase?.replace(/\/$/, '')
+  return base ? `${base}/${encodeURIComponent(photoId)}` : `/${photoId}`
+}
+
 const handleOpenViewer = (index: number) => {
-  router.push(`/${displayPhotos.value[index]?.id}`)
+  const photo = displayPhotos.value[index]
+  if (!photo) return
+
+  openViewer(
+    index,
+    props.returnRoute || null,
+    displayPhotos.value as Photo[],
+    props.globeRoute || null,
+  )
+  router.push(buildPhotoRoute(photo.id))
 }
 
 const scrollToPhoto = (photoIndex: number) => {
@@ -413,6 +467,9 @@ watch(currentPhotoIndex, (newIndex) => {
           <MasonryItemHeader
             :stats="photoStats"
             :date-range-text
+            :profile="headerProfile"
+            :album-route="albumRoute"
+            :globe-route="globeRoute"
           />
         </div>
 

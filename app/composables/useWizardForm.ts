@@ -2,6 +2,7 @@ import type {
   FieldDescriptor,
   SettingsFieldsResponse,
 } from '~~/shared/types/settings'
+import { applyWizardSchemaDefaults } from '~~/shared/utils/wizard-defaults'
 import { useWizardStore } from '~/stores/wizard'
 
 /**
@@ -71,10 +72,10 @@ export function useWizardForm(namespace: string) {
         defaults[field.key] = field.value ?? field.defaultValue ?? ''
       })
 
-      // Merge defaults with existing store state
-      // Existing store state takes precedence
+      // Existing non-empty store state takes precedence. Empty cached fields
+      // are refreshed from current server-side environment defaults.
       const currentState = state.value
-      const newState = { ...defaults, ...currentState }
+      const newState = applyWizardSchemaDefaults(defaults, currentState)
 
       // Update store
       state.value = newState

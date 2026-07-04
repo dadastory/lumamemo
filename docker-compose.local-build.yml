@@ -1,0 +1,6 @@
+services:
+  chronoframe:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: chronoframe:local

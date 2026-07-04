@@ -1,0 +1,107 @@
+services:
+  postgres:
+    image: ${POSTGRES_IMAGE:-postgres:18-alpine}
+    container_name: chronoframe_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-chronoframe}
+      POSTGRES_USER: ${POSTGRES_USER:-chronoframe}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-chronoframe-postgres-password}
+    expose:
+      - '5432'
+    volumes:
+      - ./data/middleware/postgres:/var/lib/postgresql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  minio:
+    image: ${MINIO_IMAGE:-minio/minio:latest}
+    container_name: chronoframe_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-chronoframe}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-chronoframe-minio-password}
+    expose:
+      - '9000'
+      - '9001'
+    volumes:
+      - ./data/middleware/minio:/data
+
+  minio-init:
+    image: ${MINIO_MC_IMAGE:-minio/mc:latest}
+    container_name: chronoframe_minio_init
+    depends_on:
+      - minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-chronoframe}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-chronoframe-minio-password}
+      MINIO_BUCKET: ${MINIO_BUCKET:-chronoframe}
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD; do sleep 1; done;
+      mc mb --ignore-existing local/$$MINIO_BUCKET;
+      mc anonymous set download local/$$MINIO_BUCKET;
+      "
+
+  nominatim:
+    image: ${NOMINATIM_IMAGE:-mediagis/nominatim:5.3.2}
+    container_name: chronoframe_nominatim
+    restart: unless-stopped
+    expose:
+      - '8080'
+    environment:
+      PBF_URL: ${NOMINATIM_PBF_URL:-}
+      REPLICATION_URL: ${NOMINATIM_REPLICATION_URL:-}
+      NOMINATIM_PASSWORD: ${NOMINATIM_PASSWORD:-chronoframe-nominatim-password}
+      IMPORT_STYLE: ${NOMINATIM_IMPORT_STYLE:-admin}
+      THREADS: ${NOMINATIM_THREADS:-4}
+      HTTPS_PROXY: ''
+      HTTP_PROXY: ''
+      ALL_PROXY: ''
+      https_proxy: ''
+      http_proxy: ''
+      all_proxy: ''
+      NO_PROXY: '*'
+      no_proxy: '*'
+    shm_size: ${NOMINATIM_SHM_SIZE:-1gb}
+    volumes:
+      - ./data/middleware/nominatim:/var/lib/postgresql/16/main
+
+  pmtiles:
+    image: ${PMTILES_IMAGE:-protomaps/go-pmtiles:latest}
+    container_name: chronoframe_pmtiles
+    restart: unless-stopped
+    command:
+      - serve
+      - /data
+      - --port=8080
+      - --cors=*
+      - --public-url=http://localhost:${GATEWAY_PORT:-3000}/tiles
+    expose:
+      - '8080'
+    volumes:
+      - ./data/middleware/pmtiles:/data:ro
+    environment:
+      HTTPS_PROXY: ''
+      HTTP_PROXY: ''
+      ALL_PROXY: ''
+      https_proxy: ''
+      http_proxy: ''
+      all_proxy: ''
+      NO_PROXY: '*'
+      no_proxy: '*'
+
+  maplibre:
+    image: ${MAPLIBRE_IMAGE:-nginx:alpine}
+    container_name: chronoframe_maplibre
+    restart: unless-stopped
+    expose:
+      - '80'
+    volumes:
+      - ./data/middleware/maplibre/public:/usr/share/nginx/html:ro

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { generateSafePhotoId } from '~~/server/utils/file-utils'
 
 /**
@@ -7,7 +7,7 @@ import { generateSafePhotoId } from '~~/server/utils/file-utils'
  * 可以检查单个或多个文件
  */
 export default defineEventHandler(async (event) => {
-  await requireAdminSession(event)
+  const session = await requireActiveUserSession(event)
 
   const t = await useTranslation(event)
 
@@ -41,7 +41,13 @@ export default defineEventHandler(async (event) => {
       for (const fileName of fileNames) {
         // 生成 photoId（与上传时的逻辑相同）
         const { storageProvider } = useStorageProvider(event)
-        const storageKey = `${(storageProvider.config?.prefix || '').replace(/\/+$/, '')}/${fileName}`
+        const prefix = (storageProvider.config?.prefix || '').replace(
+          /^\/+|\/+$/g,
+          '',
+        )
+        const storageKey = [prefix, `users/${session.user.id}`, fileName]
+          .filter(Boolean)
+          .join('/')
         const photoId = generateSafePhotoId(storageKey)
 
         // 查询数据库
@@ -58,7 +64,12 @@ export default defineEventHandler(async (event) => {
             height: tables.photos.height,
           })
           .from(tables.photos)
-          .where(eq(tables.photos.id, photoId))
+          .where(
+            and(
+              eq(tables.photos.id, photoId),
+              eq(tables.photos.ownerUserId, session.user.id),
+            ),
+          )
           .get()
 
         results.push({
@@ -89,7 +100,12 @@ export default defineEventHandler(async (event) => {
             height: tables.photos.height,
           })
           .from(tables.photos)
-          .where(eq(tables.photos.id, photoId))
+          .where(
+            and(
+              eq(tables.photos.id, photoId),
+              eq(tables.photos.ownerUserId, session.user.id),
+            ),
+          )
           .get()
 
         results.push({

@@ -21,6 +21,7 @@ export default eventHandler(async (event) => {
       .from(tables.photos)
       .where(eq(tables.photos.id, photoId))
       .limit(1)
+      .all()
 
     if (photos.length === 0) {
       throw createError({

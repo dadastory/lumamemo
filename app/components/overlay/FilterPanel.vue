@@ -258,7 +258,7 @@ const onShuffle = () => {
           <div
             v-for="city in availableFilters.cities"
             :key="city.label"
-            class="flex items-center justify-between cursor-pointer select-none hover:bg-neutral-400/30 dark:hover:bg-info-800/30 rounded-lg px-2 py-2"
+            class="flex min-w-0 items-center justify-between gap-2 cursor-pointer select-none hover:bg-neutral-400/30 dark:hover:bg-info-800/30 rounded-lg px-2 py-2"
             :class="
               isFilterSelected('cities', city.label)
                 ? 'bg-neutral-400/30 dark:bg-info-800/30'
@@ -266,13 +266,16 @@ const onShuffle = () => {
             "
             @click="handleToggleFilter('cities', city.label)"
           >
-            <span class="text-sm text-default font-medium truncate">
+            <span
+              class="min-w-0 flex-1 text-sm text-default font-medium truncate"
+              :title="city.label"
+            >
               {{ city.label }}
             </span>
             <Icon
               v-if="isFilterSelected('cities', city.label)"
               name="tabler:check"
-              class="size-4 text-green-500"
+              class="size-4 shrink-0 text-green-500"
             />
           </div>
           <div

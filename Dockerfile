@@ -1,16 +1,21 @@
 FROM node:22.22.3-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
+ENV NPM_CONFIG_REGISTRY="https://registry.npmmirror.com"
+ENV npm_config_registry="https://registry.npmmirror.com"
+ENV COREPACK_NPM_REGISTRY="https://registry.npmmirror.com"
 RUN corepack enable
 
 FROM base AS deps
 WORKDIR /usr/src/app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/webgl-image/package.json ./packages/webgl-image/
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm config set registry https://registry.npmmirror.com \
+	&& pnpm install --frozen-lockfile
 
 FROM base AS build
 WORKDIR /usr/src/app
+COPY --from=deps /root/.cache/node/corepack /root/.cache/node/corepack
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=deps /usr/src/app/packages/webgl-image/node_modules ./packages/webgl-image/node_modules
 COPY . .
@@ -19,7 +24,9 @@ RUN NODE_OPTIONS="--max-old-space-size=8192" pnpm run build
 RUN find ./.output -type f -name '*.map' -delete
 
 FROM node:22.22.3-alpine AS runtime_deps
-RUN apk add --no-cache ca-certificates perl exiftool \
+ARG APK_MIRROR="https://mirrors.aliyun.com/alpine"
+RUN sed -i "s#https://dl-cdn.alpinelinux.org/alpine#${APK_MIRROR}#g" /etc/apk/repositories \
+	&& apk add --no-cache ca-certificates perl exiftool \
 	&& install -Dm755 "$(readlink -f /usr/bin/perl)" /opt/runtime-bin/perl \
 	&& install -Dm755 "$(readlink -f /usr/bin/env)" /opt/runtime-bin/env \
 	&& install -Dm755 "$(readlink -f /usr/bin/exiftool)" /opt/runtime-bin/exiftool
@@ -45,6 +52,7 @@ VOLUME ["/app/data"]
 ENV NODE_ENV=production
 ENV NITRO_PORT=3000
 ENV NITRO_HOST=0.0.0.0
+ENV DATABASE_PROVIDER=sqlite
 ENV DATABASE_URL=./data/app.sqlite3
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt

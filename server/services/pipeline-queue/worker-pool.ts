@@ -258,6 +258,7 @@ export class WorkerPool {
         .select()
         .from(tables.pipelineQueue)
         .where(eq(tables.pipelineQueue.status, 'in-stages'))
+        .all()
 
       if (deadTasks.length > 0) {
         this.logger.warn(
@@ -273,6 +274,7 @@ export class WorkerPool {
             statusStage: null,
           })
           .where(eq(tables.pipelineQueue.status, 'in-stages'))
+          .run()
 
         this.logger.success(
           `Successfully reset ${deadTasks.length} dead tasks to pending status with priority 1`,

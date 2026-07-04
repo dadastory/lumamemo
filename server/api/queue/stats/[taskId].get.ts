@@ -1,7 +1,7 @@
 import z from 'zod'
 
 export default defineEventHandler(async (event) => {
-  await requireAdminSession(event)
+  const session = await requireActiveUserSession(event)
 
   try {
     const { taskId } = await getValidatedRouterParams(
@@ -27,8 +27,22 @@ export default defineEventHandler(async (event) => {
       })
     }
 
+    if (
+      !isAdminUser(session.user) &&
+      taskStats.payload?.ownerUserId !== session.user.id
+    ) {
+      throw createError({
+        statusCode: 403,
+        statusMessage: 'Cannot read another user task',
+      })
+    }
+
     return taskStats
   } catch (error) {
+    if ((error as any).statusCode) {
+      throw error
+    }
+
     throw createError({
       statusCode: 500,
       statusMessage:

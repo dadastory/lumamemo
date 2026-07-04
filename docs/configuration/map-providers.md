@@ -5,7 +5,7 @@ ChronoFrame supports two types of map providers. You can choose the one that bes
 | Provider              | Supported | Extra Configuration   | Features                                     |
 | --------------------- | :-------: | --------------------- | -------------------------------------------- |
 | [MapLibre](#maplibre) |    ✅     | MapTiler Access Token | Free and open-source, supports custom styles |
-| [Mapbox](#mapbox)     |    ✅     | Mapbox Access Token   | Free tier, better renderer performance       |
+| [Mapbox](#mapbox)     |    ✅     | Mapbox Access Token   | Default provider, Standard style, globe view |
 
 ## MapLibre
 
@@ -32,12 +32,13 @@ To use Mapbox as the map provider, you will need a [Mapbox Access Token](https:/
 ```bash
 NUXT_PUBLIC_MAP_PROVIDER=mapbox
 NUXT_PUBLIC_MAPBOX_ACCESS_TOKEN=your_mapbox_access_token
+NUXT_PUBLIC_MAP_MAPBOX_STYLE=mapbox://styles/mapbox/standard
 ```
 
 ### Custom Styles
 
 ```bash
 # If you configure a custom style, it will override the default styles.
-# Example: mapbox://styles/mapbox/streets-v11
-NUXT_PUBLIC_MAP_MAPBOX_STYLE=
+# Example: mapbox://styles/mapbox/streets-v12
+NUXT_PUBLIC_MAP_MAPBOX_STYLE=mapbox://styles/mapbox/standard
 ```

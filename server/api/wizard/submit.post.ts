@@ -2,6 +2,11 @@ import { z } from 'zod'
 import { settingsManager } from '~~/server/services/settings/settingsManager'
 import { storageConfigSchema } from '~~/shared/types/storage'
 import { useDB, tables, eq } from '~~/server/utils/db'
+import {
+  ensureUserPublicProfile,
+  prepareNewUserRecord,
+} from '~~/server/utils/users'
+import { getAuthCookieOptions } from '~~/server/utils/auth-cookie'
 
 export default eventHandler(async (event) => {
   await requireFirstLaunch(event)
@@ -24,11 +29,21 @@ export default eventHandler(async (event) => {
         name: z.string().min(1),
         config: storageConfigSchema,
       }),
-      map: z.object({
-        provider: z.enum(['mapbox', 'maplibre']),
-        token: z.string().min(1),
-        style: z.string().optional(),
-      }),
+      map: z
+        .object({
+          provider: z.enum(['mapbox', 'maplibre']),
+          token: z.string().optional().default(''),
+          style: z.string().optional(),
+        })
+        .superRefine((map, ctx) => {
+          if (map.provider === 'mapbox' && !map.token) {
+            ctx.addIssue({
+              code: 'custom',
+              path: ['token'],
+              message: 'Mapbox token is required',
+            })
+          }
+        }),
     }).parse,
   )
 
@@ -36,7 +51,7 @@ export default eventHandler(async (event) => {
 
   // 1. Handle Admin User
   let adminUser: typeof tables.users.$inferSelect | undefined
-  const existingUser = db.select().from(tables.users).limit(1).get()
+  const existingUser = await db.select().from(tables.users).limit(1).get()
   if (existingUser) {
     if (existingUser.email === body.admin.email) {
       await db
@@ -44,11 +59,20 @@ export default eventHandler(async (event) => {
         .set({
           password: await hashPassword(body.admin.password),
           username: body.admin.username,
+          displayName: body.site.author || body.admin.username,
+          profileTitle: body.site.title,
+          profileSlogan: body.site.slogan || null,
+          avatar: body.site.avatarUrl || null,
           isAdmin: 1,
+          role: 'admin',
         })
         .where(eq(tables.users.id, existingUser.id))
         .run()
-      adminUser = db.select().from(tables.users).where(eq(tables.users.id, existingUser.id)).get()
+      adminUser = await db
+        .select()
+        .from(tables.users)
+        .where(eq(tables.users.id, existingUser.id))
+        .get()
     } else {
       throw createError({
         statusCode: 400,
@@ -58,27 +82,33 @@ export default eventHandler(async (event) => {
   } else {
     await db
       .insert(tables.users)
-      .values({
-        email: body.admin.email,
-        username: body.admin.username,
-        password: await hashPassword(body.admin.password),
-        isAdmin: 1,
-        createdAt: new Date(),
-      })
+      .values(
+        await prepareNewUserRecord(db, {
+          email: body.admin.email,
+          username: body.admin.username,
+          displayName: body.site.author || body.admin.username,
+          profileTitle: body.site.title,
+          profileSlogan: body.site.slogan || null,
+          avatar: body.site.avatarUrl || null,
+          password: await hashPassword(body.admin.password),
+          isAdmin: 1,
+          role: 'admin',
+          createdAt: new Date(),
+        }),
+      )
       .run()
-    adminUser = db.select().from(tables.users).where(eq(tables.users.email, body.admin.email)).get()
+    adminUser = await db
+      .select()
+      .from(tables.users)
+      .where(eq(tables.users.email, body.admin.email))
+      .get()
   }
 
-  // 2. Handle Site Settings
-  await settingsManager.set('app', 'title', body.site.title)
-  if (body.site.slogan)
-    await settingsManager.set('app', 'slogan', body.site.slogan)
-  if (body.site.avatarUrl)
-    await settingsManager.set('app', 'avatarUrl', body.site.avatarUrl)
-  if (body.site.author)
-    await settingsManager.set('app', 'author', body.site.author)
+  if (adminUser) {
+    await ensureUserPublicProfile(db, adminUser)
+  }
 
-  // 3. Handle Storage Settings
+  // 2. Handle Storage Settings
   // Check if provider already exists to avoid duplicates if re-running?
   // For now, just add it.
   const id = await settingsManager.storage.addProvider({
@@ -88,29 +118,29 @@ export default eventHandler(async (event) => {
   })
   await settingsManager.set('storage', 'provider', id)
 
-  // 4. Handle Map Settings
+  // 3. Handle Map Settings
   await settingsManager.set('map', 'provider', body.map.provider)
   if (body.map.provider === 'mapbox') {
     await settingsManager.set('map', 'mapbox.token', body.map.token)
     if (body.map.style)
       await settingsManager.set('map', 'mapbox.style', body.map.style)
   } else {
-    await settingsManager.set('map', 'maplibre.token', body.map.token)
+    await settingsManager.set('map', 'maplibre.token', body.map.token || '')
     if (body.map.style)
       await settingsManager.set('map', 'maplibre.style', body.map.style)
   }
 
-  // 5. Mark Complete
+  // 4. Mark Complete
   await settingsManager.set('system', 'firstLaunch', false, undefined, true)
 
-  // 6. Auto-login the admin user
+  // 5. Auto-login the admin user
   if (adminUser) {
     await setUserSession(
       event,
       { user: sanitizeSessionUser(adminUser) },
       {
         cookie: {
-          secure: false,
+          ...getAuthCookieOptions(event),
         },
       },
     )

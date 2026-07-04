@@ -37,6 +37,7 @@ export default defineEventHandler(async (event) => {
       .select()
       .from(tables.pipelineQueue)
       .where(whereCondition)
+      .all()
 
     const failedTasks = tasksToRetry.filter((task) => task.status === 'failed')
 
@@ -66,6 +67,7 @@ export default defineEventHandler(async (event) => {
         createdAt: new Date(), // 更新创建时间以便重新调度
       })
       .where(inArray(tables.pipelineQueue.id, failedTaskIds))
+      .run()
 
     return {
       success: true,

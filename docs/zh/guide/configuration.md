@@ -14,7 +14,7 @@
 | NUXT_PUBLIC_APP_AUTHOR                   | 应用作者                                             | 无                                    | 否                                                                    |
 | NUXT_PUBLIC_APP_AVATAR_URL               | 应用头像 URL                                         | 无                                    | 否                                                                    |
 | NUXT_PUBLIC_COLOR_MODE_PREFERENCE        | 颜色模式偏好，可选 `light`、`dark`、`system`         | system                                | 否                                                                    |
-| NUXT_PUBLIC_MAP_PROVIDER                 | 地图提供者，可选 `mapbox`、`maplibre`                | `maplibre`                            | 否                                                                    |
+| NUXT_PUBLIC_MAP_PROVIDER                 | 地图提供者，可选 `mapbox`、`maplibre`                | `mapbox`                              | 否                                                                    |
 | NUXT_PUBLIC_MAPBOX_ACCESS_TOKEN          | Mapbox 访问令牌(可限制 URL)，用于地图服务            | 无                                    | 当 `NUXT_PUBLIC_MAP_PROVIDER` 为 `mapbox` 时必需                      |
 | NUXT_NOMINATIM_BASE_URL                  | Nominatim 反向地理编码服务的基础 URL                 | `https://nominatim.openstreetmap.org` | 否                                                                    |
 | NUXT_MAPBOX_ACCESS_TOKEN                 | Mapbox 访问令牌(无 URL 限制)，用于位置信息服务       | 无                                    | 否                                                                    |

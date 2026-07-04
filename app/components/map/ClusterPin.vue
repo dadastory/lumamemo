@@ -219,13 +219,13 @@ const sizeDelta = computed(() => {
                         clusteredPhotos.length &&
                         clusteredPhotos.some((p) => p.city)
                       "
-                      class="flex items-center gap-1 text-xs text-neutral-600 dark:text-muted font-medium mt-2"
+                      class="flex min-w-0 items-center gap-1 text-xs text-neutral-600 dark:text-muted font-medium mt-2"
                     >
                       <Icon
                         name="tabler:map-pin"
-                        class="size-4"
+                        class="size-4 shrink-0"
                       />
-                      <span class="truncate">
+                      <span class="min-w-0 flex-1 truncate">
                         {{
                           clusteredPhotos
                             .map((p) => p.city)
@@ -240,13 +240,13 @@ const sizeDelta = computed(() => {
                         clusteredPhotos.length &&
                         clusteredPhotos.some((p) => p.dateTaken)
                       "
-                      class="flex items-center gap-1 text-xs text-neutral-600 dark:text-muted font-medium mt-2"
+                      class="flex min-w-0 items-center gap-1 text-xs text-neutral-600 dark:text-muted font-medium mt-2"
                     >
                       <Icon
                         name="tabler:calendar-week"
-                        class="size-4"
+                        class="size-4 shrink-0"
                       />
-                      <span class="truncate">
+                      <span class="min-w-0 flex-1 truncate">
                         {{
                           (() => {
                             const dates = clusteredPhotos

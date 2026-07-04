@@ -19,6 +19,7 @@ interface Props {
   photos: Photo[]
   currentIndex: number
   isOpen: boolean
+  globeRoute?: string | null
 }
 
 const props = defineProps<Props>()
@@ -974,6 +975,7 @@ const swiperModules = [Navigation, Keyboard, Virtual]
               v-if="showExifPanel && currentPhoto"
               :current-photo="currentPhoto"
               :exif-data="currentPhoto?.exif"
+              :globe-route="globeRoute"
               :on-close="() => (showExifPanel = false)"
             />
           </AnimatePresence>
@@ -981,6 +983,7 @@ const swiperModules = [Navigation, Keyboard, Virtual]
             v-else-if="currentPhoto"
             :current-photo="currentPhoto"
             :exif-data="currentPhoto?.exif"
+            :globe-route="globeRoute"
           />
         </div>
       </motion.div>

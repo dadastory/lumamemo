@@ -34,16 +34,17 @@ const containerHeight = ref(0)
 // 批处理队列
 const batchQueue = ref<LogEntry[]>([])
 const isBatchProcessing = ref(false)
-const MAX_LOG_LINES = 6000
-const TRIM_TO_LOG_LINES = 4000
-const BATCH_SIZE = 100 // 每批处理的日志条数
+const MAX_LOG_LINES = 3000
+const TRIM_TO_LOG_LINES = 2000
+const BATCH_SIZE = 200 // 每批处理的日志条数
 const BATCH_DELAY = 8 // 每批处理间隔（毫秒）
-const INITIAL_LOG_LINES = 'all'
+const INITIAL_LOG_LINES = 500
 const ROW_HEIGHT = 28
 const VIRTUAL_OVERSCAN = 20
 const VIRTUAL_BOTTOM_PADDING = 8
 
 let resizeObserver: ResizeObserver | null = null
+let initialSettleTimer: ReturnType<typeof setTimeout> | null = null
 
 const logLevels = ['error', 'warn', 'info', 'success', 'debug']
 
@@ -106,7 +107,14 @@ const processBatch = async () => {
 
   isBatchProcessing.value = false
 
-  // 注意：初始加载完成现在由消息超时检测控制，不在这里处理
+  if (isInitialLoading.value) {
+    isInitialLoading.value = false
+    loadingProgress.value = 100
+    connectionState.value = 'live'
+    if (autoScroll.value) {
+      await scrollToBottom()
+    }
+  }
 }
 
 // 解析日志行
@@ -296,19 +304,8 @@ const getConnectionStatusColor = ():
 }
 
 // 高亮搜索结果
-const highlightSearch = (content: string) => {
-  if (!normalizedSearchQuery.value) return content
-
-  const query = normalizedSearchQuery.value.replace(
-    /[.*+?^${}()|[\]\\]/g,
-    '\\$&',
-  ) // 转义特殊字符
-  const regex = new RegExp(`(${query})`, 'gi')
-  return content.replace(
-    regex,
-    '<mark class="bg-yellow-300 dark:bg-yellow-700 text-black dark:text-white rounded">$1</mark>',
-  )
-}
+const highlightSearch = (content: string) =>
+  highlightLogSearch(content, normalizedSearchQuery.value)
 
 // 切换自动滚动
 const toggleAutoScroll = () => {
@@ -365,12 +362,23 @@ const connectLogStream = () => {
   connectionState.value = 'connecting'
   eventSource = new EventSource(`/api/system/logs?initial=${INITIAL_LOG_LINES}`)
 
-  let initialLoadCompleteTimer: NodeJS.Timeout | null = null
-  const MESSAGE_TIMEOUT = 2000 // 消息间隔超时时间（毫秒）
-
   eventSource.onopen = () => {
     isConnected.value = true
     connectionState.value = 'loadingHistory'
+    if (initialSettleTimer) {
+      clearTimeout(initialSettleTimer)
+    }
+    initialSettleTimer = setTimeout(() => {
+      if (
+        isInitialLoading.value &&
+        logs.value.length === 0 &&
+        batchQueue.value.length === 0
+      ) {
+        isInitialLoading.value = false
+        loadingProgress.value = 100
+        connectionState.value = 'live'
+      }
+    }, 800)
   }
 
   eventSource.onmessage = (event) => {
@@ -378,39 +386,14 @@ const connectLogStream = () => {
     if (logLine && logLine.trim()) {
       const logEntry = parseLogLine(logLine)
       if (logEntry) {
-        // 清除之前的定时器
-        if (initialLoadCompleteTimer) {
-          clearTimeout(initialLoadCompleteTimer)
-          initialLoadCompleteTimer = null
-        }
-
-        if (isInitialLoading.value) {
-          addLogEntry(logEntry)
-          loadingProgress.value = Math.min(90, loadingProgress.value + 0.2)
-
-          // 设置新的定时器，如果在指定时间内没有新消息，认为初始加载完成
-          initialLoadCompleteTimer = setTimeout(() => {
-            if (isInitialLoading.value) {
-              connectionState.value = 'live'
-              // 让加载指示器显示完成状态后再隐藏
-              setTimeout(() => {
-                isInitialLoading.value = false
-                loadingProgress.value = 100
-                autoScroll.value = true
-                scrollToBottom()
-              }, 500)
-            }
-          }, MESSAGE_TIMEOUT)
-        } else {
-          // 实时日志直接添加
-          addLogEntry(logEntry)
-        }
+        addLogEntry(logEntry)
       }
     }
   }
 
   eventSource.onerror = (error) => {
     isConnected.value = false
+    isInitialLoading.value = false
     connectionState.value = 'error'
     console.error('EventSource error:', error)
   }
@@ -444,6 +427,10 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  if (initialSettleTimer) {
+    clearTimeout(initialSettleTimer)
+    initialSettleTimer = null
+  }
   if (eventSource) {
     eventSource.close()
   }
@@ -555,25 +542,30 @@ onUnmounted(() => {
               :clearable="false"
             />
             <!-- Auto scroll -->
-            <UButton
-              icon="tabler:arrow-bar-to-down"
-              color="neutral"
-              size="sm"
-              :variant="autoScroll ? 'outline' : 'soft'"
-              class="ms-auto sm:ms-0"
-              @click="toggleAutoScroll"
-            />
-            <!-- Download raw log -->
-            <!-- TODO: Download raw log file -->
-            <!-- <UButton 
-            as="a"
-            target="_blank"
-            rel="noopener"
-            icon="tabler:download"
-            color="neutral"
-            size="sm"
-            variant="soft"
-          /> -->
+            <UTooltip :text="$t('dashboard.logs.actions.autoScroll')">
+              <UButton
+                icon="tabler:chevrons-down"
+                color="neutral"
+                size="sm"
+                :variant="autoScroll ? 'outline' : 'soft'"
+                class="ms-auto sm:ms-0"
+                :aria-label="$t('dashboard.logs.actions.autoScroll')"
+                @click="toggleAutoScroll"
+              />
+            </UTooltip>
+            <UTooltip :text="$t('dashboard.logs.actions.downloadRaw')">
+              <UButton
+                as="a"
+                href="/api/system/logs/download"
+                target="_blank"
+                rel="noopener"
+                icon="tabler:download"
+                color="neutral"
+                size="sm"
+                variant="soft"
+                :aria-label="$t('dashboard.logs.actions.downloadRaw')"
+              />
+            </UTooltip>
           </div>
         </div>
         <!-- 加载进度指示器 -->
