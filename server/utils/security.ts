@@ -103,6 +103,34 @@ export const sanitizeSessionUser = (user: AnyRecord | null | undefined) => {
 const encodeStorageKeyPath = (key: string | null | undefined) =>
   key ? `/image/${key.split('/').map(encodeURIComponent).join('/')}` : null
 
+const normalizePhotoImageVariants = (
+  variants: AnyRecord | null | undefined,
+  options: { includeKeys: boolean },
+) => {
+  if (!variants || typeof variants !== 'object') return null
+
+  const normalized: AnyRecord = {}
+  for (const name of ['thumb', 'card', 'view']) {
+    const variant = variants[name]
+    if (!variant || typeof variant !== 'object') continue
+
+    const key = typeof variant.key === 'string' ? variant.key : null
+    const url = encodeStorageKeyPath(key) ?? variant.url
+    if (!url) continue
+
+    normalized[name] = {
+      ...(options.includeKeys && key ? { key } : {}),
+      url,
+      width: variant.width,
+      height: variant.height,
+      size: variant.size,
+      format: variant.format || 'webp',
+    }
+  }
+
+  return Object.keys(normalized).length > 0 ? normalized : null
+}
+
 const serializeOwner = (record: AnyRecord) => {
   const id = record.ownerId ?? record.ownerUserId
   const username = record.ownerUsername ?? record.owner?.username
@@ -128,6 +156,9 @@ export const serializePublicPhoto = (photo: AnyRecord) => ({
   originalUrl: encodeStorageKeyPath(photo.storageKey) ?? photo.originalUrl,
   thumbnailUrl: encodeStorageKeyPath(photo.thumbnailKey) ?? photo.thumbnailUrl,
   thumbnailHash: photo.thumbnailHash,
+  imageVariants: normalizePhotoImageVariants(photo.imageVariants, {
+    includeKeys: false,
+  }),
   tags: photo.tags,
   exif: serializePublicExif(photo.exif),
   latitude: photo.latitude,
@@ -145,6 +176,9 @@ export const serializeAdminPhoto = (photo: AnyRecord) => ({
   ...photo,
   originalUrl: encodeStorageKeyPath(photo.storageKey) ?? photo.originalUrl,
   thumbnailUrl: encodeStorageKeyPath(photo.thumbnailKey) ?? photo.thumbnailUrl,
+  imageVariants: normalizePhotoImageVariants(photo.imageVariants, {
+    includeKeys: true,
+  }),
   livePhotoVideoUrl:
     encodeStorageKeyPath(photo.livePhotoVideoKey) ?? photo.livePhotoVideoUrl,
   owner: serializeOwner(photo),
@@ -402,15 +436,21 @@ export async function getPhotoByStorageKey(key: string) {
   const { useDB, tables } = await import('./db')
   const db = useDB()
   const photos = await db.select().from(tables.photos).all()
-  return photos.find(
-    (photo: AnyRecord) =>
+  return photos.find((photo: AnyRecord) => {
+    const variantKeys = Object.values(photo.imageVariants || {})
+      .map((variant: any) => variant?.key)
+      .filter(Boolean)
+
+    return (
       photo.storageKey === key ||
       photo.thumbnailKey === key ||
       photo.livePhotoVideoKey === key ||
+      variantKeys.includes(key) ||
       storagePathMatches(photo.originalUrl, key) ||
       storagePathMatches(photo.thumbnailUrl, key) ||
-      storagePathMatches(photo.livePhotoVideoUrl, key),
-  )
+      storagePathMatches(photo.livePhotoVideoUrl, key)
+    )
+  })
 }
 
 export async function getVisiblePhotoByStorageKey(key: string) {
@@ -463,10 +503,59 @@ export async function authorizePhotoStorageKey(event: any, key: string) {
   if (isAdminUser(session.user)) return
 
   const photo = await getPhotoByStorageKey(key)
+  const normalizedKey = normalizeStorageKey(key)
+  const isOriginalKey = Boolean(
+    photo &&
+    normalizedKey &&
+    (photo.storageKey === normalizedKey ||
+      storagePathMatches(photo.originalUrl, normalizedKey)),
+  )
+
+  if (isOriginalKey && photo) {
+    if (
+      session.user &&
+      (canManageOwnedResource(session.user, photo.ownerUserId) ||
+        isPhotoPublic(photo))
+    ) {
+      return
+    }
+
+    throw createError({
+      statusCode: 404,
+      statusMessage: 'Photo not found',
+    })
+  }
+
   if (
     photo &&
     (isPhotoPublic(photo) ||
       canManageOwnedResource(session.user, photo.ownerUserId))
+  ) {
+    return
+  }
+
+  throw createError({
+    statusCode: 404,
+    statusMessage: 'Photo not found',
+  })
+}
+
+export async function authorizeOriginalPhotoDownload(
+  event: any,
+  photo: AnyRecord,
+) {
+  const session = await getSafeUserSession(event)
+  if (!session.user || isDisabledUser(session.user)) {
+    throw createError({
+      statusCode: 401,
+      statusMessage: 'Login required',
+    })
+  }
+
+  if (
+    isAdminUser(session.user) ||
+    canManageOwnedResource(session.user, photo.ownerUserId) ||
+    isPhotoPublic(photo)
   ) {
     return
   }

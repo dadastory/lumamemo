@@ -31,7 +31,10 @@ describe('database adapter config', () => {
   })
 
   it('keeps SQLite migrations in sync with user profile columns', () => {
-    const migrationDir = new URL('../server/database/migrations/', import.meta.url)
+    const migrationDir = new URL(
+      '../server/database/migrations/',
+      import.meta.url,
+    )
     const sqliteMigrations = readdirSync(migrationDir)
       .filter((file) => /^\d+_.+\.sql$/.test(file))
       .sort()
@@ -54,5 +57,27 @@ describe('database adapter config', () => {
     }
 
     assert.match(sqliteMigrations, /users_public_id_unique/)
+  })
+
+  it('registers the image variants SQLite migration in the Drizzle journal', () => {
+    const migrationDir = new URL(
+      '../server/database/migrations/',
+      import.meta.url,
+    )
+    const migration = readFileSync(
+      new URL('0014_photo_image_variants.sql', migrationDir),
+      'utf8',
+    )
+    const journal = JSON.parse(
+      readFileSync(new URL('meta/_journal.json', migrationDir), 'utf8'),
+    )
+
+    assert.match(migration, /ADD `image_variants` text/)
+    assert.equal(
+      journal.entries.some(
+        (entry) => entry.tag === '0014_photo_image_variants',
+      ),
+      true,
+    )
   })
 })

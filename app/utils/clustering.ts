@@ -1,4 +1,5 @@
 import type { PhotoMarker, ClusterPoint } from '~~/shared/types/map'
+import { getPhotoVariantUrl } from './photo-image-variants'
 
 /**
  * Simple clustering algorithm for small datasets
@@ -101,7 +102,7 @@ export function photosToMarkers(photos: Photo[]): PhotoMarker[] {
       latitude: photo.latitude!,
       longitude: photo.longitude!,
       title: photo.title || undefined,
-      thumbnailUrl: photo.thumbnailUrl || undefined,
+      thumbnailUrl: getPhotoVariantUrl(photo, 'thumb') || undefined,
       thumbnailHash: photo.thumbnailHash || undefined,
       dateTaken: photo.dateTaken || undefined,
       city: photo.city || undefined,

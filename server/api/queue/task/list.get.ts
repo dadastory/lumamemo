@@ -19,6 +19,7 @@ export default defineEventHandler(async (event) => {
             'photo',
             'live-photo-video',
             'photo-reverse-geocoding',
+            'photo-variants',
             'photo-erase-location',
           ])
           .optional(),
@@ -53,9 +54,8 @@ export default defineEventHandler(async (event) => {
       .from(tables.pipelineQueue)
       .orderBy(desc(tables.pipelineQueue.createdAt))
 
-    const tasks = await (whereCondition
-      ? queryBuilder.where(whereCondition)
-      : queryBuilder
+    const tasks = await (
+      whereCondition ? queryBuilder.where(whereCondition) : queryBuilder
     ).all()
 
     return {

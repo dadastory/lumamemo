@@ -13,6 +13,7 @@ const emit = defineEmits<{
 
 const toast = useToast()
 const { gtag } = useGtag()
+const { loggedIn } = useUserSession()
 
 const shareUrl = computed(() => {
   if (typeof window !== 'undefined') {
@@ -40,7 +41,7 @@ const ogImageUrl = computed(() => {
   if (typeof window !== 'undefined') {
     // Add timestamp to prevent caching issues
     const timestamp = Date.now()
-    return `${window.location.origin}/__og-image__/image/${props.photo.id}/og.png?t=${timestamp}`
+    return `${window.location.origin}/api/photos/${props.photo.id}/share-preview?t=${timestamp}`
   }
   return ''
 })
@@ -236,6 +237,15 @@ const nativeShare = async () => {
 const downloadOgImage = async () => {
   try {
     const response = await fetch(ogImageUrl.value)
+    if (!response.ok) {
+      throw new Error(response.statusText || $t('common.unknownError'))
+    }
+
+    const contentType = response.headers.get('content-type') || ''
+    if (!contentType.startsWith('image/')) {
+      throw new Error($t('ui.action.share.error.ogImageDownloadFailed'))
+    }
+
     const blob = await response.blob()
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -255,44 +265,6 @@ const downloadOgImage = async () => {
   } catch (error) {
     toast.add({
       title: $t('ui.action.share.error.ogImageDownloadFailed'),
-      description: (error as Error)?.message || $t('common.unknownError'),
-      color: 'error',
-      icon: 'tabler:x',
-      duration: 3000,
-    })
-  }
-}
-
-const downloadOriginalImage = async () => {
-  try {
-    const response = await fetch(props.photo.originalUrl!)
-    const blob = await response.blob()
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    const extension = props.photo.originalUrl!.split('.').pop() || 'jpg'
-    link.download = `${props.photo.title || 'photo'}.${extension}`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    window.URL.revokeObjectURL(url)
-
-    // Track download event in Google Analytics
-    gtag('event', 'photo_download', {
-      photo_id: props.photo.id,
-      photo_title: props.photo.title || 'Untitled',
-      download_type: 'original',
-    })
-
-    toast.add({
-      title: $t('ui.action.share.success.originalImageDownloaded'),
-      color: 'success',
-      icon: 'tabler:download',
-      duration: 3000,
-    })
-  } catch (error) {
-    toast.add({
-      title: $t('ui.action.share.error.originalImageDownloadFailed'),
       description: (error as Error)?.message || $t('common.unknownError'),
       color: 'error',
       icon: 'tabler:x',
@@ -416,8 +388,8 @@ defineShortcuts({
           >
             <!-- Native Share (Mobile) -->
             <div
-              v-if="canNativeShare"
-              class="mb-4 flex items-center gap-2"
+              v-if="canNativeShare && loggedIn"
+              class="mb-4"
             >
               <UButton
                 block
@@ -428,16 +400,6 @@ defineShortcuts({
                 @click="nativeShare"
               >
                 {{ $t('ui.action.share.actions.nativeShare') }}
-              </UButton>
-              <UButton
-                block
-                size="lg"
-                color="info"
-                variant="soft"
-                icon="tabler:download"
-                @click="downloadOriginalImage"
-              >
-                {{ $t('ui.action.share.actions.downloadOriginalImage') }}
               </UButton>
             </div>
 
@@ -482,6 +444,7 @@ defineShortcuts({
                     variant="ghost"
                     color="neutral"
                     icon="tabler:download"
+                    :disabled="ogImageLoading || ogImageError"
                     @click="downloadOgImage"
                   >
                     {{ $t('ui.action.share.actions.downloadOgImage') }}
@@ -529,7 +492,7 @@ defineShortcuts({
                   <!-- OG Image -->
                   <img
                     v-show="!ogImageLoading && !ogImageError"
-                    :key="`og-image-${props.photo.id}-${Date.now()}`"
+                    :key="ogImageUrl"
                     :src="ogImageUrl"
                     :alt="$t('ui.action.share.ogImage.alt')"
                     class="w-full h-auto aspect-2/1 object-cover rounded"

@@ -79,8 +79,7 @@
           "generateShareImage": "共有画像を生成",
           "shareUrl": "共有URL",
           "downloadOgImage": "プレビューをダウンロード",
-          "downloadOriginal": "オリジナルをダウンロード",
-          "downloadOriginalImage": "オリジナル画像をダウンロード"
+          "downloadOriginal": "オリジナルをダウンロード"
         },
         "success": {
           "linkCopied": "リンクをクリップボードにコピーしました",
@@ -551,6 +550,7 @@
           "lastModified": "最終更新",
           "fileSize": "ファイルサイズ",
           "colorSpace": "カラースペース",
+          "imageVariants": "画像バリアント",
           "reactions": "リアクション",
           "actions": "操作"
         },
@@ -572,7 +572,8 @@
         "thumbnailAlt": "写真サムネイル"
       },
       "actions": {
-        "reprocess": "再処理",
+        "reprocess": "写真を再処理",
+        "rebuildVariants": "画像バリアントを再生成",
         "refreshLocation": "都市情報を再取得",
         "eraseLocationInfo": "位置情報を抹消",
         "delete": "削除",
@@ -582,6 +583,7 @@
       "selection": {
         "selected": "{count} / {total}行選択済み",
         "batchReprocess": "一括再処理",
+        "batchRebuildVariants": "バリアント再生成",
         "batchEraseLocation": "位置情報を抹消",
         "batchDownload": "一括ダウンロード",
         "batchDelete": "一括削除"
@@ -642,7 +644,9 @@
         "uploadSuccess": "写真が正常にアップロードされました。処理中です...",
         "uploadMultipleSuccess": "{count}枚の写真が正常にアップロードされました。処理中です...",
         "reprocessSuccess": "再処理タスクが追加されました",
+        "rebuildVariantsSuccess": "画像バリアント再生成タスクが追加されました",
         "batchReprocessSuccess": "{count}枚の写真の再処理タスクをキューに正常に送信しました",
+        "batchRebuildVariantsSuccess": "{count}枚の写真を画像バリアント再生成キューに送信しました",
         "batchReprocessing": "再処理タスクを送信しています...",
         "reprocessTaskId": "タスク ID：{taskId}",
         "deleteSuccess": "写真が正常に削除されました",
@@ -665,7 +669,9 @@
         "deleteFailed": "写真の削除に失敗しました",
         "batchDeleteFailed": "一括削除に失敗しました",
         "batchReprocessFailed": "一括再処理に失敗しました",
+        "batchRebuildVariantsFailed": "画像バリアントの一括再生成に失敗しました",
         "reprocessFailed": "写真の再処理に失敗しました",
+        "rebuildVariantsFailed": "画像バリアントの再生成に失敗しました",
         "livePhotoNotFound": "ライブフォトではありません",
         "livePhotoLoadError": "ライブフォト情報を読み込めません",
         "metadataUpdateSuccess": "写真のメタデータを更新しました",
@@ -708,6 +714,11 @@
         "error": "エラー",
         "skipped": "スキップ",
         "blocked": "ブロック済み"
+      },
+      "imageVariants": {
+        "complete": "完了",
+        "missing": "未生成",
+        "partial": "{count}/{total}"
       },
       "uploadQueue": {
         "clearCompleted": "完了したタスクをクリア",
@@ -754,6 +765,7 @@
           "preprocessing": "前処理中",
           "metadata": "メタデータ抽出",
           "thumbnail": "サムネイル生成",
+          "variants": "画像バリアント生成",
           "exif": "EXIF 処理",
           "reverseGeocoding": "逆ジオコーディング",
           "livePhoto": "Live Photo 検出"
@@ -968,12 +980,14 @@
         "photo": "写真処理",
         "live-photo-video": "LivePhoto動画",
         "photo-reverse-geocoding": "写真の逆ジオコーディング",
+        "photo-variants": "写真バリアント生成",
         "photo-erase-location": "写真位置情報の抹消"
       },
       "stages": {
         "preprocessing": "前処理",
         "metadata": "メタデータ",
         "thumbnail": "サムネイル",
+        "variants": "画像バリアント",
         "exif": "EXIF処理",
         "motion-photo": "モーションフォト処理",
         "reverse-geocoding": "地理解析",
@@ -1736,6 +1750,9 @@
   },
   "photo": {
     "owner": "アップロード者",
+    "viewer": {
+      "downloadOriginal": "元画像をダウンロード"
+    },
     "image": {
       "loadError": "画像の読み込み失敗"
     }

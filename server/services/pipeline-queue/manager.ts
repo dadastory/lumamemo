@@ -14,7 +14,7 @@ import {
   preprocessImageWithJpegUpload,
   processImageMetadataAndSharp,
 } from '../image/processor'
-import { generateThumbnailAndHash } from '../image/thumbnail'
+import { generateImageVariantsAndHash } from '../image/variants'
 import { extractExifData, extractPhotoInfo } from '../image/exif'
 import {
   extractLocationFromGPS,
@@ -323,27 +323,23 @@ export class QueueManager {
 
           const { imageBuffer, metadata } = processedData
 
-          // STEP 3: 生成缩略图
-          await this.updateTaskStage(taskId, 'thumbnail')
-          this.logger.info(`[${taskId}:in-stage] thumbnail generation`)
-          const { thumbnailBuffer, thumbnailHash } =
-            await generateThumbnailAndHash(imageBuffer, this.logger)
+          const ownerUserId = Number(payload.ownerUserId)
+          if (!Number.isSafeInteger(ownerUserId) || ownerUserId <= 0) {
+            throw new Error('Photo task is missing a resolved owner')
+          }
 
-          // 上传缩略图到存储服务
-          const thumbnailObject = await new Promise<any>((resolve, reject) => {
-            setImmediate(async () => {
-              try {
-                const result = await storageProvider.create(
-                  `thumbnails/${photoId}.webp`,
-                  thumbnailBuffer,
-                  'image/webp',
-                )
-                resolve(result)
-              } catch (error) {
-                reject(error)
-              }
+          // STEP 3: 生成多尺寸派生图
+          await this.updateTaskStage(taskId, 'variants')
+          this.logger.info(`[${taskId}:in-stage] image variants generation`)
+          const { imageVariants, thumbnailHash } =
+            await generateImageVariantsAndHash({
+              buffer: imageBuffer,
+              photoId,
+              ownerUserId,
+              storageProvider,
+              logger: this.logger,
             })
-          })
+          const thumbnailVariant = imageVariants.card || imageVariants.thumb
 
           // STEP 4: 提取 EXIF 数据
           await this.updateTaskStage(taskId, 'exif')
@@ -431,11 +427,6 @@ export class QueueManager {
             }
           }
 
-          const ownerUserId = Number(payload.ownerUserId)
-          if (!Number.isSafeInteger(ownerUserId) || ownerUserId <= 0) {
-            throw new Error('Photo task is missing a resolved owner')
-          }
-
           const db = useDB()
           const existingPhoto = await db
             .select({ ownerUserId: tables.photos.ownerUserId })
@@ -468,7 +459,7 @@ export class QueueManager {
             height: metadata.height,
             aspectRatio: metadata.width / metadata.height,
             storageKey: storageKey,
-            thumbnailKey: thumbnailObject.key,
+            thumbnailKey: thumbnailVariant?.key || null,
             fileSize: storageObject.size || null,
             lastModified:
               storageObject.lastModified?.toISOString() ||
@@ -476,10 +467,11 @@ export class QueueManager {
             originalUrl: imageBuffers.jpegKey
               ? storageProvider.getPublicUrl(imageBuffers.jpegKey) // 使用 JPEG 版本作为 originalUrl
               : storageProvider.getPublicUrl(storageKey),
-            thumbnailUrl: storageProvider.getPublicUrl(thumbnailObject.key),
+            thumbnailUrl: thumbnailVariant?.url || null,
             thumbnailHash: thumbnailHash
               ? compressUint8Array(thumbnailHash)
               : null,
+            imageVariants,
             exif: normalizedExifData,
             // 地理位置信息
             latitude: coordinates?.latitude || null,
@@ -537,6 +529,93 @@ export class QueueManager {
           return result
         } catch (error) {
           this.logger.error(`Task ${taskId} processing failed`, error)
+          throw error
+        }
+      },
+      photoVariants: async (task: PipelineQueueItem) => {
+        const db = useDB()
+        const { id: taskId, payload } = task
+        const storageProvider = getStorageManager().getProvider()
+
+        if (payload.type !== 'photo-variants') {
+          throw new Error(
+            `Invalid payload type for photo variants task: ${payload.type}`,
+          )
+        }
+
+        const photo = await db
+          .select()
+          .from(tables.photos)
+          .where(eq(tables.photos.id, payload.photoId))
+          .get()
+
+        if (!photo?.storageKey) {
+          throw new Error(
+            `Photo ${payload.photoId} has no original storage key`,
+          )
+        }
+
+        const ownerUserId = Number(photo.ownerUserId)
+        if (!Number.isSafeInteger(ownerUserId) || ownerUserId <= 0) {
+          throw new Error(`Photo ${payload.photoId} is missing an owner`)
+        }
+
+        try {
+          await this.updateTaskStage(taskId, 'variants')
+          this.logger.info(
+            `[${taskId}:in-stage] rebuilding image variants for ${payload.photoId}`,
+          )
+
+          const imageBuffers = await preprocessImageWithJpegUpload(
+            photo.storageKey,
+          )
+          if (!imageBuffers) {
+            throw new Error('Preprocessing failed')
+          }
+
+          const processedData = await processImageMetadataAndSharp(
+            imageBuffers.processed,
+            photo.storageKey,
+          )
+          if (!processedData) {
+            throw new Error('Metadata processing failed')
+          }
+
+          const { imageVariants, thumbnailHash } =
+            await generateImageVariantsAndHash({
+              buffer: processedData.imageBuffer,
+              photoId: photo.id,
+              ownerUserId,
+              storageProvider,
+              logger: this.logger,
+            })
+          const thumbnailVariant = imageVariants.card || imageVariants.thumb
+
+          await db
+            .update(tables.photos)
+            .set({
+              width: processedData.metadata.width,
+              height: processedData.metadata.height,
+              aspectRatio:
+                processedData.metadata.width / processedData.metadata.height,
+              thumbnailKey: thumbnailVariant?.key || photo.thumbnailKey,
+              thumbnailUrl: thumbnailVariant?.url || photo.thumbnailUrl,
+              thumbnailHash: thumbnailHash
+                ? compressUint8Array(thumbnailHash)
+                : photo.thumbnailHash,
+              imageVariants,
+            })
+            .where(eq(tables.photos.id, photo.id))
+            .run()
+
+          this.logger.success(
+            `Image variants task ${taskId} processed successfully for ${photo.id}`,
+          )
+        } catch (error) {
+          this.logger.error(
+            `Image variants task ${taskId} processing failed`,
+            error,
+          )
           throw error
         }
       },
@@ -865,6 +944,9 @@ export class QueueManager {
             break
           case 'photo':
             await this.processors.photo(task)
+            break
+          case 'photo-variants':
+            await this.processors.photoVariants(task)
             break
           case 'photo-reverse-geocoding':
             await this.processors.reverseGeocoding(task)

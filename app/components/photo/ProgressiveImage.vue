@@ -76,7 +76,20 @@ const showWebGLViewer = computed(() => {
     highResLoaded.value &&
     currentSrc.value &&
     props.isCurrentImage &&
-    !hasError.value
+    !hasError.value &&
+    !isAnimatedSource.value
+  )
+})
+
+const isAnimatedSource = computed(() => isAnimatedImageUrl(props.src))
+
+const showNativeAnimatedImage = computed(() => {
+  return (
+    highResLoaded.value &&
+    currentSrc.value &&
+    props.isCurrentImage &&
+    !hasError.value &&
+    isAnimatedSource.value
   )
 })
 
@@ -147,6 +160,15 @@ loadImage()
 
 const handleWebGLStateChange = useWebGLWorkState(props.loadingIndicatorRef)
 
+const handleNativeImageLoad = () => {
+  highResRendered.value = true
+}
+
+const handleNativeImageError = () => {
+  hasError.value = true
+  props.onError?.()
+}
+
 // 处理缩放状态变化
 const handleZoomChange = (originalScale: number, relativeScale: number) => {
   const isZoomed = relativeScale > 1.1 // 认为缩放超过 1.1 倍算作缩放状态
@@ -183,6 +205,16 @@ onUnmounted(() => {
       class="absolute inset-0 w-full h-full object-contain"
       thumbhash-class="opacity-50"
       image-contain
+    />
+
+    <img
+      v-if="showNativeAnimatedImage"
+      :src="currentSrc!"
+      :alt="alt || $t('ui.photo.altFallback')"
+      :class="className"
+      class="w-full h-full object-contain"
+      @load="handleNativeImageLoad"
+      @error="handleNativeImageError"
     />
 
     <!-- WebGL 图片查看器 -->

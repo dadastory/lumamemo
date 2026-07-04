@@ -25,6 +25,7 @@ const columnNameMap = computed<Record<string, string>>(() => ({
   lastModified: $t('dashboard.photos.table.columns.lastModified'),
   fileSize: $t('dashboard.photos.table.columns.fileSize'),
   colorSpace: $t('dashboard.photos.table.columns.colorSpace'),
+  imageVariants: $t('dashboard.photos.table.columns.imageVariants'),
   reactions: $t('dashboard.photos.table.columns.reactions'),
   actions: $t('dashboard.photos.table.columns.actions'),
 }))
@@ -571,6 +572,7 @@ const columnVisibility = ref({
   lastModified: true,
   fileSize: true,
   colorSpace: true,
+  imageVariants: true,
   reactions: true,
 })
 
@@ -593,6 +595,28 @@ const livePhotoStats = computed(() => {
 
   return { total, livePhotos, staticPhotos }
 })
+
+const PHOTO_VARIANT_DEFINITIONS = [
+  { key: 'thumb', label: '320' },
+  { key: 'card', label: '960' },
+  { key: 'view', label: '2048' },
+] as const
+
+const getImageVariantStatus = (photo: Photo) => {
+  const items = PHOTO_VARIANT_DEFINITIONS.map((definition) => ({
+    ...definition,
+    generated: Boolean(photo.imageVariants?.[definition.key]),
+  }))
+  const generatedCount = items.filter((item) => item.generated).length
+
+  return {
+    items,
+    generatedCount,
+    totalCount: items.length,
+    isComplete: generatedCount === items.length,
+    isMissing: generatedCount === 0,
+  }
+}
 
 const photoFilter = ref<'all' | 'livephoto' | 'static'>('all')
 
@@ -821,9 +845,11 @@ const columns = computed<TableColumn<Photo>[]>(() => [
     accessorKey: 'thumbnailUrl',
     header: $t('dashboard.photos.table.columns.thumbnail.title'),
     cell: ({ row }) => {
-      const url = row.original.thumbnailUrl
+      const url = getPhotoVariantUrl(row.original, 'thumb')
       return h(ThumbImage, {
-        src: url || row.original.originalUrl || '',
+        src: url,
+        srcset: getPhotoVariantSrcset(row.original),
+        sizes: '64px',
         alt: row.original.title || $t('dashboard.photos.table.thumbnailAlt'),
         key: row.original.id,
         thumbhash: row.original.thumbnailHash || '',
@@ -1019,6 +1045,47 @@ const columns = computed<TableColumn<Photo>[]>(() => [
     id: 'colorSpace',
     accessorFn: (row) => row.exif?.ColorSpace,
     header: $t('dashboard.photos.table.columns.colorSpace'),
+  },
+  {
+    id: 'imageVariants',
+    accessorKey: 'imageVariants',
+    header: $t('dashboard.photos.table.columns.imageVariants'),
+    cell: ({ row }) => {
+      const status = getImageVariantStatus(row.original)
+      const label = status.isComplete
+        ? $t('dashboard.photos.imageVariants.complete')
+        : status.isMissing
+          ? $t('dashboard.photos.imageVariants.missing')
+          : $t('dashboard.photos.imageVariants.partial', {
+              count: status.generatedCount,
+              total: status.totalCount,
+            })
+
+      return h('div', { class: 'flex min-w-[11rem] flex-col gap-1' }, [
+        h(UBadge, {
+          label,
+          color: status.isComplete ? 'success' : 'warning',
+          variant: 'soft',
+          size: 'sm',
+          class: 'w-fit',
+        }),
+        h(
+          'div',
+          { class: 'flex items-center gap-1 text-[11px]' },
+          status.items.map((item) =>
+            h(
+              'span',
+              {
+                class: item.generated
+                  ? 'text-green-600 dark:text-green-400'
+                  : 'text-neutral-400',
+              },
+              item.label,
+            ),
+          ),
+        ),
+      ])
+    },
   },
   {
     accessorKey: 'reactions',
@@ -1612,6 +1679,55 @@ const handleReprocessSingle = async (photo: Photo) => {
   }
 }
 
+const handleRebuildVariantsSingle = async (photo: Photo) => {
+  try {
+    if (!photo || !photo.storageKey) {
+      toast.add({
+        title: $t('dashboard.photos.messages.error'),
+        description: $t('dashboard.photos.messages.noStorageKey'),
+        color: 'error',
+      })
+      return
+    }
+
+    const result = await $fetch('/api/queue/add-task', {
+      method: 'POST',
+      body: {
+        payload: {
+          type: 'photo-variants',
+          photoId: photo.id,
+        },
+        priority: 1,
+        maxAttempts: 3,
+      },
+    })
+
+    if (result.success) {
+      toast.add({
+        title: $t('dashboard.photos.messages.rebuildVariantsSuccess'),
+        description: $t('dashboard.photos.messages.reprocessTaskId', {
+          taskId: result.taskId,
+        }),
+        color: 'success',
+      })
+      refresh()
+    } else {
+      toast.add({
+        title: $t('dashboard.photos.messages.error'),
+        description: $t('dashboard.photos.messages.rebuildVariantsFailed'),
+        color: 'error',
+      })
+    }
+  } catch (error: any) {
+    console.error('重建多尺寸图片失败:', error)
+    toast.add({
+      title: $t('dashboard.photos.messages.rebuildVariantsFailed'),
+      description: error.message || $t('dashboard.photos.messages.error'),
+      color: 'error',
+    })
+  }
+}
+
 const getRowActions = (photo: Photo) => {
   const isReverseLoading = !!reverseGeocodeLoading.value[photo.id]
   const isEraseLocationLoading = !!eraseLocationLoading.value[photo.id]
@@ -1630,6 +1746,13 @@ const getRowActions = (photo: Photo) => {
         icon: 'tabler:refresh',
         onSelect() {
           handleReprocessSingle(photo)
+        },
+      },
+      {
+        label: $t('dashboard.photos.actions.rebuildVariants'),
+        icon: 'tabler:photo-cog',
+        onSelect() {
+          handleRebuildVariantsSingle(photo)
         },
       },
       {
@@ -1875,6 +1998,79 @@ const handleBatchReprocess = async () => {
   }
 }
 
+const handleBatchRebuildVariants = async () => {
+  const selectedRowModel = table.value?.tableApi?.getFilteredSelectedRowModel()
+  const selectedPhotos =
+    selectedRowModel?.rows.map((row: any) => row.original) || []
+
+  if (selectedPhotos.length === 0) {
+    toast.add({
+      title: $t('dashboard.photos.messages.batchSelectRequired'),
+      description: '',
+      color: 'warning',
+    })
+    return
+  }
+
+  const photosWithStorageKey = selectedPhotos.filter(
+    (photo: Photo) => photo.storageKey,
+  )
+  if (photosWithStorageKey.length !== selectedPhotos.length) {
+    toast.add({
+      title: $t('dashboard.photos.messages.error'),
+      description: $t('dashboard.photos.messages.batchNoStorageKey', {
+        count: selectedPhotos.length - photosWithStorageKey.length,
+      }),
+      color: 'error',
+    })
+    return
+  }
+
+  try {
+    const result = await $fetch('/api/queue/add-tasks', {
+      method: 'POST',
+      body: {
+        tasks: photosWithStorageKey.map((photo: Photo) => ({
+          payload: {
+            type: 'photo-variants',
+            photoId: photo.id,
+          },
+          priority: 1,
+          maxAttempts: 3,
+        })),
+      },
+    })
+
+    if (result.success) {
+      toast.add({
+        title: $t('dashboard.photos.messages.rebuildVariantsSuccess'),
+        description: $t(
+          'dashboard.photos.messages.batchRebuildVariantsSuccess',
+          {
+            count: photosWithStorageKey.length,
+          },
+        ),
+        color: 'success',
+      })
+      rowSelection.value = {}
+      refresh()
+    } else {
+      toast.add({
+        title: $t('dashboard.photos.messages.error'),
+        description: $t('dashboard.photos.messages.batchRebuildVariantsFailed'),
+        color: 'error',
+      })
+    }
+  } catch (error: any) {
+    console.error('批量重建多尺寸图片失败:', error)
+    toast.add({
+      title: $t('dashboard.photos.messages.batchRebuildVariantsFailed'),
+      description: error.message || $t('dashboard.photos.messages.error'),
+      color: 'error',
+    })
+  }
+}
+
 // 批量抹除位置信息
 const handleBatchEraseLocation = async () => {
   const selectedRowModel = table.value?.tableApi?.getFilteredSelectedRowModel()
@@ -2013,7 +2209,7 @@ const handleBatchDownload = async () => {
   try {
     for (const photo of photosWithUrl) {
       try {
-        const response = await fetch(photo.originalUrl!)
+        const response = await fetch(`/api/photos/${photo.id}/original`)
         if (!response.ok) {
           failureCount++
           continue
@@ -2023,7 +2219,7 @@ const handleBatchDownload = async () => {
         const url = window.URL.createObjectURL(blob)
         const link = document.createElement('a')
         link.href = url
-        const extension = photo.originalUrl!.split('.').pop() || 'jpg'
+        const extension = photo.originalUrl?.split('.').pop() || 'jpg'
         link.download = `${photo.title || `photo-${photo.id}`}.${extension}`
         document.body.appendChild(link)
         link.click()
@@ -2529,6 +2725,20 @@ onUnmounted(() => {
                   >
                     <span class="hidden sm:inline">{{
                       $t('dashboard.photos.selection.batchReprocess')
+                    }}</span>
+                  </UButton>
+
+                  <UButton
+                    v-if="isAdmin"
+                    color="neutral"
+                    variant="ghost"
+                    size="sm"
+                    class="rounded-full text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-neutral-800"
+                    icon="tabler:photo-cog"
+                    @click="handleBatchRebuildVariants"
+                  >
+                    <span class="hidden sm:inline">{{
+                      $t('dashboard.photos.selection.batchRebuildVariants')
                     }}</span>
                   </UButton>
 

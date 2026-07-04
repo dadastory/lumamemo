@@ -149,7 +149,7 @@ useHead({
         class="absolute inset-x-0 top-0 h-2/3 sm:h-[500px] overflow-hidden z-0"
       >
         <ThumbImage
-          :src="coverPhoto.thumbnailUrl || ''"
+          :src="getPhotoVariantUrl(coverPhoto, 'card')"
           :thumbhash="coverPhoto.thumbnailHash"
           :alt="album.title"
           class="w-full h-full object-cover opacity-40 dark:opacity-20 scale-110 saturate-150"

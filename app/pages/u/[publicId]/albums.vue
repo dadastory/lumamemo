@@ -156,7 +156,7 @@ const getPhotoTransform = (index: number, isHover: boolean) => {
                   <ThumbImage
                     class="w-full h-auto object-cover saturate-50"
                     :lazy="false"
-                    :src="photo.thumbnailUrl!"
+                    :src="getPhotoVariantUrl(photo, 'card')"
                     :thumbhash="photo.thumbnailHash"
                     :alt="
                       photo.exif?.ImageDescription || $t('ui.photo.altFallback')
@@ -241,7 +241,7 @@ const getPhotoTransform = (index: number, isHover: boolean) => {
             >
               <ThumbImage
                 class="w-full h-full object-cover"
-                :src="photo.thumbnailUrl!"
+                :src="getPhotoVariantUrl(photo, 'thumb')"
                 :thumbhash="photo.thumbnailHash"
                 :alt="album.title"
                 :style="{ aspectRatio: photo.aspectRatio || 1 }"

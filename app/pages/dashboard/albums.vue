@@ -444,8 +444,10 @@ const columns = computed<any[]>(() => [
                 <img
                   v-if="(row.original as unknown as AlbumItem).coverPhoto"
                   :src="
-                    (row.original as unknown as AlbumItem).coverPhoto
-                      ?.thumbnailUrl || ''
+                    getPhotoVariantUrl(
+                      (row.original as unknown as AlbumItem).coverPhoto,
+                      'card',
+                    )
                   "
                   :alt="(row.original as unknown as AlbumItem).title"
                   class="w-full h-full object-cover"
@@ -587,8 +589,10 @@ const columns = computed<any[]>(() => [
             >
               <ThumbImage
                 :src="
-                  allPhotos.find((p) => p.id === coverPhotoId)?.thumbnailUrl ||
-                  ''
+                  getPhotoVariantUrl(
+                    allPhotos.find((p) => p.id === coverPhotoId),
+                    'card',
+                  )
                 "
                 :alt="coverPhotoId"
                 class="absolute inset-0 w-full h-full object-cover"
@@ -714,8 +718,10 @@ const columns = computed<any[]>(() => [
                     >
                       <img
                         :src="
-                          allPhotos.find((p) => p.id === photoId)
-                            ?.thumbnailUrl || ''
+                          getPhotoVariantUrl(
+                            allPhotos.find((p) => p.id === photoId),
+                            'thumb',
+                          )
                         "
                         :alt="photoId"
                         class="w-full h-full object-cover"
@@ -947,7 +953,7 @@ const columns = computed<any[]>(() => [
                           @click="setDraftCoverPhoto(photo.id)"
                         >
                           <ThumbImage
-                            :src="photo.thumbnailUrl || ''"
+                            :src="getPhotoVariantUrl(photo, 'thumb')"
                             :alt="photo.title || $t('ui.photo.altFallback')"
                             class="h-full w-full object-cover"
                           />
@@ -1015,7 +1021,7 @@ const columns = computed<any[]>(() => [
                       }"
                     >
                       <ThumbImage
-                        :src="photo.thumbnailUrl || ''"
+                        :src="getPhotoVariantUrl(photo, 'thumb')"
                         :alt="photo.title || $t('ui.photo.altFallback')"
                         class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                       />

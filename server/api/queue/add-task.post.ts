@@ -38,6 +38,10 @@ export default defineEventHandler(async (event) => {
         type: z.literal('photo-erase-location'),
         photoId: z.string().min(1),
       }),
+      z.object({
+        type: z.literal('photo-variants'),
+        photoId: z.string().min(1),
+      }),
     ])
 
     const { payload, priority, maxAttempts } = await readValidatedBody(
@@ -62,7 +66,8 @@ export default defineEventHandler(async (event) => {
 
       if (
         payload.type === 'photo-reverse-geocoding' ||
-        payload.type === 'photo-erase-location'
+        payload.type === 'photo-erase-location' ||
+        payload.type === 'photo-variants'
       ) {
         const photo = await useDB()
           .select()

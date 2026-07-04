@@ -172,7 +172,7 @@ onBeforeMount(() => {
         class="absolute inset-0 h-2/3 sm:h-[500px] overflow-hidden -z-10"
       >
         <ThumbImage
-          :src="coverPhoto.thumbnailUrl || ''"
+          :src="getPhotoVariantUrl(coverPhoto, 'card')"
           :thumbhash="coverPhoto.thumbnailHash"
           :alt="albumData.title"
           class="w-full h-full object-cover opacity-40 dark:opacity-20 scale-110 saturate-150"
@@ -255,7 +255,13 @@ onBeforeMount(() => {
                 <!-- Created -->
                 <div
                   class="flex items-center gap-1"
-                  :title="$t('album.createdTooltip', { date: $dayjs(albumData.createdAt).format('YYYY-MM-DD HH:mm:ss') })"
+                  :title="
+                    $t('album.createdTooltip', {
+                      date: $dayjs(albumData.createdAt).format(
+                        'YYYY-MM-DD HH:mm:ss',
+                      ),
+                    })
+                  "
                 >
                   <Icon
                     name="tabler:clock-plus"

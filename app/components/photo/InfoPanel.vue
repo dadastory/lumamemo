@@ -628,8 +628,8 @@ const onAlbumClick = (albumId: number) => {
         </h4>
 
         <Histogram
-          v-if="currentPhoto.thumbnailUrl"
-          :thumbnail-url="currentPhoto.thumbnailUrl"
+          v-if="getPhotoVariantUrl(currentPhoto, 'card')"
+          :thumbnail-url="getPhotoVariantUrl(currentPhoto, 'card')"
         />
       </div>
 

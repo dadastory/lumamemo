@@ -108,8 +108,11 @@ const getStageText = (stage: string) => {
     preprocessing: $t('dashboard.photos.uploadQueueItem.stage.preprocessing'),
     metadata: $t('dashboard.photos.uploadQueueItem.stage.metadata'),
     thumbnail: $t('dashboard.photos.uploadQueueItem.stage.thumbnail'),
+    variants: $t('dashboard.photos.uploadQueueItem.stage.variants'),
     exif: $t('dashboard.photos.uploadQueueItem.stage.exif'),
-    'reverse-geocoding': $t('dashboard.photos.uploadQueueItem.stage.reverseGeocoding'),
+    'reverse-geocoding': $t(
+      'dashboard.photos.uploadQueueItem.stage.reverseGeocoding',
+    ),
     'live-photo': $t('dashboard.photos.uploadQueueItem.stage.livePhoto'),
   }
   return stageMap[stage] || stage
@@ -432,7 +435,11 @@ const generateParticleStyle = (index: number) => {
             v-if="uploadingFile.uploadProgress?.timeRemainingText"
             class="text-xs text-neutral-500 dark:text-neutral-400"
           >
-            {{ $t('dashboard.photos.uploadQueueItem.progress.remainingTime', [uploadingFile.uploadProgress.timeRemainingText]) }}
+            {{
+              $t('dashboard.photos.uploadQueueItem.progress.remainingTime', [
+                uploadingFile.uploadProgress.timeRemainingText,
+              ])
+            }}
           </div>
         </div>
 
@@ -491,7 +498,7 @@ const generateParticleStyle = (index: number) => {
         v-if="
           (uploadingFile.status === 'skipped' ||
             uploadingFile.status === 'blocked') &&
-            uploadingFile.error
+          uploadingFile.error
         "
         :initial="{ opacity: 0, height: 0, y: -10 }"
         :animate="{ opacity: 1, height: 'auto', y: 0 }"
@@ -548,7 +555,9 @@ const generateParticleStyle = (index: number) => {
         class="mt-3"
       >
         <UAlert
-          :description="$t('dashboard.photos.uploadQueueItem.alerts.longProcessing')"
+          :description="
+            $t('dashboard.photos.uploadQueueItem.alerts.longProcessing')
+          "
           color="info"
           variant="soft"
           icon="tabler:info-circle"

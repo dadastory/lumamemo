@@ -6,7 +6,7 @@ import {
   real,
   uniqueIndex,
 } from 'drizzle-orm/sqlite-core'
-import type { NeededExif } from '~~/shared/types/photo'
+import type { NeededExif, PhotoImageVariants } from '~~/shared/types/photo'
 import type { StorageConfig } from '../services/storage'
 
 type PipelineQueuePayload =
@@ -29,6 +29,10 @@ type PipelineQueuePayload =
     }
   | {
       type: 'photo-erase-location'
+      photoId: string
+    }
+  | {
+      type: 'photo-variants'
       photoId: string
     }
 
@@ -92,6 +96,9 @@ export const photos = sqliteTable('photos', {
   originalUrl: text('original_url'),
   thumbnailUrl: text('thumbnail_url'),
   thumbnailHash: text('thumbnail_hash'),
+  imageVariants: text('image_variants', {
+    mode: 'json',
+  }).$type<PhotoImageVariants>(),
   tags: text('tags', { mode: 'json' }).$type<string[]>(),
   exif: text('exif', { mode: 'json' }).$type<NeededExif>(),
   // 地理位置信息
@@ -139,6 +146,7 @@ export const pipelineQueue = sqliteTable('pipeline_queue', {
       'preprocessing',
       'metadata',
       'thumbnail',
+      'variants',
       'exif',
       'motion-photo',
       'reverse-geocoding',

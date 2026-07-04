@@ -101,3 +101,18 @@ export interface PhotoInfo {
   tags: string[]
   description: string
 }
+
+export type PhotoImageVariantName = 'thumb' | 'card' | 'view'
+
+export interface PhotoImageVariant {
+  key?: string
+  url: string
+  width: number
+  height: number
+  size: number
+  format: 'webp'
+}
+
+export type PhotoImageVariants = Partial<
+  Record<PhotoImageVariantName, PhotoImageVariant>
+>

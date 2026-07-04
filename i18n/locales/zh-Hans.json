@@ -88,8 +88,7 @@
           "generateShareImage": "生成分享图片",
           "shareUrl": "分享链接",
           "downloadOgImage": "下载预览图",
-          "downloadOriginal": "下载原图",
-          "downloadOriginalImage": "下载原图"
+          "downloadOriginal": "下载原图"
         },
         "success": {
           "linkCopied": "链接已复制到剪贴板",
@@ -625,6 +624,7 @@
           "lastModified": "最后更新",
           "fileSize": "文件大小",
           "colorSpace": "颜色空间",
+          "imageVariants": "图片版本",
           "reactions": "表态",
           "actions": "操作"
         },
@@ -646,7 +646,8 @@
         "thumbnailAlt": "照片缩略图"
       },
       "actions": {
-        "reprocess": "重新处理",
+        "reprocess": "重新处理照片",
+        "rebuildVariants": "重建多尺寸图片",
         "refreshLocation": "重新获取城市",
         "eraseLocationInfo": "抹除位置信息",
         "delete": "删除",
@@ -656,6 +657,7 @@
       "selection": {
         "selected": "{count} / {total} 行已选择",
         "batchReprocess": "重新处理",
+        "batchRebuildVariants": "重建多尺寸",
         "batchEraseLocation": "抹除位置信息",
         "batchDownload": "批量下载",
         "batchDelete": "批量删除"
@@ -719,6 +721,10 @@
         "batchReprocessSuccess": "已成功提交 {count} 张照片至重新处理队列",
         "batchReprocessing": "正在提交重新处理任务...",
         "reprocessTaskId": "任务ID: {taskId}",
+        "rebuildVariantsSuccess": "已添加多尺寸图片重建任务",
+        "batchRebuildVariantsSuccess": "已成功提交 {count} 张照片至多尺寸图片重建队列",
+        "rebuildVariantsFailed": "重建多尺寸图片失败",
+        "batchRebuildVariantsFailed": "批量重建多尺寸图片失败",
         "deleteSuccess": "照片删除成功",
         "batchDeleteSuccess": "已成功删除 {count} 张照片",
         "batchSelectRequired": "请至少选择一张照片进行此操作",
@@ -757,6 +763,11 @@
         "taskSubmitFailed": "提交任务失败",
         "taskStatusCheckFailed": "检查任务状态失败",
         "uploadFailed": "上传失败"
+      },
+      "imageVariants": {
+        "complete": "完整",
+        "missing": "缺失",
+        "partial": "{count}/{total}"
       },
       "errors": {
         "noSelection": "请选择要上传的照片",
@@ -828,6 +839,7 @@
           "preprocessing": "预处理中",
           "metadata": "提取元数据",
           "thumbnail": "生成缩略图",
+          "variants": "生成多尺寸图片",
           "exif": "处理 EXIF",
           "reverseGeocoding": "地理解析",
           "livePhoto": "检测 LivePhoto"
@@ -1042,12 +1054,14 @@
         "photo": "照片处理",
         "live-photo-video": "LivePhoto视频",
         "photo-reverse-geocoding": "照片逆地理编码",
+        "photo-variants": "照片多尺寸生成",
         "photo-erase-location": "照片位置信息抹除"
       },
       "stages": {
         "preprocessing": "预处理",
         "metadata": "元数据",
         "thumbnail": "缩略图",
+        "variants": "多尺寸图片",
         "exif": "EXIF处理",
         "motion-photo": "动态照片处理",
         "reverse-geocoding": "地理解析",
@@ -1736,6 +1750,9 @@
   },
   "photo": {
     "owner": "上传者",
+    "viewer": {
+      "downloadOriginal": "下载原图"
+    },
     "image": {
       "loadError": "图片加载失败"
     }

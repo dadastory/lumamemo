@@ -5,6 +5,8 @@ import type { CSSProperties } from 'vue'
 const props = withDefaults(
   defineProps<{
     src: string
+    srcset?: string
+    sizes?: string
     alt: string
     thumbhash?: string | null
     class?: string
@@ -17,6 +19,8 @@ const props = withDefaults(
   }>(),
   {
     thumbhash: null,
+    srcset: '',
+    sizes: '',
     class: '',
     thumbhashClass: '',
     style: undefined,
@@ -85,6 +89,8 @@ const onError = () => {
       v-if="isElemVisible"
       loading="lazy"
       :src="src"
+      :srcset="srcset || undefined"
+      :sizes="sizes || undefined"
       :alt="alt"
       :class="
         twMerge(

@@ -79,8 +79,7 @@
           "generateShareImage": "Generate Share Image",
           "shareUrl": "Share URL",
           "downloadOgImage": "Download Preview",
-          "downloadOriginal": "Download Original",
-          "downloadOriginalImage": "Download Original Image"
+          "downloadOriginal": "Download Original"
         },
         "success": {
           "linkCopied": "Link copied to clipboard",
@@ -625,6 +624,7 @@
           "lastModified": "Last Modified",
           "fileSize": "File Size",
           "colorSpace": "Color Space",
+          "imageVariants": "Image Versions",
           "reactions": "Reactions",
           "actions": "Actions"
         },
@@ -646,7 +646,8 @@
         "thumbnailAlt": "Photo Thumbnail"
       },
       "actions": {
-        "reprocess": "Reprocess",
+        "reprocess": "Reprocess Photo",
+        "rebuildVariants": "Rebuild Image Versions",
         "refreshLocation": "Re-fetch City",
         "eraseLocationInfo": "Erase location info",
         "delete": "Delete",
@@ -656,6 +657,7 @@
       "selection": {
         "selected": "{count} / {total} rows selected",
         "batchReprocess": "Reprocess",
+        "batchRebuildVariants": "Rebuild Versions",
         "batchEraseLocation": "Erase location info",
         "batchDownload": "Download",
         "batchDelete": "Batch Delete"
@@ -719,6 +721,10 @@
         "batchReprocessSuccess": "Successfully submitted {count} photos to the reprocessing queue",
         "batchReprocessing": "Submitting reprocessing tasks...",
         "reprocessTaskId": "Task ID: {taskId}",
+        "rebuildVariantsSuccess": "Image version rebuild task added",
+        "batchRebuildVariantsSuccess": "Submitted {count} photos to the image version rebuild queue",
+        "rebuildVariantsFailed": "Failed to rebuild image versions",
+        "batchRebuildVariantsFailed": "Batch image version rebuild failed",
         "deleteSuccess": "Photo deleted successfully",
         "batchDeleteSuccess": "Successfully deleted {count} photos",
         "batchSelectRequired": "Please select at least one photo for this operation",
@@ -757,6 +763,11 @@
         "taskSubmitFailed": "Failed to submit task",
         "taskStatusCheckFailed": "Failed to check task status",
         "uploadFailed": "Upload failed"
+      },
+      "imageVariants": {
+        "complete": "Complete",
+        "missing": "Missing",
+        "partial": "{count}/{total}"
       },
       "errors": {
         "noSelection": "Please select photos to upload",
@@ -828,6 +839,7 @@
           "preprocessing": "Preprocessing",
           "metadata": "Extracting metadata",
           "thumbnail": "Generating thumbnail",
+          "variants": "Generating image variants",
           "exif": "Processing EXIF",
           "reverseGeocoding": "Reverse geocoding",
           "livePhoto": "Detecting Live Photo"
@@ -1042,12 +1054,14 @@
         "photo": "Photo Processing",
         "live-photo-video": "LivePhoto Video",
         "photo-reverse-geocoding": "Photo Reverse Geocoding",
+        "photo-variants": "Photo Variant Generation",
         "photo-erase-location": "Photo Location Erasure"
       },
       "stages": {
         "preprocessing": "Preprocessing",
         "metadata": "Metadata",
         "thumbnail": "Thumbnail",
+        "variants": "Image Variants",
         "exif": "EXIF Processing",
         "motion-photo": "Motion Photo Processing",
         "reverse-geocoding": "Geocoding",
@@ -1736,6 +1750,9 @@
   },
   "photo": {
     "owner": "Uploader",
+    "viewer": {
+      "downloadOriginal": "Download original"
+    },
     "image": {
       "loadError": "Failed to load image"
     }

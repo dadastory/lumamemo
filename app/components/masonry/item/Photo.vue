@@ -81,7 +81,9 @@ const handleImageLoad = () => {
 
 const handleImageError = () => {
   isLoading.value = false
-  console.warn(`Failed to load image: ${props.photo.thumbnailUrl}`)
+  console.warn(
+    `Failed to load image: ${getPhotoVariantUrl(props.photo, 'card')}`,
+  )
 }
 
 // LivePhoto video handling - 优化的交互逻辑
@@ -405,7 +407,8 @@ onMounted(() => {
   })
 
   // Preload thumbnail image
-  if (props.photo.thumbnailUrl) {
+  const cardUrl = getPhotoVariantUrl(props.photo, 'card')
+  if (cardUrl) {
     const img = new Image()
     img.onload = () => {
       // Update loading state after preload completes
@@ -415,7 +418,7 @@ onMounted(() => {
       // Even if preload fails, we should stop loading state
       isLoading.value = false
     }
-    img.src = props.photo.thumbnailUrl
+    img.src = cardUrl
   } else {
     // If no thumbnail URL, stop loading immediately
     isLoading.value = false
@@ -502,7 +505,9 @@ onUnmounted(() => {
         :style="{ aspectRatio }"
       >
         <ThumbImage
-          :src="photo.thumbnailUrl || ''"
+          :src="getPhotoVariantUrl(photo, 'card')"
+          :srcset="getPhotoVariantSrcset(photo)"
+          sizes="(max-width: 640px) 50vw, (max-width: 1280px) 33vw, 25vw"
           :alt="photo.title || $t('ui.photo.altFallback')"
           :thumbhash="photo.thumbnailHash || ''"
           class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
@@ -603,7 +608,8 @@ onUnmounted(() => {
               <span
                 v-if="photo.dateTaken && displayLocation"
                 class="shrink-0 whitespace-nowrap"
-              >·</span>
+                >·</span
+              >
               <span
                 v-if="displayLocation"
                 class="min-w-0 flex-1 truncate"

@@ -41,6 +41,32 @@ describe('security serializers', () => {
     originalUrl: '/storage/photos/private/original.jpg',
     thumbnailUrl: '/storage/photos/private/thumb.webp',
     thumbnailHash: 'thumbhash',
+    imageVariants: {
+      thumb: {
+        key: 'photos/private/variants/photo-1/thumb.webp',
+        url: '/storage/photos/private/variants/photo-1/thumb.webp',
+        width: 320,
+        height: 240,
+        size: 12000,
+        format: 'webp',
+      },
+      card: {
+        key: 'photos/private/variants/photo-1/card.webp',
+        url: '/storage/photos/private/variants/photo-1/card.webp',
+        width: 960,
+        height: 720,
+        size: 64000,
+        format: 'webp',
+      },
+      view: {
+        key: 'photos/private/variants/photo-1/view.webp',
+        url: '/storage/photos/private/variants/photo-1/view.webp',
+        width: 2048,
+        height: 1536,
+        size: 220000,
+        format: 'webp',
+      },
+    },
     tags: ['travel'],
     exif: {
       Make: 'Nikon',
@@ -195,7 +221,10 @@ describe('security serializers', () => {
 
   it('rejects storage namespaces with traversal or absolute paths', () => {
     assert.equal(isStorageKeyInUserNamespace('../users/2/a.jpg', 2), false)
-    assert.equal(isStorageKeyInUserNamespace('users/2/../../evil.jpg', 2), false)
+    assert.equal(
+      isStorageKeyInUserNamespace('users/2/../../evil.jpg', 2),
+      false,
+    )
     assert.equal(isStorageKeyInUserNamespace('/etc/users/2/a.jpg', 2), false)
     assert.equal(isStorageKeyInUserNamespace('users\\2\\a.jpg', 2), false)
   })
@@ -261,14 +290,31 @@ describe('security serializers', () => {
       storageKey: 'photos/users/4/original.heic',
       thumbnailKey: 'thumbnails/generated.webp',
       livePhotoVideoKey: 'photos/users/5/video.mov',
+      imageVariants: {
+        thumb: {
+          key: 'photos/users/4/variants/photo-1/thumb.webp',
+          url: '/storage/photos/users/4/variants/photo-1/thumb.webp',
+        },
+        card: {
+          key: 'photos/users/4/variants/photo-1/card.webp',
+          url: '/storage/photos/users/4/variants/photo-1/card.webp',
+        },
+        view: {
+          key: 'photos/users/5/variants/photo-1/view.webp',
+          url: '/storage/photos/users/5/variants/photo-1/view.webp',
+        },
+      },
     }
 
     assert.deepEqual(getUserOwnedPhotoStorageKeys(photo, 4), [
       'photos/users/4/original.heic',
       'photos/users/4/original.jpeg',
+      'photos/users/4/variants/photo-1/thumb.webp',
+      'photos/users/4/variants/photo-1/card.webp',
     ])
     assert.deepEqual(getUserOwnedPhotoStorageKeys(photo, 5), [
       'photos/users/5/video.mov',
+      'photos/users/5/variants/photo-1/view.webp',
     ])
   })
 
@@ -278,6 +324,14 @@ describe('security serializers', () => {
     assert.equal(publicPhoto.id, 'photo-1')
     assert.equal(publicPhoto.thumbnailUrl, '/image/photos/private/thumb.webp')
     assert.equal(publicPhoto.originalUrl, '/image/photos/private/original.jpg')
+    assert.deepEqual(publicPhoto.imageVariants.thumb, {
+      url: '/image/photos/private/variants/photo-1/thumb.webp',
+      width: 320,
+      height: 240,
+      size: 12000,
+      format: 'webp',
+    })
+    assert.equal('key' in publicPhoto.imageVariants.thumb, false)
     assert.equal(publicPhoto.latitude, 43.4674)
     assert.equal(publicPhoto.longitude, 11.8851)
     assert.equal(publicPhoto.exif.Make, 'Nikon')
@@ -306,6 +360,14 @@ describe('security serializers', () => {
     assert.equal(adminPhoto.livePhotoVideoKey, 'photos/private/video.mov')
     assert.equal(adminPhoto.thumbnailUrl, '/image/photos/private/thumb.webp')
     assert.equal(adminPhoto.originalUrl, '/image/photos/private/original.jpg')
+    assert.deepEqual(adminPhoto.imageVariants.thumb, {
+      key: 'photos/private/variants/photo-1/thumb.webp',
+      url: '/image/photos/private/variants/photo-1/thumb.webp',
+      width: 320,
+      height: 240,
+      size: 12000,
+      format: 'webp',
+    })
     assert.equal(
       adminPhoto.livePhotoVideoUrl,
       '/image/photos/private/video.mov',
@@ -438,7 +500,10 @@ describe('security serializers', () => {
 
   it('does not proxy remote URLs through the thumbnail route', () => {
     const source = readFileSync(
-      new URL('../server/routes/thumb/[...thumbnailUrl].get.ts', import.meta.url),
+      new URL(
+        '../server/routes/thumb/[...thumbnailUrl].get.ts',
+        import.meta.url,
+      ),
       'utf8',
     )
 

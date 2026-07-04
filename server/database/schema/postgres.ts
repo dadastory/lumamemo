@@ -10,7 +10,7 @@ import {
   timestamp,
   uniqueIndex,
 } from 'drizzle-orm/pg-core'
-import type { NeededExif } from '~~/shared/types/photo'
+import type { NeededExif, PhotoImageVariants } from '~~/shared/types/photo'
 import type { StorageConfig } from '../../services/storage'
 
 type PipelineQueuePayload =
@@ -33,6 +33,10 @@ type PipelineQueuePayload =
     }
   | {
       type: 'photo-erase-location'
+      photoId: string
+    }
+  | {
+      type: 'photo-variants'
       photoId: string
     }
 
@@ -96,6 +100,7 @@ export const photos = pgTable('photos', {
   originalUrl: text('original_url'),
   thumbnailUrl: text('thumbnail_url'),
   thumbnailHash: text('thumbnail_hash'),
+  imageVariants: jsonb('image_variants').$type<PhotoImageVariants>(),
   tags: jsonb('tags').$type<string[]>(),
   exif: jsonb('exif').$type<NeededExif>(),
   latitude: doublePrecision('latitude'),
@@ -136,6 +141,7 @@ export const pipelineQueue = pgTable('pipeline_queue', {
       'preprocessing',
       'metadata',
       'thumbnail',
+      'variants',
       'exif',
       'motion-photo',
       'reverse-geocoding',

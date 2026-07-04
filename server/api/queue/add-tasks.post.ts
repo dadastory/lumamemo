@@ -38,6 +38,10 @@ export default defineEventHandler(async (event) => {
         type: z.literal('photo-erase-location'),
         photoId: z.string().min(1),
       }),
+      z.object({
+        type: z.literal('photo-variants'),
+        photoId: z.string().min(1),
+      }),
     ])
 
     const { tasks, defaultPriority, defaultMaxAttempts } =

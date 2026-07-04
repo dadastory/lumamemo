@@ -29,6 +29,7 @@ const emit = defineEmits<{
 }>()
 
 const toast = useToast()
+const { loggedIn } = useUserSession()
 
 const containerRef = ref<HTMLDivElement>()
 const swiperRef = ref<SwiperType>()
@@ -246,6 +247,46 @@ const handleImageLoaded = () => {
     showZoomLevel.value = false
     zoomLevelTimer.value = null
   }, 2000)
+}
+
+const downloadOriginalImage = async () => {
+  const photo = currentPhoto.value
+  if (!photo) return
+
+  try {
+    const response = await fetch(
+      `/api/photos/${currentPhoto.value.id}/original`,
+    )
+    if (!response.ok) {
+      throw new Error(response.statusText || $t('common.unknownError'))
+    }
+
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    const extension = photo.originalUrl?.split('.').pop() || 'jpg'
+    link.href = url
+    link.download = `${photo.title || photo.id}.${extension}`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+
+    toast.add({
+      title: $t('ui.action.share.success.originalImageDownloaded'),
+      color: 'success',
+      icon: 'tabler:download',
+      duration: 3000,
+    })
+  } catch (error) {
+    toast.add({
+      title: $t('ui.action.share.error.originalImageDownloadFailed'),
+      description: (error as Error)?.message || $t('common.unknownError'),
+      color: 'error',
+      icon: 'tabler:x',
+      duration: 3000,
+    })
+  }
 }
 
 // LivePhoto processing and playback functions
@@ -476,7 +517,8 @@ const handleReactionSelect = async (reactionId: string, iconName: string) => {
       toast.add({
         icon: 'tabler:alert-circle',
         title: $t('viewer.reaction.error.title'),
-        description: error instanceof Error ? error.message : $t('common.unknownError'),
+        description:
+          error instanceof Error ? error.message : $t('common.unknownError'),
         color: 'warning',
       })
     }
@@ -648,11 +690,24 @@ const swiperModules = [Navigation, Keyboard, Virtual]
                     @click="showExifPanel = !showExifPanel"
                   />
 
+                  <!-- 原图下载按钮 - 登录后显示 -->
+                  <GlassButton
+                    v-if="loggedIn"
+                    icon="tabler:download"
+                    size="sm"
+                    rounded
+                    :aria-label="$t('photo.viewer.downloadOriginal')"
+                    :title="$t('photo.viewer.downloadOriginal')"
+                    @click="downloadOriginalImage"
+                  />
+
                   <!-- 分享按钮 -->
                   <GlassButton
                     icon="tabler:share-3"
                     size="sm"
                     rounded
+                    :aria-label="$t('ui.action.share.tooltip')"
+                    :title="$t('ui.action.share.tooltip')"
                     @click="showShareModal = true"
                   />
 
@@ -718,8 +773,8 @@ const swiperModules = [Navigation, Keyboard, Virtual]
                       }"
                       :loading-indicator-ref="loadingIndicatorRef || null"
                       :is-current-image="index === currentIndex"
-                      :src="photo.originalUrl!"
-                      :thumbnail-src="photo.thumbnailUrl!"
+                      :src="getPhotoDisplayUrl(photo)"
+                      :thumbnail-src="getPhotoVariantUrl(photo, 'card')"
                       :thumbhash="photo.thumbnailHash"
                       :alt="photo.title || ''"
                       :width="
