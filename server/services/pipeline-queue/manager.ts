@@ -2,7 +2,7 @@ import type { ConsolaInstance } from 'consola'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'path'
-import { asc, desc, eq, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, sql } from 'drizzle-orm'
 import { exiftool } from 'exiftool-vendored'
 import type {
   NewPipelineQueueItem,
@@ -28,6 +28,7 @@ import {
   isSameUserId,
   isStorageKeyInUserNamespace,
 } from '~~/server/utils/security'
+import { getPhotoDisplayStorageKey } from '~~/server/utils/raw-photo'
 
 const EXIF_LOCATION_KEYS = [
   'GPSAltitude',
@@ -174,11 +175,19 @@ export class QueueManager {
       if (!highestPriorityPendingTask) return null
 
       const task = highestPriorityPendingTask
-      await tx
+      const claimedTask = await tx
         .update(tables.pipelineQueue)
         .set({ status: 'in-stages' })
-        .where(eq(tables.pipelineQueue.id, task.id))
-        .run()
+        .where(
+          and(
+            eq(tables.pipelineQueue.id, task.id),
+            eq(tables.pipelineQueue.status, 'pending'),
+          ),
+        )
+        .returning({ id: tables.pipelineQueue.id })
+        .get()
+
+      if (!claimedTask) return null
 
       return { ...task, status: 'in-stages' as const }
     })
@@ -302,10 +311,18 @@ export class QueueManager {
             throw new Error(`Storage object not found`)
           }
 
+          const ownerUserId = Number(payload.ownerUserId)
+          if (!Number.isSafeInteger(ownerUserId) || ownerUserId <= 0) {
+            throw new Error('Photo task is missing a resolved owner')
+          }
+
           // STEP 1: 预处理 - 转换 HEIC 到 JPEG 并上传
           await this.updateTaskStage(taskId, 'preprocessing')
           this.logger.info(`[${taskId}:in-stage] preprocessing`)
-          const imageBuffers = await preprocessImageWithJpegUpload(storageKey)
+          const imageBuffers = await preprocessImageWithJpegUpload(storageKey, {
+            photoId,
+            ownerUserId,
+          })
           if (!imageBuffers) {
             throw new Error('Preprocessing failed')
           }
@@ -322,11 +339,6 @@ export class QueueManager {
           }
 
           const { imageBuffer, metadata } = processedData
-
-          const ownerUserId = Number(payload.ownerUserId)
-          if (!Number.isSafeInteger(ownerUserId) || ownerUserId <= 0) {
-            throw new Error('Photo task is missing a resolved owner')
-          }
 
           // STEP 3: 生成多尺寸派生图
           await this.updateTaskStage(taskId, 'variants')
@@ -458,7 +470,13 @@ export class QueueManager {
             width: metadata.width,
             height: metadata.height,
             aspectRatio: metadata.width / metadata.height,
+            sourceType: imageBuffers.sourceType,
             storageKey: storageKey,
+            displayStorageKey: imageBuffers.displayStorageKey || null,
+            displayMimeType: imageBuffers.displayMimeType || null,
+            displayFileSize: imageBuffers.displayFileSize || null,
+            displayWidth: imageBuffers.displayWidth || null,
+            displayHeight: imageBuffers.displayHeight || null,
             thumbnailKey: thumbnailVariant?.key || null,
             fileSize: storageObject.size || null,
             lastModified:
@@ -466,7 +484,9 @@ export class QueueManager {
               new Date().toISOString(),
             originalUrl: imageBuffers.jpegKey
               ? storageProvider.getPublicUrl(imageBuffers.jpegKey) // 使用 JPEG 版本作为 originalUrl
-              : storageProvider.getPublicUrl(storageKey),
+              : imageBuffers.displayStorageKey
+                ? storageProvider.getPublicUrl(imageBuffers.displayStorageKey)
+                : storageProvider.getPublicUrl(storageKey),
             thumbnailUrl: thumbnailVariant?.url || null,
             thumbnailHash: thumbnailHash
               ? compressUint8Array(thumbnailHash)
@@ -504,6 +524,22 @@ export class QueueManager {
               set: result,
             })
             .run()
+
+          if (imageBuffers.primaryAsset) {
+            await db
+              .delete(tables.photoAssets)
+              .where(
+                and(
+                  eq(tables.photoAssets.photoId, photoId),
+                  eq(tables.photoAssets.kind, 'embedded-preview'),
+                ),
+              )
+              .run()
+            await db
+              .insert(tables.photoAssets)
+              .values(imageBuffers.primaryAsset)
+              .run()
+          }
 
           if (shouldAutoEraseLocationOnUpload) {
             try {
@@ -566,8 +602,20 @@ export class QueueManager {
             `[${taskId}:in-stage] rebuilding image variants for ${payload.photoId}`,
           )
 
+          const variantSourceKey = getPhotoDisplayStorageKey(photo)
+          if (!variantSourceKey) {
+            throw new Error(
+              `Photo ${payload.photoId} has no display source key`,
+            )
+          }
+
           const imageBuffers = await preprocessImageWithJpegUpload(
-            photo.storageKey,
+            variantSourceKey,
+            {
+              photoId: photo.id,
+              ownerUserId,
+              allowRaw: false,
+            },
           )
           if (!imageBuffers) {
             throw new Error('Preprocessing failed')
@@ -598,6 +646,12 @@ export class QueueManager {
               height: processedData.metadata.height,
               aspectRatio:
                 processedData.metadata.width / processedData.metadata.height,
+              displayWidth: photo.displayStorageKey
+                ? processedData.metadata.width
+                : photo.displayWidth,
+              displayHeight: photo.displayStorageKey
+                ? processedData.metadata.height
+                : photo.displayHeight,
               thumbnailKey: thumbnailVariant?.key || photo.thumbnailKey,
               thumbnailUrl: thumbnailVariant?.url || photo.thumbnailUrl,
               thumbnailHash: thumbnailHash

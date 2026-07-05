@@ -36,7 +36,7 @@ if (profileError.value) {
 
 const { photos, status } = usePhotos()
 const viewerState = useViewerState()
-const { isViewerOpen } = storeToRefs(viewerState)
+const { isViewerOpen, scopedPhotos } = storeToRefs(viewerState)
 const { openViewer, switchToIndex, closeViewer } = viewerState
 
 const headerProfile = computed(() => ({
@@ -64,9 +64,22 @@ watch(
       return
     }
 
-    const foundIndex = currentPhotos.findIndex(
+    let activePhotos =
+      isViewerOpen.value && scopedPhotos.value
+        ? scopedPhotos.value
+        : currentPhotos
+    let foundIndex = activePhotos.findIndex(
       (photo) => photo.id === currentPhotoId,
     )
+    let shouldResetToProfileScope = false
+
+    if (foundIndex === -1 && activePhotos !== currentPhotos) {
+      activePhotos = currentPhotos
+      foundIndex = activePhotos.findIndex(
+        (photo) => photo.id === currentPhotoId,
+      )
+      shouldResetToProfileScope = true
+    }
 
     if (foundIndex === -1) {
       closeViewer()
@@ -75,17 +88,18 @@ watch(
 
     useHead({
       title:
-        currentPhotos[foundIndex]?.title ||
+        activePhotos[foundIndex]?.title ||
         profile.value?.profileTitle ||
         $t('title.fallback.photo'),
     })
 
-    if (!isViewerOpen.value) {
+    if (!isViewerOpen.value || shouldResetToProfileScope) {
       openViewer(
         foundIndex,
         profileRoute.value,
         currentPhotos as Photo[],
         buildPublicGlobeRoute(props.publicId),
+        buildPublicAlbumsRoute(props.publicId),
       )
       return
     }

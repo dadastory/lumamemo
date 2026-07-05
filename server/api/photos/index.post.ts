@@ -7,6 +7,11 @@ import {
   buildInternalUploadTarget,
   shouldUseBrowserDirectUpload,
 } from '~~/server/utils/upload-target'
+import {
+  RAW_PHOTO_EXTENSIONS,
+  getUploadContentType,
+  isRawFileName,
+} from '~~/shared/utils/raw-photo'
 
 const VIDEO_EXTENSIONS = new Set(['.mov', '.mp4'])
 
@@ -22,6 +27,7 @@ const IMAGE_EXTENSIONS = new Set([
   '.tif',
   '.tiff',
   '.webp',
+  ...RAW_PHOTO_EXTENSIONS,
 ])
 
 const isVideoFile = (
@@ -52,6 +58,10 @@ export default eventHandler(async (event) => {
 
   const body = await readBody(event)
   const { fileName, contentType, skipDuplicateCheck } = body
+  const uploadContentType =
+    fileName && isRawFileName(fileName)
+      ? getUploadContentType({ name: fileName, type: contentType })
+      : contentType || 'application/octet-stream'
   const isVideoUpload = fileName ? isVideoFile(fileName, contentType) : false
 
   if (!fileName) {
@@ -149,7 +159,7 @@ export default eventHandler(async (event) => {
 
     if (shouldUseBrowserDirectUpload(storageProvider)) {
       const signedUrl = await storageProvider.getSignedUrl(objectKey, 3600, {
-        contentType: contentType || 'application/octet-stream',
+        contentType: uploadContentType,
       })
 
       const response: any = {

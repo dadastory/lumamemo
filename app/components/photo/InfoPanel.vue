@@ -10,6 +10,7 @@ interface Props {
   currentPhoto: Photo
   exifData?: NeededExif | null
   globeRoute?: string | null
+  albumRoute?: string | null
   onClose?: () => void
 }
 
@@ -473,7 +474,12 @@ const onTagClick = (tag: string) => {
 }
 
 const onAlbumClick = (albumId: number) => {
-  window.open(`/albums/${albumId}`)
+  const baseAlbumRoute = (props.albumRoute || '/albums').replace(/\/+$/, '')
+  const target = `${baseAlbumRoute}/${encodeURIComponent(String(albumId))}`
+  const opened = window.open(target, '_blank', 'noopener')
+  if (!opened) {
+    window.location.assign(target)
+  }
 }
 </script>
 

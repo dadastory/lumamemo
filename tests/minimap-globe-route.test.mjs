@@ -32,7 +32,10 @@ describe('photo minimap globe route', () => {
     const source = readSource('app/components/photo/InfoPanel.vue')
 
     assert.match(source, /globeRoute\?: string \| null/)
-    assert.doesNotMatch(source, /window\.open\(`\/globe\?photoId=\$\{photoId\}`\)/)
+    assert.doesNotMatch(
+      source,
+      /window\.open\(`\/globe\?photoId=\$\{photoId\}`\)/,
+    )
     assert.match(source, /props\.globeRoute \|\| '\/globe'/)
     assert.match(source, /new URLSearchParams\(\{ photoId \}\)/)
   })
@@ -42,15 +45,17 @@ describe('photo minimap globe route', () => {
     const publicProfileSource = readSource(
       'app/components/public/PublicProfileMasonry.vue',
     )
-    const publicAlbumSource = readSource('app/pages/u/[publicId]/albums/[albumId].vue')
+    const publicAlbumSource = readSource(
+      'app/pages/u/[publicId]/albums/[albumId].vue',
+    )
 
     assert.match(
       masonrySource,
-      /openViewer\(\s*index,\s*props\.returnRoute \|\| null,\s*displayPhotos\.value as Photo\[\],\s*props\.globeRoute \|\| null,\s*\)/s,
+      /openViewer\(\s*index,\s*props\.returnRoute \|\| null,\s*displayPhotos\.value as Photo\[\],\s*props\.globeRoute \|\| null,\s*props\.albumRoute \|\| null,\s*\)/s,
     )
     assert.match(
       publicProfileSource,
-      /openViewer\(\s*foundIndex,\s*profileRoute\.value,\s*currentPhotos as Photo\[\],\s*buildPublicGlobeRoute\(props\.publicId\),\s*\)/s,
+      /openViewer\(\s*foundIndex,\s*profileRoute\.value,\s*currentPhotos as Photo\[\],\s*buildPublicGlobeRoute\(props\.publicId\),\s*buildPublicAlbumsRoute\(props\.publicId\),\s*\)/s,
     )
     assert.match(publicAlbumSource, /buildPublicGlobeRoute\(publicId\.value\)/)
   })

@@ -1,4 +1,5 @@
 import { normalizeStorageKey } from './storage-key.ts'
+import { getPhotoDisplayStorageKey } from './raw-photo.ts'
 
 type AnyRecord = Record<string, any>
 
@@ -145,15 +146,20 @@ const serializeOwner = (record: AnyRecord) => {
 
 export const serializePublicPhoto = (photo: AnyRecord) => ({
   id: photo.id,
+  sourceType: photo.sourceType ?? 'image',
   title: photo.title,
   description: photo.description,
-  width: photo.width,
-  height: photo.height,
-  aspectRatio: photo.aspectRatio,
+  width: photo.displayWidth ?? photo.width,
+  height: photo.displayHeight ?? photo.height,
+  aspectRatio:
+    photo.displayWidth && photo.displayHeight
+      ? photo.displayWidth / photo.displayHeight
+      : photo.aspectRatio,
   dateTaken: photo.dateTaken,
-  fileSize: photo.fileSize,
+  fileSize: photo.displayFileSize ?? photo.fileSize,
   lastModified: photo.lastModified,
-  originalUrl: encodeStorageKeyPath(photo.storageKey) ?? photo.originalUrl,
+  originalUrl:
+    encodeStorageKeyPath(getPhotoDisplayStorageKey(photo)) ?? photo.originalUrl,
   thumbnailUrl: encodeStorageKeyPath(photo.thumbnailKey) ?? photo.thumbnailUrl,
   thumbnailHash: photo.thumbnailHash,
   imageVariants: normalizePhotoImageVariants(photo.imageVariants, {
@@ -174,7 +180,9 @@ export const serializePublicPhoto = (photo: AnyRecord) => ({
 
 export const serializeAdminPhoto = (photo: AnyRecord) => ({
   ...photo,
-  originalUrl: encodeStorageKeyPath(photo.storageKey) ?? photo.originalUrl,
+  sourceType: photo.sourceType ?? 'image',
+  originalUrl:
+    encodeStorageKeyPath(getPhotoDisplayStorageKey(photo)) ?? photo.originalUrl,
   thumbnailUrl: encodeStorageKeyPath(photo.thumbnailKey) ?? photo.thumbnailUrl,
   imageVariants: normalizePhotoImageVariants(photo.imageVariants, {
     includeKeys: true,
@@ -433,24 +441,48 @@ export async function getVisiblePhotos() {
 }
 
 export async function getPhotoByStorageKey(key: string) {
-  const { useDB, tables } = await import('./db')
+  const { useDB, tables, eq } = await import('./db')
   const db = useDB()
   const photos = await db.select().from(tables.photos).all()
-  return photos.find((photo: AnyRecord) => {
+  const normalizedKey = normalizeStorageKey(key)
+  if (!normalizedKey) return undefined
+
+  const photo = photos.find((photo: AnyRecord) => {
     const variantKeys = Object.values(photo.imageVariants || {})
       .map((variant: any) => variant?.key)
+      .map((variantKey: string | null | undefined) =>
+        normalizeStorageKey(variantKey),
+      )
       .filter(Boolean)
 
     return (
-      photo.storageKey === key ||
-      photo.thumbnailKey === key ||
-      photo.livePhotoVideoKey === key ||
-      variantKeys.includes(key) ||
-      storagePathMatches(photo.originalUrl, key) ||
-      storagePathMatches(photo.thumbnailUrl, key) ||
-      storagePathMatches(photo.livePhotoVideoUrl, key)
+      photo.storageKey === normalizedKey ||
+      photo.displayStorageKey === normalizedKey ||
+      photo.thumbnailKey === normalizedKey ||
+      photo.livePhotoVideoKey === normalizedKey ||
+      variantKeys.includes(normalizedKey) ||
+      storagePathMatches(photo.originalUrl, normalizedKey) ||
+      storagePathMatches(photo.thumbnailUrl, normalizedKey) ||
+      storagePathMatches(photo.livePhotoVideoUrl, normalizedKey)
     )
   })
+  if (photo) return photo
+
+  const asset = await db
+    .select({
+      photoId: tables.photoAssets.photoId,
+    })
+    .from(tables.photoAssets)
+    .where(eq(tables.photoAssets.storageKey, normalizedKey))
+    .get()
+
+  if (!asset?.photoId) return undefined
+
+  return await db
+    .select()
+    .from(tables.photos)
+    .where(eq(tables.photos.id, asset.photoId))
+    .get()
 }
 
 export async function getVisiblePhotoByStorageKey(key: string) {
@@ -512,6 +544,22 @@ export async function authorizePhotoStorageKey(event: any, key: string) {
   )
 
   if (isOriginalKey && photo) {
+    const isRawOriginalKey =
+      photo.sourceType === 'raw' && photo.storageKey === normalizedKey
+    if (isRawOriginalKey) {
+      if (
+        session.user &&
+        canManageOwnedResource(session.user, photo.ownerUserId)
+      ) {
+        return
+      }
+
+      throw createError({
+        statusCode: 404,
+        statusMessage: 'Photo not found',
+      })
+    }
+
     if (
       session.user &&
       (canManageOwnedResource(session.user, photo.ownerUserId) ||

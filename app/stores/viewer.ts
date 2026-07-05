@@ -5,6 +5,7 @@ export const useViewerState = defineStore('photo-viewer-state', () => {
   const isViewerOpen = ref(false)
   const returnRoute = ref<string | null>(null)
   const globeRoute = ref<string | null>(null)
+  const albumRoute = ref<string | null>(null)
   const isDirectAccess = ref(false)
   // The photo collection the current viewing session navigates (e.g. an album).
   // When null, the viewer falls back to the global photo list.
@@ -15,6 +16,7 @@ export const useViewerState = defineStore('photo-viewer-state', () => {
     route?: string | null,
     photos?: Photo[] | null,
     nextGlobeRoute?: string | null,
+    nextAlbumRoute?: string | null,
   ) => {
     currentPhotoIndex.value = index
     isViewerOpen.value = true
@@ -23,6 +25,7 @@ export const useViewerState = defineStore('photo-viewer-state', () => {
     // it) to fall back to the global list.
     scopedPhotos.value = photos ?? null
     globeRoute.value = nextGlobeRoute ?? null
+    albumRoute.value = nextAlbumRoute ?? null
     if (route) {
       returnRoute.value = route
       isDirectAccess.value = false
@@ -48,6 +51,7 @@ export const useViewerState = defineStore('photo-viewer-state', () => {
     isViewerOpen,
     returnRoute,
     globeRoute,
+    albumRoute,
     isDirectAccess,
     scopedPhotos,
     openViewer,

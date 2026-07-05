@@ -171,11 +171,15 @@ watch(isMobile, (mobile) => {
   remeasureMasonryLayout()
 })
 
-watch([masonryItems, () => route.fullPath], () => {
-  remeasureMasonryLayout()
-}, {
-  flush: 'post',
-})
+watch(
+  [masonryItems, () => route.fullPath],
+  () => {
+    remeasureMasonryLayout()
+  },
+  {
+    flush: 'post',
+  },
+)
 
 const photoStats = computed(() => {
   const totalPhotos = displayPhotos.value?.length || 0
@@ -379,6 +383,7 @@ const handleOpenViewer = (index: number) => {
     props.returnRoute || null,
     displayPhotos.value as Photo[],
     props.globeRoute || null,
+    props.albumRoute || null,
   )
   router.push(buildPhotoRoute(photo.id))
 }

@@ -20,10 +20,15 @@ export const getPhotoStorageKeys = (photo: any) => {
       )
     }
   }
+  if (photo.displayStorageKey) keys.add(photo.displayStorageKey)
   if (photo.thumbnailKey) keys.add(photo.thumbnailKey)
   if (photo.livePhotoVideoKey) keys.add(photo.livePhotoVideoKey)
   for (const variant of Object.values(photo.imageVariants || {})) {
     const key = (variant as any)?.key
+    if (typeof key === 'string' && key) keys.add(key)
+  }
+  for (const asset of photo.photoAssets || photo.assets || []) {
+    const key = asset?.storageKey
     if (typeof key === 'string' && key) keys.add(key)
   }
   return [...keys]

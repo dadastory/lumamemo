@@ -2,6 +2,10 @@ import { useStorageProvider } from '~~/server/utils/useStorageProvider'
 import { logger } from '~~/server/utils/logger'
 import { settingsManager } from '~~/server/services/settings/settingsManager'
 import { normalizeStorageKey } from '~~/server/utils/storage-key'
+import {
+  isSupportedRawUpload,
+  normalizeUploadContentType,
+} from '~~/shared/utils/raw-photo'
 
 export default eventHandler(async (event) => {
   const session = await requireActiveUserSession(event)
@@ -39,8 +43,10 @@ export default eventHandler(async (event) => {
     })
   }
 
-  const contentType =
-    getHeader(event, 'content-type') || 'application/octet-stream'
+  const contentType = normalizeUploadContentType(
+    getHeader(event, 'content-type') || 'application/octet-stream',
+  )
+  const isAllowedRawUpload = isSupportedRawUpload(storageKey, contentType)
 
   // MIME 类型白名单验证（可通过环境变量配置）
   const config = useRuntimeConfig(event)
@@ -51,11 +57,15 @@ export default eventHandler(async (event) => {
     const allowedTypes = whitelistStr
       ? whitelistStr
           .split(',')
-          .map((type: string) => type.trim())
+          .map((type: string) => normalizeUploadContentType(type))
           .filter(Boolean)
       : []
 
-    if (allowedTypes.length > 0 && !allowedTypes.includes(contentType)) {
+    if (
+      allowedTypes.length > 0 &&
+      !allowedTypes.includes(contentType) &&
+      !isAllowedRawUpload
+    ) {
       throw createError({
         statusCode: 415,
         statusMessage: t('upload.error.invalidType.title'),
@@ -83,7 +93,7 @@ export default eventHandler(async (event) => {
     })
   }
 
-  // 简单大小限制（从设置中读取，默认 256MB）
+  // 简单大小限制，从系统设置读取；设置缺失时使用后端默认值。
   const maxFileSizeMB =
     (await settingsManager.get<number>('system', 'upload.maxFileSize')) ?? 256
   const maxBytes = maxFileSizeMB * 1024 * 1024

@@ -1,5 +1,20 @@
 import pkg from './package.json'
 import type { AnalyticsConfig } from './shared/types/config'
+import { RAW_MIME_TYPES } from './shared/utils/raw-photo'
+
+const DEFAULT_UPLOAD_MIME_WHITELIST = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/bmp',
+  'image/tiff',
+  'image/heic',
+  'image/heif',
+  ...RAW_MIME_TYPES,
+  'video/quicktime',
+  'video/mp4',
+].join(',')
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -118,8 +133,7 @@ export default defineNuxtConfig({
     upload: {
       mime: {
         whitelistEnabled: true,
-        whitelist:
-          'image/jpeg,image/png,image/webp,image/gif,image/bmp,image/tiff,image/heic,image/heif,video/quicktime,video/mp4',
+        whitelist: DEFAULT_UPLOAD_MIME_WHITELIST,
       },
       duplicateCheck: {
         enabled: true,

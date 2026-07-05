@@ -313,7 +313,7 @@ export const extractExifData = async (
             }
           }
 
-          if (!metadata.exif) {
+          if (!metadata.exif && !rawImageBuffer) {
             logger?.warn('No EXIF data found in image metadata')
             return null
           }

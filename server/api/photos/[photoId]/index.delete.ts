@@ -34,9 +34,19 @@ export default eventHandler(async (event) => {
 
   logger.image.info(`Deleting photo ${photo.title || photo.id || photoId}`)
 
+  const photoAssets = await useDB()
+    .select()
+    .from(tables.photoAssets)
+    .where(eq(tables.photoAssets.photoId, photoId))
+    .all()
+
   if (photo.storageKey) {
     logger.image.info(`Deleting photo files for ${photoId} from storage`)
-    await deletePhotoFiles(storageProvider, photo, { strict: false })
+    await deletePhotoFiles(
+      storageProvider,
+      { ...photo, photoAssets },
+      { strict: false },
+    )
   }
 
   await useDB().delete(tables.photos).where(eq(tables.photos.id, photoId)).run()

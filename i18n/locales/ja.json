@@ -509,7 +509,7 @@
     "photos": {
       "title": "写真をアップロード",
       "subtitle": "アップロードされた写真は自動的に処理され、ライブラリに追加されます。その後、{0}セクションで写真を整理できます。",
-      "supportedFormats": "JPEG / PNG / HEIC / ライブフォト / モーションフォト",
+      "supportedFormats": "JPEG / PNG / HEIC / RAW / ライブフォト / モーションフォト",
       "maxFileSize": "最大 {size}MB",
       "buttons": {
         "upload": "写真をアップロード",
@@ -517,7 +517,7 @@
       },
       "uploader": {
         "label": "ドラッグアンドドロップするか、クリックして写真を選択します",
-        "description": "JPEG、PNG、HEIC形式の写真、およびMOV形式のライブフォトビデオをサポート。ファイルあたりの最大サイズ：{maxSize}MB"
+        "description": "JPEG、PNG、HEIC、RAW形式の写真、およびMOV形式のライブフォトビデオをサポート。ファイルあたりの最大サイズ：{maxSize}MB"
       },
       "toolbar": {
         "title": "写真管理",
@@ -1751,7 +1751,30 @@
   "photo": {
     "owner": "アップロード者",
     "viewer": {
-      "downloadOriginal": "元画像をダウンロード"
+      "downloadOriginal": "元画像をダウンロード",
+      "downloadRawOriginal": "RAW原本をダウンロード",
+      "downloadCurrentDisplay": "現在の表示画像をダウンロード",
+      "rawOriginalDownloaded": "RAW原本をダウンロードしました",
+      "rawOriginalDownloadFailed": "RAW原本のダウンロードに失敗しました",
+      "displayImageDownloaded": "現在の表示画像をダウンロードしました",
+      "displayImageDownloadFailed": "現在の表示画像のダウンロードに失敗しました"
+    },
+    "rawVersions": {
+      "title": "RAWバージョン",
+      "count": "{count}件のバージョン",
+      "addRender": "現像画像を追加",
+      "uploading": "アップロード中...",
+      "primary": "主表示画像",
+      "setPrimary": "主画像に設定",
+      "rotateLeft": "左に90°回転",
+      "rotateRight": "右に90°回転",
+      "processing": "RAWバージョンを処理中...",
+      "processingFailed": "RAWバージョンの処理に失敗しました",
+      "reloadFailed": "更新後の写真を再読み込みできませんでした",
+      "deleteVersion": "バージョンを削除",
+      "deleteConfirm": "このRAWバージョンを削除しますか？",
+      "deleteFailed": "RAWバージョンの削除に失敗しました",
+      "cannotDeletePrimary": "このバージョンを削除する前に別の主画像へ切り替えてください"
     },
     "image": {
       "loadError": "画像の読み込み失敗"

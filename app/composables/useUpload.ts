@@ -138,6 +138,67 @@ export function useUpload(options: UseUploadOptions = {}) {
     })
   }
 
+  const getUploadHttpErrorMessage = (xhr: XMLHttpRequest): string => {
+    let errorMessage = ''
+
+    switch (xhr.status) {
+      case 400:
+        errorMessage = t('upload.runtimeError.badRequest')
+        break
+      case 401:
+        errorMessage = t('upload.runtimeError.unauthorized')
+        break
+      case 403:
+        errorMessage = t('upload.runtimeError.forbidden')
+        break
+      case 404:
+        errorMessage = t('upload.runtimeError.notFound')
+        break
+      case 409:
+        errorMessage = t('upload.runtimeError.conflict')
+        break
+      case 413:
+        errorMessage = t('upload.runtimeError.fileTooLarge')
+        break
+      case 415:
+        errorMessage = t('upload.runtimeError.unsupportedType')
+        break
+      case 429:
+        errorMessage = t('upload.runtimeError.rateLimited')
+        break
+      case 500:
+        errorMessage = t('upload.runtimeError.internalServerError')
+        break
+      case 502:
+      case 503:
+      case 504:
+        errorMessage = t('upload.runtimeError.serviceUnavailable')
+        break
+      default:
+        errorMessage = t('upload.runtimeError.httpError', {
+          status: xhr.status,
+        })
+    }
+
+    try {
+      const responseText = xhr.responseText
+      if (responseText) {
+        try {
+          const responseData = JSON.parse(responseText)
+          if (responseData.data?.message) {
+            errorMessage = responseData.data.title || errorMessage
+          }
+        } catch {
+          errorMessage += ` - ${responseText}`
+        }
+      }
+    } catch {
+      // Ignore response parsing errors.
+    }
+
+    return errorMessage
+  }
+
   // 主要的上传函数
   const uploadFile = async (
     file: File,
@@ -154,6 +215,46 @@ export function useUpload(options: UseUploadOptions = {}) {
       // 创建新的 XHR 实例
       currentXHR = new XMLHttpRequest()
       const xhr = currentXHR
+      let requestSettled = false
+
+      const retryUpload = () => {
+        setTimeout(() => {
+          uploadFile(file, signedUrl, callbacks, attempt + 1)
+            .then(resolve)
+            .catch(reject)
+        }, retryDelay * attempt)
+      }
+
+      const handleUploadHttpError = () => {
+        if (requestSettled) return
+
+        const endTime = Date.now()
+        const errorMessage = getUploadHttpErrorMessage(xhr)
+        const canRetry =
+          attempt < maxRetries && (xhr.status >= 500 || xhr.status === 429)
+
+        if (canRetry) {
+          requestSettled = true
+          updateStatus({
+            status: 'error',
+            error: t('upload.runtimeError.retrying', {
+              message: errorMessage,
+              attempt,
+              max: maxRetries,
+            }),
+            endTime,
+          })
+          callbacks.onRetry?.(attempt, maxRetries)
+          retryUpload()
+          return
+        }
+
+        requestSettled = true
+        updateStatus({ status: 'error', error: errorMessage, endTime })
+        callbacks.onStatusChange?.('error')
+        callbacks.onError?.(errorMessage, xhr)
+        reject(new Error(errorMessage))
+      }
 
       // 设置超时
       if (timeout > 0) {
@@ -178,15 +279,25 @@ export function useUpload(options: UseUploadOptions = {}) {
 
       // 成功处理
       xhr.addEventListener('load', () => {
+        if (requestSettled) return
+
         const endTime = Date.now()
-        updateStatus({ status: 'success', endTime })
-        callbacks.onStatusChange?.('success')
-        callbacks.onSuccess?.(xhr)
-        resolve(xhr)
+        if (xhr.status >= 200 && xhr.status < 300) {
+          requestSettled = true
+          updateStatus({ status: 'success', endTime })
+          callbacks.onStatusChange?.('success')
+          callbacks.onSuccess?.(xhr)
+          resolve(xhr)
+          return
+        }
+
+        handleUploadHttpError()
       })
 
       // 错误处理
       xhr.addEventListener('error', () => {
+        if (requestSettled) return
+
         const endTime = Date.now()
         let errorMessage = ''
 
@@ -194,11 +305,17 @@ export function useUpload(options: UseUploadOptions = {}) {
           // 状态码 0 通常表示网络连接失败、CORS 问题或服务器不可达
           errorMessage = t('upload.runtimeError.networkFailed')
         } else if (xhr.status >= 400 && xhr.status < 500) {
-          errorMessage = t('upload.runtimeError.clientError', { status: xhr.status })
+          errorMessage = t('upload.runtimeError.clientError', {
+            status: xhr.status,
+          })
         } else if (xhr.status >= 500) {
-          errorMessage = t('upload.runtimeError.serverError', { status: xhr.status })
+          errorMessage = t('upload.runtimeError.serverError', {
+            status: xhr.status,
+          })
         } else {
-          errorMessage = t('upload.runtimeError.networkError', { status: xhr.status })
+          errorMessage = t('upload.runtimeError.networkError', {
+            status: xhr.status,
+          })
         }
 
         // 检查是否可以重试
@@ -209,6 +326,7 @@ export function useUpload(options: UseUploadOptions = {}) {
             xhr.status === 429) // 频率限制
 
         if (canRetry) {
+          requestSettled = true
           updateStatus({
             status: 'error',
             error: t('upload.runtimeError.retrying', {
@@ -219,14 +337,9 @@ export function useUpload(options: UseUploadOptions = {}) {
             endTime,
           })
           callbacks.onRetry?.(attempt, maxRetries)
-
-          // 延迟后重试
-          setTimeout(() => {
-            uploadFile(file, signedUrl, callbacks, attempt + 1)
-              .then(resolve)
-              .catch(reject)
-          }, retryDelay * attempt) // 指数退避
+          retryUpload()
         } else {
+          requestSettled = true
           updateStatus({ status: 'error', error: errorMessage, endTime })
           callbacks.onStatusChange?.('error')
           callbacks.onError?.(errorMessage, xhr)
@@ -236,6 +349,8 @@ export function useUpload(options: UseUploadOptions = {}) {
 
       // 超时处理
       xhr.addEventListener('timeout', () => {
+        if (requestSettled) return
+
         const endTime = Date.now()
         const errorMessage = t('upload.runtimeError.timeout', { timeout })
 
@@ -243,6 +358,7 @@ export function useUpload(options: UseUploadOptions = {}) {
         const canRetry = attempt < maxRetries
 
         if (canRetry) {
+          requestSettled = true
           updateStatus({
             status: 'error',
             error: t('upload.runtimeError.retrying', {
@@ -253,14 +369,9 @@ export function useUpload(options: UseUploadOptions = {}) {
             endTime,
           })
           callbacks.onRetry?.(attempt, maxRetries)
-
-          // 延迟后重试
-          setTimeout(() => {
-            uploadFile(file, signedUrl, callbacks, attempt + 1)
-              .then(resolve)
-              .catch(reject)
-          }, retryDelay * attempt) // 指数退避
+          retryUpload()
         } else {
+          requestSettled = true
           updateStatus({ status: 'error', error: errorMessage, endTime })
           callbacks.onStatusChange?.('error')
           callbacks.onError?.(errorMessage, xhr)
@@ -270,84 +381,14 @@ export function useUpload(options: UseUploadOptions = {}) {
 
       // 中止处理
       xhr.addEventListener('abort', () => {
+        if (requestSettled) return
+
         const endTime = Date.now()
+        requestSettled = true
         updateStatus({ status: 'aborted', endTime })
         callbacks.onStatusChange?.('aborted')
         callbacks.onAbort?.()
         reject(new Error(t('upload.runtimeError.aborted')))
-      })
-
-      // 状态变化处理
-      xhr.addEventListener('readystatechange', () => {
-        if (xhr.readyState === XMLHttpRequest.DONE) {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            // 成功情况在 load 事件中处理
-            return
-          } else if (xhr.status >= 400) {
-            const endTime = Date.now()
-            let errorMessage = ''
-
-            // 根据状态码提供更友好的错误信息
-            switch (xhr.status) {
-              case 400:
-                errorMessage = t('upload.runtimeError.badRequest')
-                break
-              case 401:
-                errorMessage = t('upload.runtimeError.unauthorized')
-                break
-              case 403:
-                errorMessage = t('upload.runtimeError.forbidden')
-                break
-              case 404:
-                errorMessage = t('upload.runtimeError.notFound')
-                break
-              case 409:
-                errorMessage = t('upload.runtimeError.conflict')
-                break
-              case 413:
-                errorMessage = t('upload.runtimeError.fileTooLarge')
-                break
-              case 415:
-                errorMessage = t('upload.runtimeError.unsupportedType')
-                break
-              case 429:
-                errorMessage = t('upload.runtimeError.rateLimited')
-                break
-              case 500:
-                errorMessage = t('upload.runtimeError.internalServerError')
-                break
-              case 502:
-              case 503:
-              case 504:
-                errorMessage = t('upload.runtimeError.serviceUnavailable')
-                break
-              default:
-                errorMessage = t('upload.runtimeError.httpError', { status: xhr.status })
-            }
-
-            // 尝试获取服务器返回的详细错误信息
-            try {
-              const responseText = xhr.responseText
-              if (responseText) {
-                try {
-                  const responseData = JSON.parse(responseText)
-                  if (responseData.data?.message) {
-                    errorMessage = responseData.data.title || errorMessage
-                  }
-                } catch {
-                  // 如果不是 JSON，使用原始文本
-                  errorMessage += ` - ${responseText}`
-                }
-              }
-            } catch {
-              // 忽略解析错误
-            }
-
-            updateStatus({ status: 'error', error: errorMessage, endTime })
-            callbacks.onStatusChange?.('error')
-            callbacks.onError?.(errorMessage, xhr)
-          }
-        }
       })
 
       // 准备请求
@@ -387,7 +428,8 @@ export function useUpload(options: UseUploadOptions = {}) {
 
   // 格式化时间
   const formatTime = (seconds: number): string => {
-    if (!isFinite(seconds) || seconds < 0) return t('upload.progress.calculating')
+    if (!isFinite(seconds) || seconds < 0)
+      return t('upload.progress.calculating')
 
     const hours = Math.floor(seconds / 3600)
     const minutes = Math.floor((seconds % 3600) / 60)

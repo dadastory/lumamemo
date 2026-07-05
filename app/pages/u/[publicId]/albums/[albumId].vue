@@ -126,6 +126,7 @@ const handleOpenViewer = (index: number) => {
     buildPublicAlbumDetailRoute(publicId.value, albumId.value),
     albumPhotos.value,
     buildPublicGlobeRoute(publicId.value),
+    buildPublicAlbumsRoute(publicId.value),
   )
   router.push(buildPublicPhotoRoute(publicId.value, photo.id))
 }

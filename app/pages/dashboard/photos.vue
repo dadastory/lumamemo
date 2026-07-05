@@ -5,6 +5,11 @@ import { h, resolveComponent } from 'vue'
 import { Icon, UBadge } from '#components'
 import ThumbImage from '~/components/ui/ThumbImage.vue'
 import { formatPhotoLocation } from '~/utils/photo-location'
+import {
+  RAW_UPLOAD_ACCEPT,
+  getUploadContentType,
+  isSupportedRawFile,
+} from '~~/shared/utils/raw-photo'
 
 const UCheckbox = resolveComponent('UCheckbox')
 const Rating = resolveComponent('Rating')
@@ -49,6 +54,15 @@ const systemUploadEraseLocationDefault = computed(() => {
 })
 
 const dayjs = useDayjs()
+const PHOTO_UPLOAD_ACCEPT = [
+  'image/jpeg',
+  'image/png',
+  'image/heic',
+  'image/heif',
+  RAW_UPLOAD_ACCEPT,
+  'video/quicktime',
+  '.mov',
+].join(',')
 
 const { status, refresh } = usePhotos()
 const { filteredPhotos, selectedCounts, hasActiveFilters } = usePhotoFilters()
@@ -307,7 +321,7 @@ const uploadImage = async (
       method: 'POST',
       body: {
         fileName: file.name,
-        contentType: file.type,
+        contentType: getUploadContentType(file),
       },
     })
 
@@ -1181,14 +1195,19 @@ const validateFile = (
     'image/heif',
     'video/quicktime', // MOV 文件
   ]
-
   const isValidImageType = allowedTypes.includes(file.type)
   const isValidImageExtension = ['.heic', '.heif'].some((ext) =>
     file.name.toLowerCase().endsWith(ext),
   )
+  const isValidRawFile = isSupportedRawFile(file)
   const isValidVideoExtension = file.name.toLowerCase().endsWith('.mov')
 
-  if (!isValidImageType && !isValidImageExtension && !isValidVideoExtension) {
+  if (
+    !isValidImageType &&
+    !isValidImageExtension &&
+    !isValidRawFile &&
+    !isValidVideoExtension
+  ) {
     return {
       valid: false,
       reason: 'unsupported-format',
@@ -2356,7 +2375,7 @@ onUnmounted(() => {
                 icon="tabler:cloud-upload"
                 layout="list"
                 size="xl"
-                accept="image/jpeg,image/png,image/heic,image/heif,video/quicktime,.mov"
+                :accept="PHOTO_UPLOAD_ACCEPT"
                 multiple
                 highlight
                 dropzone

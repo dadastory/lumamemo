@@ -38,6 +38,7 @@ type PipelineQueuePayload =
   | {
       type: 'photo-variants'
       photoId: string
+      ownerUserId?: number | null
     }
 
 export const users = pgTable('users', {
@@ -87,6 +88,9 @@ export const userInvites = pgTable('user_invites', {
 
 export const photos = pgTable('photos', {
   id: text('id').primaryKey().unique(),
+  sourceType: text('source_type', { enum: ['image', 'raw'] })
+    .default('image')
+    .notNull(),
   title: text('title'),
   description: text('description'),
   width: integer('width'),
@@ -94,6 +98,11 @@ export const photos = pgTable('photos', {
   aspectRatio: real('aspect_ratio'),
   dateTaken: text('date_taken'),
   storageKey: text('storage_key'),
+  displayStorageKey: text('display_storage_key'),
+  displayMimeType: text('display_mime_type'),
+  displayFileSize: integer('display_file_size'),
+  displayWidth: integer('display_width'),
+  displayHeight: integer('display_height'),
   thumbnailKey: text('thumbnail_key'),
   fileSize: integer('file_size'),
   lastModified: text('last_modified'),
@@ -117,6 +126,26 @@ export const photos = pgTable('photos', {
   visibility: text('visibility', { enum: ['private', 'public'] })
     .default('private')
     .notNull(),
+})
+
+export const photoAssets = pgTable('photo_assets', {
+  id: serial('id').primaryKey(),
+  photoId: text('photo_id')
+    .notNull()
+    .references(() => photos.id, { onDelete: 'cascade' }),
+  kind: text('kind', { enum: ['embedded-preview', 'uploaded-render'] })
+    .default('uploaded-render')
+    .notNull(),
+  storageKey: text('storage_key').notNull(),
+  fileName: text('file_name').notNull(),
+  mimeType: text('mime_type').notNull(),
+  fileSize: integer('file_size').notNull(),
+  width: integer('width').notNull(),
+  height: integer('height').notNull(),
+  isPrimary: boolean('is_primary').default(false).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 })
 
 export const pipelineQueue = pgTable('pipeline_queue', {

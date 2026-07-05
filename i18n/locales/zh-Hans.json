@@ -583,7 +583,7 @@
     "photos": {
       "title": "照片上传",
       "subtitle": "上传后照片会自动处理并添加到库中。您可以随后在 {0} 中组织您的照片。",
-      "supportedFormats": "JPEG / PNG / HEIC / 实况视频 / Motion Photo",
+      "supportedFormats": "JPEG / PNG / HEIC / RAW 原片 / 实况视频 / Motion Photo",
       "maxFileSize": "最大 {size}MB",
       "buttons": {
         "upload": "上传照片",
@@ -591,7 +591,7 @@
       },
       "uploader": {
         "label": "拖放或点击选择照片",
-        "description": "支持 JPEG、PNG、HEIC 格式照片，以及 MOV 格式 Live Photo 视频，单个文件最大 {maxSize}MB"
+        "description": "支持 JPEG、PNG、HEIC、RAW 原片格式照片，以及 MOV 格式 Live Photo 视频，单个文件最大 {maxSize}MB"
       },
       "toolbar": {
         "title": "照片管理",
@@ -1751,7 +1751,30 @@
   "photo": {
     "owner": "上传者",
     "viewer": {
-      "downloadOriginal": "下载原图"
+      "downloadOriginal": "下载原图",
+      "downloadRawOriginal": "下载 RAW 原片",
+      "downloadCurrentDisplay": "下载当前显示图",
+      "rawOriginalDownloaded": "RAW 原片下载成功",
+      "rawOriginalDownloadFailed": "RAW 原片下载失败",
+      "displayImageDownloaded": "当前显示图下载成功",
+      "displayImageDownloadFailed": "当前显示图下载失败"
+    },
+    "rawVersions": {
+      "title": "RAW 版本",
+      "count": "{count} 个版本",
+      "addRender": "添加处理图",
+      "uploading": "上传中...",
+      "primary": "主显示图",
+      "setPrimary": "设为主图",
+      "rotateLeft": "左旋 90°",
+      "rotateRight": "右旋 90°",
+      "processing": "正在处理 RAW 版本...",
+      "processingFailed": "RAW 版本处理失败",
+      "reloadFailed": "重新加载更新后的照片失败",
+      "deleteVersion": "删除版本",
+      "deleteConfirm": "删除这个 RAW 版本？",
+      "deleteFailed": "删除 RAW 版本失败",
+      "cannotDeletePrimary": "请先切换到其他主图，再删除这个版本"
     },
     "image": {
       "loadError": "图片加载失败"

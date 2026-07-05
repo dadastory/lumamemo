@@ -2,7 +2,10 @@
 import dayjsLocale_zhCN from 'dayjs/locale/zh-cn'
 import dayjsLocale_zhTW from 'dayjs/locale/zh-tw'
 import dayjsLocale_zhHK from 'dayjs/locale/zh-hk'
-import { buildPublicPhotoRoute } from '~/utils/public-profile-routes'
+import {
+  buildPublicAlbumsRoute,
+  buildPublicPhotoRoute,
+} from '~/utils/public-profile-routes'
 
 const router = useRouter()
 const dayjs = useDayjs()
@@ -59,10 +62,14 @@ const apiEndpoint = computed(() => {
   // 前端页面：登录用户显示所有照片，未登录用户只显示可见照片
   return loggedIn.value ? '/api/photos' : '/api/photos/visible'
 })
-const { data, refresh, status } = await useFetch(() => apiEndpoint.value, {
-  immediate: computed(() => Boolean(apiEndpoint.value)),
-  watch: [apiEndpoint, publicProfileId],
-})
+const { data, refresh, status } = await useFetch<Photo[]>(
+  () => apiEndpoint.value,
+  {
+    immediate: computed(() => Boolean(apiEndpoint.value)),
+    watch: [apiEndpoint, publicProfileId],
+    default: () => [],
+  },
+)
 
 const photos = computed(() => (data.value as Photo[]) || [])
 
@@ -72,6 +79,7 @@ const {
   isViewerOpen,
   returnRoute,
   globeRoute,
+  albumRoute,
   isDirectAccess,
   scopedPhotos,
 } = storeToRefs(useViewerState())
@@ -79,6 +87,71 @@ const {
 // The photo collection the viewer actually navigates: the scoped list (e.g. an
 // album) when present, otherwise the global list.
 const viewerPhotos = computed(() => scopedPhotos.value ?? photos.value)
+
+const appendPhotoUrlToken = (url: string | null | undefined, token: string) => {
+  if (!url || !token) return url
+
+  const hashIndex = url.indexOf('#')
+  const hash = hashIndex >= 0 ? url.slice(hashIndex) : ''
+  const urlWithoutHash = hashIndex >= 0 ? url.slice(0, hashIndex) : url
+  const queryIndex = urlWithoutHash.indexOf('?')
+  const base =
+    queryIndex >= 0 ? urlWithoutHash.slice(0, queryIndex) : urlWithoutHash
+  const query = queryIndex >= 0 ? urlWithoutHash.slice(queryIndex + 1) : ''
+  const params = new URLSearchParams(query)
+  params.set('v', token)
+  const queryString = params.toString()
+
+  return `${base}${queryString ? `?${queryString}` : ''}${hash}`
+}
+
+const withPhotoUrlCacheToken = (photo: Photo) => {
+  if (photo.sourceType !== 'raw') return photo
+
+  const token = String(photo.lastModified || Date.now())
+  const tokenedImageVariants = photo.imageVariants
+    ? Object.fromEntries(
+        Object.entries(photo.imageVariants).map(([variantName, variant]) => [
+          variantName,
+          variant?.url
+            ? {
+                ...variant,
+                url: appendPhotoUrlToken(variant.url, token),
+              }
+            : variant,
+        ]),
+      )
+    : photo.imageVariants
+
+  return {
+    ...photo,
+    originalUrl: appendPhotoUrlToken(photo.originalUrl, token),
+    thumbnailUrl: appendPhotoUrlToken(photo.thumbnailUrl, token),
+    imageVariants: tokenedImageVariants,
+  } as Photo
+}
+
+const replacePhotoInList = (list: Photo[] | null | undefined, photo: Photo) => {
+  if (!list?.length) return list
+
+  const photoIndex = list.findIndex((item) => item.id === photo.id)
+  if (photoIndex < 0) return list
+
+  const nextPhotos = [...list]
+  nextPhotos[photoIndex] = {
+    ...nextPhotos[photoIndex],
+    ...photo,
+  }
+  return nextPhotos
+}
+
+const handlePhotoUpdated = (photo: Photo) => {
+  const updatedPhoto = withPhotoUrlCacheToken(photo)
+
+  data.value = replacePhotoInList(data.value, updatedPhoto) ?? data.value
+  scopedPhotos.value =
+    replacePhotoInList(scopedPhotos.value, updatedPhoto) ?? scopedPhotos.value
+}
 
 const handleIndexChange = (newIndex: number) => {
   switchToIndex(newIndex)
@@ -160,8 +233,13 @@ provide(
           :current-index="currentPhotoIndex"
           :is-open="isViewerOpen"
           :globe-route="globeRoute"
+          :album-route="
+            albumRoute ||
+            (publicProfileId ? buildPublicAlbumsRoute(publicProfileId) : null)
+          "
           @close="handleClose"
           @index-change="handleIndexChange"
+          @photo-updated="handlePhotoUpdated"
         />
       </ClientOnly>
     </PhotosProvider>

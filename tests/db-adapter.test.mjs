@@ -80,4 +80,38 @@ describe('database adapter config', () => {
       true,
     )
   })
+
+  it('registers RAW photo version migrations for SQLite and Postgres', () => {
+    const sqliteMigrationDir = new URL(
+      '../server/database/migrations/',
+      import.meta.url,
+    )
+    const postgresMigrationDir = new URL(
+      '../server/database/migrations/postgres/',
+      import.meta.url,
+    )
+    const sqliteMigration = readFileSync(
+      new URL('0015_raw_photo_versions.sql', sqliteMigrationDir),
+      'utf8',
+    )
+    const postgresMigration = readFileSync(
+      new URL('0004_raw_photo_versions.sql', postgresMigrationDir),
+      'utf8',
+    )
+    const journal = JSON.parse(
+      readFileSync(new URL('meta/_journal.json', sqliteMigrationDir), 'utf8'),
+    )
+
+    assert.match(sqliteMigration, /CREATE TABLE `photo_assets`/)
+    assert.match(sqliteMigration, /ADD `display_storage_key` text/)
+    assert.match(postgresMigration, /CREATE TABLE IF NOT EXISTS "photo_assets"/)
+    assert.match(
+      postgresMigration,
+      /ADD COLUMN IF NOT EXISTS "display_storage_key"/,
+    )
+    assert.equal(
+      journal.entries.some((entry) => entry.tag === '0015_raw_photo_versions'),
+      true,
+    )
+  })
 })

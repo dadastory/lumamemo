@@ -20,12 +20,14 @@ interface Props {
   currentIndex: number
   isOpen: boolean
   globeRoute?: string | null
+  albumRoute?: string | null
 }
 
 const props = defineProps<Props>()
 const emit = defineEmits<{
   close: []
   indexChange: [index: number]
+  'photo-updated': [photo: Photo]
 }>()
 
 const toast = useToast()
@@ -94,6 +96,38 @@ const { convertMovToMp4, getProcessingState } = useLivePhotoProcessor()
 // Computed
 const currentPhoto = computed(() => props.photos[props.currentIndex])
 const isMobile = useMediaQuery('(max-width: 768px)')
+
+const rawDisplayRefreshTokens = ref<Record<string, number>>({})
+
+const appendRefreshToken = (url: string, token: number) => {
+  if (!url || !token) return url
+  return `${url}${url.includes('?') ? '&' : '?'}v=${encodeURIComponent(String(token))}`
+}
+
+const getPhotoDisplayRefreshToken = (photo: Photo) =>
+  rawDisplayRefreshTokens.value[photo.id] || 0
+
+const refreshRawDisplay = (photoId: string) => {
+  rawDisplayRefreshTokens.value = {
+    ...rawDisplayRefreshTokens.value,
+    [photoId]: (rawDisplayRefreshTokens.value[photoId] || 0) + 1,
+  }
+}
+
+const getRefreshablePhotoDisplayUrl = (photo: Photo) =>
+  appendRefreshToken(
+    getPhotoDisplayUrl(photo),
+    getPhotoDisplayRefreshToken(photo),
+  )
+
+const getRefreshablePhotoVariantUrl = (
+  photo: Photo,
+  variant: 'thumb' | 'card' | 'view',
+) =>
+  appendRefreshToken(
+    getPhotoVariantUrl(photo, variant),
+    getPhotoDisplayRefreshToken(photo),
+  )
 
 // LivePhoto processing state
 const livePhotoProcessingState = computed(() => {
@@ -249,6 +283,34 @@ const handleImageLoaded = () => {
   }, 2000)
 }
 
+const getExtensionFromContentType = (contentType: string | null) => {
+  const normalized = contentType?.split(';')[0]?.trim().toLowerCase()
+  switch (normalized) {
+    case 'image/jpeg':
+      return 'jpg'
+    case 'image/png':
+      return 'png'
+    case 'image/webp':
+      return 'webp'
+    case 'image/gif':
+      return 'gif'
+    case 'image/heic':
+      return 'heic'
+    case 'image/heif':
+      return 'heif'
+    case 'image/tiff':
+      return 'tiff'
+    default:
+      return null
+  }
+}
+
+const getStorageKeyExtension = (storageKey?: string | null) => {
+  const clean = storageKey?.split(/[?#]/)[0] || ''
+  const extension = clean.split('.').pop()
+  return extension && extension !== clean ? extension.toLowerCase() : null
+}
+
 const downloadOriginalImage = async () => {
   const photo = currentPhoto.value
   if (!photo) return
@@ -264,7 +326,11 @@ const downloadOriginalImage = async () => {
     const blob = await response.blob()
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
-    const extension = photo.originalUrl?.split('.').pop() || 'jpg'
+    const extension =
+      getStorageKeyExtension(photo.storageKey) ||
+      getExtensionFromContentType(response.headers.get('content-type')) ||
+      photo.originalUrl?.split('.').pop() ||
+      'jpg'
     link.href = url
     link.download = `${photo.title || photo.id}.${extension}`
     document.body.appendChild(link)
@@ -273,20 +339,75 @@ const downloadOriginalImage = async () => {
     window.URL.revokeObjectURL(url)
 
     toast.add({
-      title: $t('ui.action.share.success.originalImageDownloaded'),
+      title:
+        photo.sourceType === 'raw'
+          ? $t('photo.viewer.rawOriginalDownloaded')
+          : $t('ui.action.share.success.originalImageDownloaded'),
       color: 'success',
       icon: 'tabler:download',
       duration: 3000,
     })
   } catch (error) {
     toast.add({
-      title: $t('ui.action.share.error.originalImageDownloadFailed'),
+      title:
+        photo.sourceType === 'raw'
+          ? $t('photo.viewer.rawOriginalDownloadFailed')
+          : $t('ui.action.share.error.originalImageDownloadFailed'),
       description: (error as Error)?.message || $t('common.unknownError'),
       color: 'error',
       icon: 'tabler:x',
       duration: 3000,
     })
   }
+}
+
+const downloadDisplayImage = async () => {
+  const photo = currentPhoto.value
+  if (!photo) return
+
+  try {
+    const response = await fetch(`/api/photos/${photo.id}/display`)
+    if (!response.ok) {
+      throw new Error(response.statusText || $t('common.unknownError'))
+    }
+
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    const extension =
+      getExtensionFromContentType(response.headers.get('content-type')) ||
+      getStorageKeyExtension(photo.displayStorageKey) ||
+      'jpg'
+    link.href = url
+    link.download = `${photo.title || photo.id}-display.${extension}`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+
+    toast.add({
+      title: $t('photo.viewer.displayImageDownloaded'),
+      color: 'success',
+      icon: 'tabler:download',
+      duration: 3000,
+    })
+  } catch (error) {
+    toast.add({
+      title: $t('photo.viewer.displayImageDownloadFailed'),
+      description: (error as Error)?.message || $t('common.unknownError'),
+      color: 'error',
+      icon: 'tabler:x',
+      duration: 3000,
+    })
+  }
+}
+
+const handleRawPhotoUpdated = (photo: Photo) => {
+  const current = currentPhoto.value
+  if (!current || current.id !== photo.id) return
+  currentBlobSrc.value = null
+  refreshRawDisplay(photo.id)
+  emit('photo-updated', photo)
 }
 
 // LivePhoto processing and playback functions
@@ -692,12 +813,30 @@ const swiperModules = [Navigation, Keyboard, Virtual]
 
                   <!-- 原图下载按钮 - 登录后显示 -->
                   <GlassButton
+                    v-if="loggedIn && currentPhoto?.sourceType === 'raw'"
+                    icon="tabler:photo-down"
+                    size="sm"
+                    rounded
+                    :aria-label="$t('photo.viewer.downloadCurrentDisplay')"
+                    :title="$t('photo.viewer.downloadCurrentDisplay')"
+                    @click="downloadDisplayImage"
+                  />
+
+                  <GlassButton
                     v-if="loggedIn"
                     icon="tabler:download"
                     size="sm"
                     rounded
-                    :aria-label="$t('photo.viewer.downloadOriginal')"
-                    :title="$t('photo.viewer.downloadOriginal')"
+                    :aria-label="
+                      currentPhoto?.sourceType === 'raw'
+                        ? $t('photo.viewer.downloadRawOriginal')
+                        : $t('photo.viewer.downloadOriginal')
+                    "
+                    :title="
+                      currentPhoto?.sourceType === 'raw'
+                        ? $t('photo.viewer.downloadRawOriginal')
+                        : $t('photo.viewer.downloadOriginal')
+                    "
                     @click="downloadOriginalImage"
                   />
 
@@ -766,6 +905,7 @@ const swiperModules = [Navigation, Keyboard, Virtual]
                   >
                     <!-- Main Image -->
                     <ProgressiveImage
+                      :key="`${photo.id}-${getPhotoDisplayUrl(photo)}-${getPhotoDisplayRefreshToken(photo)}`"
                       class="h-full w-full object-contain transition-opacity duration-400"
                       :class="{
                         'opacity-0':
@@ -773,8 +913,10 @@ const swiperModules = [Navigation, Keyboard, Virtual]
                       }"
                       :loading-indicator-ref="loadingIndicatorRef || null"
                       :is-current-image="index === currentIndex"
-                      :src="getPhotoDisplayUrl(photo)"
-                      :thumbnail-src="getPhotoVariantUrl(photo, 'card')"
+                      :src="getRefreshablePhotoDisplayUrl(photo)"
+                      :thumbnail-src="
+                        getRefreshablePhotoVariantUrl(photo, 'card')
+                      "
                       :thumbhash="photo.thumbnailHash"
                       :alt="photo.title || ''"
                       :width="
@@ -1022,6 +1164,12 @@ const swiperModules = [Navigation, Keyboard, Virtual]
               :photos="photos"
               @index-change="emit('indexChange', $event)"
             />
+
+            <PhotoAssetPanel
+              v-if="loggedIn && currentPhoto?.sourceType === 'raw'"
+              :photo="currentPhoto"
+              @photo-updated="handleRawPhotoUpdated"
+            />
           </div>
 
           <!-- EXIF 面板 - 在桌面端始终显示，在移动端根据状态显示 -->
@@ -1031,6 +1179,7 @@ const swiperModules = [Navigation, Keyboard, Virtual]
               :current-photo="currentPhoto"
               :exif-data="currentPhoto?.exif"
               :globe-route="globeRoute"
+              :album-route="albumRoute"
               :on-close="() => (showExifPanel = false)"
             />
           </AnimatePresence>
@@ -1039,6 +1188,7 @@ const swiperModules = [Navigation, Keyboard, Virtual]
             :current-photo="currentPhoto"
             :exif-data="currentPhoto?.exif"
             :globe-route="globeRoute"
+            :album-route="albumRoute"
           />
         </div>
       </motion.div>

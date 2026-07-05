@@ -4,6 +4,8 @@ import heicConvert from 'heic-convert'
 import { getStorageManager } from '~~/server/plugins/3.storage'
 import sharp from 'sharp'
 import { withRetry, RetryPresets, RetryConditions } from '../../utils/retry'
+import { isRawStorageKey } from '~~/server/utils/raw-photo'
+import { extractRawPreview } from './raw'
 
 export interface ProcessedImageData {
   sharpInst: sharp.Sharp
@@ -209,10 +211,32 @@ export const preprocessImageBuffer = async (
 
 export const preprocessImageWithJpegUpload = async (
   s3key: string,
+  options?: {
+    photoId?: string
+    ownerUserId?: number
+    allowRaw?: boolean
+  },
 ): Promise<{
   raw: Buffer
   processed: Buffer
   jpegKey?: string // HEIC 转换后上传的 JPEG 文件的 key
+  sourceType: 'image' | 'raw'
+  displayStorageKey?: string
+  displayMimeType?: string
+  displayFileSize?: number
+  displayWidth?: number
+  displayHeight?: number
+  primaryAsset?: {
+    photoId: string
+    kind: 'embedded-preview' | 'uploaded-render'
+    storageKey: string
+    fileName: string
+    mimeType: string
+    fileSize: number
+    width: number
+    height: number
+    isPrimary: boolean
+  }
 } | null> => {
   const storageProvider = getStorageManager().getProvider()
   if (!storageProvider) return null
@@ -228,6 +252,38 @@ export const preprocessImageWithJpegUpload = async (
     let processedBuffer: Buffer
     let jpegKey: string | undefined
     let jpegStorageKey: string | undefined
+
+    if (isRawStorageKey(s3key)) {
+      if (options?.allowRaw === false) {
+        throw new Error(
+          'RAW sources are not allowed for this preprocessing run',
+        )
+      }
+      if (!options?.photoId || !options?.ownerUserId) {
+        throw new Error('RAW preprocessing requires photoId and ownerUserId')
+      }
+
+      const preview = await extractRawPreview({
+        rawBuffer: rawImageBuffer,
+        storageKey: s3key,
+        photoId: options.photoId,
+        ownerUserId: options.ownerUserId,
+        storageProvider,
+        logger: logger.image,
+      })
+
+      return {
+        raw: rawImageBuffer,
+        processed: preview.buffer,
+        sourceType: 'raw',
+        displayStorageKey: preview.storageKey,
+        displayMimeType: preview.mimeType,
+        displayFileSize: preview.fileSize,
+        displayWidth: preview.width,
+        displayHeight: preview.height,
+        primaryAsset: preview.asset,
+      }
+    }
 
     if (['.heic', '.heif', '.hif'].includes(extName)) {
       logger.image.info(
@@ -259,6 +315,7 @@ export const preprocessImageWithJpegUpload = async (
       raw: rawImageBuffer,
       processed: processedBuffer,
       jpegKey: jpegStorageKey,
+      sourceType: 'image',
     }
   } catch (err) {
     logger.image.error(`Image preprocessing failed: ${s3key}`, err)

@@ -509,7 +509,7 @@
     "photos": {
       "title": "上傳相片",
       "subtitle": "上傳後相片會自動處理並新增到您的圖庫。您稍後可以在 {0} 中組織您的相片。",
-      "supportedFormats": "JPEG / PNG / HEIC / 實況相片 / 動態相片",
+      "supportedFormats": "JPEG / PNG / HEIC / RAW 原始檔 / 實況相片 / 動態相片",
       "maxFileSize": "最大 {size}MB",
       "buttons": {
         "upload": "上傳相片",
@@ -517,7 +517,7 @@
       },
       "uploader": {
         "label": "拖曳或點擊選擇相片",
-        "description": "支援 JPEG、PNG、HEIC 格式的相片，以及 MOV 格式的實況相片影片。每個檔案的最大大小：{maxSize}MB"
+        "description": "支援 JPEG、PNG、HEIC、RAW 原始檔格式的相片，以及 MOV 格式的實況相片影片。每個檔案的最大大小：{maxSize}MB"
       },
       "toolbar": {
         "title": "相片管理",
@@ -1751,7 +1751,30 @@
   "photo": {
     "owner": "上傳者",
     "viewer": {
-      "downloadOriginal": "下載原圖"
+      "downloadOriginal": "下載原圖",
+      "downloadRawOriginal": "下載 RAW 原始檔",
+      "downloadCurrentDisplay": "下載目前顯示圖",
+      "rawOriginalDownloaded": "RAW 原始檔下載成功",
+      "rawOriginalDownloadFailed": "RAW 原始檔下載失敗",
+      "displayImageDownloaded": "目前顯示圖下載成功",
+      "displayImageDownloadFailed": "目前顯示圖下載失敗"
+    },
+    "rawVersions": {
+      "title": "RAW 版本",
+      "count": "{count} 個版本",
+      "addRender": "新增處理圖",
+      "uploading": "上傳中...",
+      "primary": "主顯示圖",
+      "setPrimary": "設為主圖",
+      "rotateLeft": "向左旋轉 90°",
+      "rotateRight": "向右旋轉 90°",
+      "processing": "正在處理 RAW 版本...",
+      "processingFailed": "RAW 版本處理失敗",
+      "reloadFailed": "重新載入更新後的相片失敗",
+      "deleteVersion": "刪除版本",
+      "deleteConfirm": "刪除此 RAW 版本？",
+      "deleteFailed": "刪除 RAW 版本失敗",
+      "cannotDeletePrimary": "請先切換到其他主圖，再刪除此版本"
     },
     "image": {
       "loadError": "圖片載入失敗"

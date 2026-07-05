@@ -583,7 +583,7 @@
     "photos": {
       "title": "Photo Upload",
       "subtitle": "Photos will be automatically processed and added to your library. You can organize your photos in the {0} section afterwards.",
-      "supportedFormats": "JPEG / PNG / HEIC / Live Photo / Motion Photo",
+      "supportedFormats": "JPEG / PNG / HEIC / RAW / Live Photo / Motion Photo",
       "maxFileSize": "Max {size}MB",
       "buttons": {
         "upload": "Upload Photos",
@@ -591,7 +591,7 @@
       },
       "uploader": {
         "label": "Drag and drop or click to select photos",
-        "description": "Supports JPEG, PNG, HEIC format photos, and MOV format Live Photo videos. Maximum file size: {maxSize}MB per file"
+        "description": "Supports JPEG, PNG, HEIC, and RAW format photos, plus MOV format Live Photo videos. Maximum file size: {maxSize}MB per file"
       },
       "toolbar": {
         "title": "Photo Management",
@@ -1751,7 +1751,30 @@
   "photo": {
     "owner": "Uploader",
     "viewer": {
-      "downloadOriginal": "Download original"
+      "downloadOriginal": "Download original",
+      "downloadRawOriginal": "Download RAW original",
+      "downloadCurrentDisplay": "Download current display image",
+      "rawOriginalDownloaded": "RAW original downloaded",
+      "rawOriginalDownloadFailed": "Failed to download RAW original",
+      "displayImageDownloaded": "Current display image downloaded",
+      "displayImageDownloadFailed": "Failed to download current display image"
+    },
+    "rawVersions": {
+      "title": "RAW versions",
+      "count": "{count} version | {count} versions",
+      "addRender": "Add render",
+      "uploading": "Uploading...",
+      "primary": "Primary",
+      "setPrimary": "Set",
+      "rotateLeft": "Rotate left 90°",
+      "rotateRight": "Rotate right 90°",
+      "processing": "Processing RAW version...",
+      "processingFailed": "RAW version processing failed",
+      "reloadFailed": "Failed to reload the updated photo",
+      "deleteVersion": "Delete version",
+      "deleteConfirm": "Delete this RAW version?",
+      "deleteFailed": "Failed to delete RAW version",
+      "cannotDeletePrimary": "Switch to another primary image before deleting this version"
     },
     "image": {
       "loadError": "Failed to load image"

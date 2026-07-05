@@ -102,6 +102,24 @@ export interface PhotoInfo {
   description: string
 }
 
+export type PhotoSourceType = 'image' | 'raw'
+export type PhotoAssetKind = 'embedded-preview' | 'uploaded-render'
+
+export interface PhotoAsset {
+  id: number
+  photoId: string
+  kind: PhotoAssetKind
+  storageKey?: string
+  fileName: string
+  mimeType: string
+  fileSize: number
+  width: number
+  height: number
+  isPrimary: boolean
+  url?: string | null
+  createdAt: string | Date
+}
+
 export type PhotoImageVariantName = 'thumb' | 'card' | 'view'
 
 export interface PhotoImageVariant {

@@ -27,9 +27,10 @@ const getPreviewSourceKey = (photo: any) => {
     photo.imageVariants?.thumb?.key,
     storageKeyFromUrl(photo.imageVariants?.thumb?.url),
     photo.thumbnailKey,
-    photo.storageKey,
     storageKeyFromUrl(photo.thumbnailUrl),
+    photo.displayStorageKey,
     storageKeyFromUrl(photo.originalUrl),
+    photo.storageKey,
   ].filter((source): source is string => Boolean(source))
 
   return orderedSources[0]

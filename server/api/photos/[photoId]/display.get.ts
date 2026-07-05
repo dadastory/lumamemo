@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { authorizeOriginalPhotoDownload } from '~~/server/utils/security'
-import { RAW_EXTENSION_MIME_TYPES } from '~~/shared/utils/raw-photo'
+import { getPhotoDisplayStorageKey } from '~~/server/utils/raw-photo'
 
 const CONTENT_TYPES: Record<string, string> = {
   '.jpg': 'image/jpeg',
@@ -10,11 +10,9 @@ const CONTENT_TYPES: Record<string, string> = {
   '.gif': 'image/gif',
   '.heic': 'image/heic',
   '.heif': 'image/heif',
-  '.hif': 'image/heif',
   '.bmp': 'image/bmp',
   '.tif': 'image/tiff',
   '.tiff': 'image/tiff',
-  ...RAW_EXTENSION_MIME_TYPES,
 }
 
 const sanitizeDownloadName = (name: string) =>
@@ -37,7 +35,8 @@ export default eventHandler(async (event) => {
     .where(eq(tables.photos.id, photoId))
     .get()
 
-  if (!photo?.storageKey) {
+  const displayStorageKey = getPhotoDisplayStorageKey(photo)
+  if (!photo || !displayStorageKey) {
     throw createError({
       statusCode: 404,
       statusMessage: 'Photo not found',
@@ -47,16 +46,16 @@ export default eventHandler(async (event) => {
   await authorizeOriginalPhotoDownload(event, photo)
 
   const { storageProvider } = useStorageProvider(event)
-  const buffer = await storageProvider.get(photo.storageKey)
+  const buffer = await storageProvider.get(displayStorageKey)
   if (!buffer) {
     throw createError({
       statusCode: 404,
-      statusMessage: 'Photo file not found',
+      statusMessage: 'Display image file not found',
     })
   }
 
-  const extension = path.extname(photo.storageKey).toLowerCase() || '.jpg'
-  const filename = `${sanitizeDownloadName(photo.title || photo.id)}${extension}`
+  const extension = path.extname(displayStorageKey).toLowerCase() || '.jpg'
+  const filename = `${sanitizeDownloadName(photo.title || photo.id)}-display${extension}`
 
   setHeader(
     event,
