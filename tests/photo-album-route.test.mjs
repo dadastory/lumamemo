@@ -32,8 +32,19 @@ describe('photo album route context', () => {
 
     assert.match(source, /albumRoute\?: string \| null/)
     assert.doesNotMatch(source, /window\.open\(`\/albums\/\$\{albumId\}`\)/)
-    assert.match(source, /props\.albumRoute \|\| '\/albums'/)
+    assert.doesNotMatch(source, /props\.albumRoute \|\| '\/albums'/)
+    assert.match(source, /if \(!props\.albumRoute\) return/)
     assert.match(source, /window\.location\.assign\(target\)/)
+  })
+
+  it('keeps legacy album detail URLs as redirects instead of owner-only pages', () => {
+    const source = readSource('app/pages/albums/[albumId].vue')
+
+    assert.match(source, /buildPublicAlbumDetailRoute/)
+    assert.match(source, /\/api\/me\/profile/)
+    assert.match(source, /navigateTo\(buildPublicAlbumDetailRoute/)
+    assert.doesNotMatch(source, /\/api\/albums\/\$\{albumId/)
+    assert.doesNotMatch(source, /openViewer\(/)
   })
 
   it('sets user-scoped album routes for public profile and public album viewer sessions', () => {

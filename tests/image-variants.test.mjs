@@ -107,8 +107,8 @@ describe('photo image variants', () => {
     const dashboardPhotos = readSource('app/pages/dashboard/photos.vue')
 
     assert.match(masonryPhoto, /getPhotoVariantUrl\(photo,\s*'card'\)/)
-    assert.match(viewer, /getPhotoDisplayUrl\(photo\)/)
-    assert.match(viewer, /getPhotoVariantUrl\(photo,\s*'card'\)/)
+    assert.match(viewer, /getRefreshablePhotoDisplayUrl\(photo\)/)
+    assert.match(viewer, /getRefreshablePhotoVariantUrl\(photo,\s*'card'\)/)
     assert.match(clustering, /getPhotoVariantUrl\(photo,\s*'thumb'\)/)
     assert.match(
       dashboardPhotos,
@@ -130,7 +130,7 @@ describe('photo image variants', () => {
       progressiveImage,
       /showWebGLViewer[\s\S]*!isAnimatedSource\.value/,
     )
-    assert.match(viewer, /:src="getPhotoDisplayUrl\(photo\)"/)
+    assert.match(viewer, /:src="getRefreshablePhotoDisplayUrl\(photo\)"/)
   })
 
   it('preserves Live Photo video playback while changing still-image variants', () => {

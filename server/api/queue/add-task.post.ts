@@ -1,4 +1,16 @@
 import { z } from 'zod'
+import {
+  assertMachineLearningQueuePayloadEnabled,
+  isMachineLearningQueuePayload,
+} from '~~/server/utils/ml-queue'
+
+const photoAiAnalysisStages = z.enum([
+  'tags',
+  'description',
+  'score',
+  'critique',
+  'suggestions',
+])
 
 const resolvePayloadOwnerUserId = async (payload: {
   storageKey: string
@@ -33,14 +45,52 @@ export default defineEventHandler(async (event) => {
         photoId: z.string().min(1),
         latitude: z.number().min(-90).max(90).optional(),
         longitude: z.number().min(-180).max(180).optional(),
+        ownerUserId: z.number().nullable().optional(),
       }),
       z.object({
         type: z.literal('photo-erase-location'),
         photoId: z.string().min(1),
+        ownerUserId: z.number().nullable().optional(),
       }),
       z.object({
         type: z.literal('photo-variants'),
         photoId: z.string().min(1),
+        ownerUserId: z.number().nullable().optional(),
+        reindexMlAfterVariants: z.boolean().optional(),
+      }),
+      z.object({
+        type: z.literal('photo-ml-index'),
+        photoId: z.string().min(1),
+        ownerUserId: z.number().nullable().optional(),
+      }),
+      z.object({
+        type: z.literal('photo-ml-auto-tags'),
+        photoId: z.string().min(1),
+        ownerUserId: z.number().nullable().optional(),
+      }),
+      z.object({
+        type: z.literal('photo-ml-semantic-embedding'),
+        photoId: z.string().min(1),
+        ownerUserId: z.number().nullable().optional(),
+      }),
+      z.object({
+        type: z.literal('photo-ai-analysis'),
+        photoId: z.string().min(1),
+        ownerUserId: z.number().nullable().optional(),
+        stages: z.array(photoAiAnalysisStages).optional(),
+      }),
+      z.object({
+        type: z.literal('photo-face-detect'),
+        photoId: z.string().min(1),
+        ownerUserId: z.number().nullable().optional(),
+      }),
+      z.object({
+        type: z.literal('photo-ml-backfill'),
+        ownerUserId: z.number().nullable().optional(),
+      }),
+      z.object({
+        type: z.literal('photo-face-cluster'),
+        ownerUserId: z.number().nullable().optional(),
       }),
     ])
 
@@ -53,43 +103,52 @@ export default defineEventHandler(async (event) => {
       }).parse,
     )
 
-    if (!isAdminUser(session.user)) {
-      if (
-        (payload.type === 'photo' || payload.type === 'live-photo-video') &&
-        !isStorageKeyInUserNamespace(payload.storageKey, session.user.id)
-      ) {
+    if (
+      (payload.type === 'photo' || payload.type === 'live-photo-video') &&
+      !isStorageKeyInUserNamespace(payload.storageKey, session.user.id)
+    ) {
+      throw createError({
+        statusCode: 403,
+        statusMessage: 'Cannot process another user upload',
+      })
+    }
+
+    if (
+      payload.type === 'photo-reverse-geocoding' ||
+      payload.type === 'photo-erase-location' ||
+      payload.type === 'photo-variants' ||
+      payload.type === 'photo-ml-index' ||
+      payload.type === 'photo-ml-auto-tags' ||
+      payload.type === 'photo-ml-semantic-embedding' ||
+      payload.type === 'photo-ai-analysis' ||
+      payload.type === 'photo-face-detect'
+    ) {
+      const photo = await useDB()
+        .select()
+        .from(tables.photos)
+        .where(eq(tables.photos.id, payload.photoId))
+        .get()
+
+      if (!canManageOwnedResource(session.user, photo?.ownerUserId)) {
         throw createError({
           statusCode: 403,
-          statusMessage: 'Cannot process another user upload',
+          statusMessage: 'Cannot process another user photo',
         })
       }
+      payload.ownerUserId = photo.ownerUserId
+    }
 
-      if (
-        payload.type === 'photo-reverse-geocoding' ||
-        payload.type === 'photo-erase-location' ||
-        payload.type === 'photo-variants'
-      ) {
-        const photo = await useDB()
-          .select()
-          .from(tables.photos)
-          .where(eq(tables.photos.id, payload.photoId))
-          .get()
-
-        if (!canManageOwnedResource(session.user, photo?.ownerUserId)) {
-          throw createError({
-            statusCode: 403,
-            statusMessage: 'Cannot process another user photo',
-          })
-        }
-      }
+    if (
+      payload.type === 'photo-ml-backfill' ||
+      payload.type === 'photo-face-cluster'
+    ) {
+      payload.ownerUserId = session.user.id
     }
 
     if (payload.type === 'photo' || payload.type === 'live-photo-video') {
-      const ownerUserId = isAdminUser(session.user)
-        ? await resolvePayloadOwnerUserId(payload)
-        : session.user.id
+      const ownerUserId = await resolvePayloadOwnerUserId(payload)
 
-      if (ownerUserId === null) {
+      if (ownerUserId === null || ownerUserId !== Number(session.user.id)) {
         throw createError({
           statusCode: 400,
           statusMessage: 'Unable to resolve upload owner',
@@ -97,6 +156,10 @@ export default defineEventHandler(async (event) => {
       }
 
       payload.ownerUserId = ownerUserId
+    }
+
+    if (isMachineLearningQueuePayload(payload)) {
+      await assertMachineLearningQueuePayloadEnabled(payload)
     }
 
     const workerPool = globalThis.__workerPool

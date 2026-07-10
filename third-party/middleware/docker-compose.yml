@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: ${POSTGRES_IMAGE:-postgres:18-alpine}
+    image: ${POSTGRES_IMAGE:-postgres:17}
     container_name: chronoframe_postgres
     restart: unless-stopped
     environment:

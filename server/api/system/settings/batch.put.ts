@@ -4,6 +4,10 @@ import {
   settingNamespaces,
 } from '~~/server/services/settings/contants'
 import { settingsManager } from '~~/server/services/settings/settingsManager'
+import {
+  assertMachineLearningCanBeEnabled,
+  assertMachineLearningSemanticSettingsValid,
+} from '~~/server/utils/ml-capabilities'
 import { useDB, tables, eq } from '~~/server/utils/db'
 
 /**
@@ -61,9 +65,16 @@ export default eventHandler(async (event) => {
       : null
     const updatedBy = currentUser ? currentUser.id : undefined
 
+    await assertMachineLearningSemanticSettingsValid(body.updates)
+
     // 逐个更新设置
     for (const update of body.updates) {
       try {
+        await assertMachineLearningCanBeEnabled(
+          update.namespace,
+          update.key,
+          update.value,
+        )
         await settingsManager.set(
           update.namespace,
           update.key,

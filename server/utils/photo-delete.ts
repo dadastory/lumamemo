@@ -31,6 +31,10 @@ export const getPhotoStorageKeys = (photo: any) => {
     const key = asset?.storageKey
     if (typeof key === 'string' && key) keys.add(key)
   }
+  for (const face of photo.photoFaces || []) {
+    const key = face?.cropStorageKey || face?.crop_storage_key
+    if (typeof key === 'string' && key) keys.add(key)
+  }
   return [...keys]
 }
 

@@ -1,5 +1,9 @@
-import { eq } from 'drizzle-orm'
-import { serializeAdminPhoto } from '~~/server/utils/security'
+import { and, eq, inArray } from 'drizzle-orm'
+import { getVectorStore } from '~~/server/services/ml/vector-store'
+import {
+  encodeStorageKeyPath,
+  serializeAdminPhoto,
+} from '~~/server/utils/security'
 
 export default eventHandler(async (event) => {
   const session = await requireActiveUserSession(event)
@@ -32,7 +36,54 @@ export default eventHandler(async (event) => {
     })
   }
 
+  const photoFaces = await (
+    await getVectorStore()
+  )
+    .listFacePayloads({
+      ownerUserId: photo.ownerUserId,
+      photoIds: [photoId],
+      includeUnassigned: true,
+    })
+    .catch(() => [])
+  const personIds = Array.from(
+    new Set(photoFaces.map((face) => face.personId).filter(Boolean)),
+  ) as number[]
+  const peopleRows =
+    personIds.length > 0
+      ? await useDB()
+          .select({
+            id: (tables as any).people.id,
+            name: (tables as any).people.name,
+            isHidden: (tables as any).people.isHidden,
+          })
+          .from((tables as any).people)
+          .where(
+            and(
+              inArray((tables as any).people.id, personIds),
+              eq((tables as any).people.ownerUserId, photo.ownerUserId),
+            ),
+          )
+          .all()
+      : []
+  const peopleById = new Map(
+    peopleRows.map((person) => [Number(person.id), person]),
+  )
+  const serializedFaces = photoFaces.map((face: any) => {
+    const person = face.personId ? peopleById.get(face.personId) : null
+    return {
+      ...face,
+      id: face.faceId,
+      cropUrl: encodeStorageKeyPath(face.cropStorageKey),
+      personName: person?.name ?? null,
+      personIsHidden: person?.isHidden ?? null,
+    }
+  })
+
   return {
-    photo: serializeAdminPhoto(photo),
+    photo: {
+      ...serializeAdminPhoto(photo),
+      photoFaces: serializedFaces,
+    },
+    photoFaces: serializedFaces,
   }
 })

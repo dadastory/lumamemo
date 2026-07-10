@@ -145,7 +145,12 @@ export default eventHandler(async (event) => {
   let taskId: number | null = null
   if (workerPool) {
     taskId = await workerPool.addTask(
-      { type: 'photo-variants', photoId, ownerUserId: photo.ownerUserId },
+      {
+        type: 'photo-variants',
+        photoId,
+        ownerUserId: photo.ownerUserId,
+        reindexMlAfterVariants: true,
+      },
       { priority: 2, maxAttempts: 3 },
     )
   } else {

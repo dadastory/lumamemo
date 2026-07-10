@@ -6,7 +6,12 @@ import {
   real,
   uniqueIndex,
 } from 'drizzle-orm/sqlite-core'
-import type { NeededExif, PhotoImageVariants } from '~~/shared/types/photo'
+import type {
+  NeededExif,
+  PhotoAiAnalysis,
+  PhotoAiAnalysisStage,
+  PhotoImageVariants,
+} from '~~/shared/types/photo'
 import type { StorageConfig } from '../services/storage'
 
 type PipelineQueuePayload =
@@ -34,6 +39,41 @@ type PipelineQueuePayload =
   | {
       type: 'photo-variants'
       photoId: string
+      ownerUserId?: number | null
+      reindexMlAfterVariants?: boolean
+    }
+  | {
+      type: 'photo-ml-index'
+      photoId: string
+      ownerUserId?: number | null
+    }
+  | {
+      type: 'photo-ml-auto-tags'
+      photoId: string
+      ownerUserId?: number | null
+    }
+  | {
+      type: 'photo-ml-semantic-embedding'
+      photoId: string
+      ownerUserId?: number | null
+    }
+  | {
+      type: 'photo-ai-analysis'
+      photoId: string
+      ownerUserId?: number | null
+      stages?: PhotoAiAnalysisStage[]
+    }
+  | {
+      type: 'photo-face-detect'
+      photoId: string
+      ownerUserId?: number | null
+    }
+  | {
+      type: 'photo-ml-backfill'
+      ownerUserId?: number | null
+    }
+  | {
+      type: 'photo-face-cluster'
       ownerUserId?: number | null
     }
 
@@ -109,6 +149,8 @@ export const photos = sqliteTable('photos', {
     mode: 'json',
   }).$type<PhotoImageVariants>(),
   tags: text('tags', { mode: 'json' }).$type<string[]>(),
+  aiTags: text('ai_tags', { mode: 'json' }).$type<string[]>(),
+  aiAnalysis: text('ai_analysis', { mode: 'json' }).$type<PhotoAiAnalysis>(),
   exif: text('exif', { mode: 'json' }).$type<NeededExif>(),
   // 地理位置信息
   latitude: real('latitude'),
@@ -183,6 +225,19 @@ export const pipelineQueue = sqliteTable('pipeline_queue', {
       'reverse-geocoding',
       'live-photo',
       'location-erase',
+      'ml-index',
+      'ml-auto-tags',
+      'ml-semantic-embedding',
+      'ml-ai-description',
+      'ml-ai-analysis',
+      'ml-ai-analysis-tags',
+      'ml-ai-analysis-description',
+      'ml-ai-analysis-score',
+      'ml-ai-analysis-critique',
+      'ml-ai-analysis-suggestions',
+      'ml-backfill',
+      'face-detection',
+      'face-cluster',
     ],
   }),
   errorMessage: text('error_message'),

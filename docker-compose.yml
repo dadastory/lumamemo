@@ -1,6 +1,8 @@
 include:
   - path: third-party/middleware/docker-compose.yml
     project_directory: .
+  - path: third-party/ai/docker-compose.yml
+    project_directory: .
 
 services:
   chronoframe:
@@ -12,6 +14,7 @@ services:
     volumes:
       - ./data/app:/app/data
       - ./data/storage:/app/data/storage
+      - ./data/ai/localai/models:/app/data/ai/localai/models
     env_file:
       - .env
     depends_on:
@@ -22,6 +25,10 @@ services:
       minio-init:
         condition: service_completed_successfully
       nominatim:
+        condition: service_started
+      chronoframe-localai:
+        condition: service_started
+      chronoframe-qdrant:
         condition: service_started
 
   gateway:

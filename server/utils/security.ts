@@ -1,5 +1,6 @@
 import { normalizeStorageKey } from './storage-key.ts'
 import { getPhotoDisplayStorageKey } from './raw-photo.ts'
+import { logger } from './logger.ts'
 
 type AnyRecord = Record<string, any>
 
@@ -101,7 +102,7 @@ export const sanitizeSessionUser = (user: AnyRecord | null | undefined) => {
   }
 }
 
-const encodeStorageKeyPath = (key: string | null | undefined) =>
+export const encodeStorageKeyPath = (key: string | null | undefined) =>
   key ? `/image/${key.split('/').map(encodeURIComponent).join('/')}` : null
 
 const normalizePhotoImageVariants = (
@@ -144,6 +145,22 @@ const serializeOwner = (record: AnyRecord) => {
   }
 }
 
+const mergePhotoTags = (
+  userTags: string[] | null | undefined,
+  aiTags: string[] | null | undefined,
+) => {
+  const seen = new Set<string>()
+  const tags: string[] = []
+  for (const rawTag of [...(userTags || []), ...(aiTags || [])]) {
+    const tag = String(rawTag || '').trim()
+    const key = tag.toLocaleLowerCase()
+    if (!tag || seen.has(key)) continue
+    seen.add(key)
+    tags.push(tag)
+  }
+  return tags
+}
+
 export const serializePublicPhoto = (photo: AnyRecord) => ({
   id: photo.id,
   sourceType: photo.sourceType ?? 'image',
@@ -165,7 +182,7 @@ export const serializePublicPhoto = (photo: AnyRecord) => ({
   imageVariants: normalizePhotoImageVariants(photo.imageVariants, {
     includeKeys: false,
   }),
-  tags: photo.tags,
+  tags: mergePhotoTags(photo.tags, photo.aiTags),
   exif: serializePublicExif(photo.exif),
   latitude: photo.latitude,
   longitude: photo.longitude,
@@ -180,6 +197,8 @@ export const serializePublicPhoto = (photo: AnyRecord) => ({
 
 export const serializeAdminPhoto = (photo: AnyRecord) => ({
   ...photo,
+  userTags: photo.tags || [],
+  tags: mergePhotoTags(photo.tags, photo.aiTags),
   sourceType: photo.sourceType ?? 'image',
   originalUrl:
     encodeStorageKeyPath(getPhotoDisplayStorageKey(photo)) ?? photo.originalUrl,
@@ -214,7 +233,6 @@ export const canManageOwnedResource = (
   ownerUserId: number | null | undefined,
 ) => {
   if (!user || isDisabledUser(user)) return false
-  if (isAdminUser(user)) return true
   return ownerUserId != null && Number(user.id) === Number(ownerUserId)
 }
 
@@ -490,10 +508,61 @@ export async function getVisiblePhotoByStorageKey(key: string) {
   return photo && isPhotoPublic(photo) ? photo : null
 }
 
+const FACE_CROP_STORAGE_KEY_RE =
+  /^photos\/users\/(?<ownerUserId>\d+)\/faces\/(?<photoId>[^/]+)\/[^/]+$/i
+
+async function getPhotoByFaceCropStorageKey(key: string) {
+  const normalizedKey = normalizeStorageKey(key)
+  if (!normalizedKey || !FACE_CROP_STORAGE_KEY_RE.test(normalizedKey)) {
+    return undefined
+  }
+
+  try {
+    const { getMachineLearningSettings } = await import(
+      '~~/server/services/ml/client'
+    )
+    const { createVectorStore } = await import(
+      '~~/server/services/ml/vector-store'
+    )
+    const settings = await getMachineLearningSettings()
+    const vectorStore = createVectorStore(settings)
+    const faces = await vectorStore.listFacePayloads({
+      cropStorageKey: normalizedKey,
+      includeUnassigned: true,
+    })
+    const face = faces.find((item: AnyRecord) => item.cropStorageKey === normalizedKey)
+    if (!face?.photoId) return undefined
+
+    const { useDB, tables, eq } = await import('./db')
+    const photo = await useDB()
+      .select()
+      .from(tables.photos)
+      .where(eq(tables.photos.id, face.photoId))
+      .get()
+
+    if (!photo) return undefined
+    if (
+      face.ownerUserId != null &&
+      photo.ownerUserId != null &&
+      Number(face.ownerUserId) !== Number(photo.ownerUserId)
+    ) {
+      return undefined
+    }
+
+    return photo
+  } catch (error) {
+    logger.chrono.warn(
+      `Failed to resolve face crop storage key ${normalizedKey}: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    )
+    return undefined
+  }
+}
+
 export async function isPhotoVisibleToRequest(event: any, photoId: string) {
   const session = await getSafeUserSession(event)
   if (isDisabledUser(session.user)) return false
-  if (isAdminUser(session.user)) return true
 
   const { useDB, tables, eq } = await import('./db')
   const db = useDB()
@@ -532,9 +601,10 @@ export async function authorizePhotoStorageKey(event: any, key: string) {
       statusMessage: 'User is disabled',
     })
   }
-  if (isAdminUser(session.user)) return
 
-  const photo = await getPhotoByStorageKey(key)
+  const photo =
+    (await getPhotoByStorageKey(key)) ||
+    (await getPhotoByFaceCropStorageKey(key))
   const normalizedKey = normalizeStorageKey(key)
   const isOriginalKey = Boolean(
     photo &&
@@ -601,7 +671,6 @@ export async function authorizeOriginalPhotoDownload(
   }
 
   if (
-    isAdminUser(session.user) ||
     canManageOwnedResource(session.user, photo.ownerUserId) ||
     isPhotoPublic(photo)
   ) {
@@ -643,5 +712,24 @@ export async function syncPhotoVisibility(photoIds: string[]) {
       .set({ visibility: publicAlbum ? 'public' : 'private' })
       .where(eq(tables.photos.id, photoId))
       .run()
+
+    try {
+      const [{ getMachineLearningSettings }, { createVectorStore }] =
+        await Promise.all([
+          import('../services/ml/client'),
+          import('../services/ml/vector-store'),
+        ])
+      const settings = await getMachineLearningSettings()
+      await createVectorStore(settings).updatePhotoVisibility(
+        photoId,
+        publicAlbum ? 'public' : 'private',
+      )
+    } catch (error) {
+      logger.dynamic('security').warn(
+        `Failed to sync vector visibility for photo ${photoId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      )
+    }
   }
 }

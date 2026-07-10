@@ -138,8 +138,9 @@ describe('security serializers', () => {
     )
   })
 
-  it('allows admins and owners to manage owned resources', () => {
-    assert.equal(canManageOwnedResource({ id: 1, role: 'admin' }, 2), true)
+  it('requires ownership for user-scoped resources even when the user is an admin', () => {
+    assert.equal(canManageOwnedResource({ id: 1, role: 'admin' }, 2), false)
+    assert.equal(canManageOwnedResource({ id: 1, role: 'admin' }, 1), true)
     assert.equal(canManageOwnedResource({ id: 1, role: 'user' }, 1), true)
     assert.equal(canManageOwnedResource({ id: 1, role: 'user' }, 2), false)
     assert.equal(canManageOwnedResource(null, 1), false)
@@ -343,6 +344,8 @@ describe('security serializers', () => {
       username: 'alice',
       avatar: '/avatar/alice.png',
     })
+    assert.equal('ownerUserId' in publicPhoto, false)
+    assert.equal('photoFaces' in publicPhoto, false)
     assert.equal(
       JSON.stringify(publicPhoto).includes('alice@example.com'),
       false,
@@ -496,6 +499,53 @@ describe('security serializers', () => {
 
     assert.match(source, /getSafeUserSession\(event\)/)
     assert.doesNotMatch(source, /getUserSession\(event\)/)
+  })
+
+  it('does not let admin role bypass user-scoped upload, queue, and album routes', () => {
+    const uploadApi = readFileSync(
+      new URL('../server/api/photos/upload.put.ts', import.meta.url),
+      'utf8',
+    )
+    const addTaskApi = readFileSync(
+      new URL('../server/api/queue/add-task.post.ts', import.meta.url),
+      'utf8',
+    )
+    const addTasksApi = readFileSync(
+      new URL('../server/api/queue/add-tasks.post.ts', import.meta.url),
+      'utf8',
+    )
+    const queueStatsApi = readFileSync(
+      new URL('../server/api/queue/stats/[taskId].get.ts', import.meta.url),
+      'utf8',
+    )
+    const photoAlbumsApi = readFileSync(
+      new URL('../server/api/photos/[photoId]/albums.get.ts', import.meta.url),
+      'utf8',
+    )
+
+    assert.doesNotMatch(uploadApi, /!isAdminUser\(session\.user\)/)
+    assert.match(
+      uploadApi,
+      /!isStorageKeyInUserNamespace\(storageKey,\s*session\.user\.id\)/,
+    )
+    assert.doesNotMatch(addTaskApi, /isAdminUser\(session\.user\)/)
+    assert.match(addTaskApi, /payload\.ownerUserId = session\.user\.id/)
+    assert.match(addTaskApi, /payload\.ownerUserId = photo\.ownerUserId/)
+    assert.doesNotMatch(addTasksApi, /requireAdminSession\(event\)/)
+    assert.match(addTasksApi, /requireActiveUserSession\(event\)/)
+    assert.match(addTasksApi, /payload\.ownerUserId = session\.user\.id/)
+    assert.match(addTasksApi, /task\.payload\.ownerUserId = photo\.ownerUserId/)
+    assert.doesNotMatch(queueStatsApi, /isAdminUser\(session\.user\)/)
+    assert.match(
+      queueStatsApi,
+      /taskStats\.payload\?\.ownerUserId !== session\.user\.id/,
+    )
+    assert.doesNotMatch(photoAlbumsApi, /isAdminUser/)
+    assert.doesNotMatch(photoAlbumsApi, /return isAdmin/)
+    assert.match(
+      photoAlbumsApi,
+      /eq\(tables\.albums\.ownerUserId,\s*session\.user\.id\)/,
+    )
   })
 
   it('does not proxy remote URLs through the thumbnail route', () => {

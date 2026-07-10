@@ -223,6 +223,34 @@ const typeOptions = computed(() => [
     label: $t('dashboard.queue.types.photo-erase-location'),
     value: 'photo-erase-location',
   },
+  {
+    label: $t('dashboard.queue.types.photo-ml-index'),
+    value: 'photo-ml-index',
+  },
+  {
+    label: $t('dashboard.queue.types.photo-ml-auto-tags'),
+    value: 'photo-ml-auto-tags',
+  },
+  {
+    label: $t('dashboard.queue.types.photo-ai-analysis'),
+    value: 'photo-ai-analysis',
+  },
+  {
+    label: $t('dashboard.queue.types.photo-ml-semantic-embedding'),
+    value: 'photo-ml-semantic-embedding',
+  },
+  {
+    label: $t('dashboard.queue.types.photo-face-detect'),
+    value: 'photo-face-detect',
+  },
+  {
+    label: $t('dashboard.queue.types.photo-ml-backfill'),
+    value: 'photo-ml-backfill',
+  },
+  {
+    label: $t('dashboard.queue.types.photo-face-cluster'),
+    value: 'photo-face-cluster',
+  },
 ])
 
 // 展开行状态

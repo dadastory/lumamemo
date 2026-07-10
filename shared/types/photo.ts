@@ -102,6 +102,42 @@ export interface PhotoInfo {
   description: string
 }
 
+export type PhotoAiAnalysisStage =
+  | 'tags'
+  | 'description'
+  | 'score'
+  | 'critique'
+  | 'suggestions'
+
+export type PhotoAiStageStatus = 'missing' | 'processing' | 'ready' | 'failed'
+
+export interface PhotoAiStageState {
+  status: PhotoAiStageStatus
+  error?: string | null
+  updatedAt?: string | null
+}
+
+export interface PhotoAiScoreBreakdown {
+  composition?: number | null
+  lighting?: number | null
+  color?: number | null
+  sharpness?: number | null
+  overall?: number | null
+}
+
+export interface PhotoAiAnalysis {
+  description?: string | null
+  score?: number | null
+  scoreBreakdown?: PhotoAiScoreBreakdown | null
+  evaluation?: string | null
+  strengths?: string[]
+  suggestions?: string[]
+  language?: string | null
+  model?: string | null
+  generatedAt?: string | null
+  stages?: Partial<Record<PhotoAiAnalysisStage, PhotoAiStageState>>
+}
+
 export type PhotoSourceType = 'image' | 'raw'
 export type PhotoAssetKind = 'embedded-preview' | 'uploaded-render'
 

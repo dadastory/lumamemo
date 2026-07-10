@@ -21,6 +21,13 @@ export default defineEventHandler(async (event) => {
             'photo-reverse-geocoding',
             'photo-variants',
             'photo-erase-location',
+            'photo-ml-index',
+            'photo-ml-auto-tags',
+            'photo-ml-semantic-embedding',
+            'photo-ai-analysis',
+            'photo-face-detect',
+            'photo-ml-backfill',
+            'photo-face-cluster',
           ])
           .optional(),
       })

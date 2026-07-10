@@ -11,6 +11,7 @@ interface Props {
   }
   albumRoute?: string
   globeRoute?: string
+  peopleRoute?: string
   photoRouteBase?: string
   returnRoute?: string
 }
@@ -475,6 +476,7 @@ watch(currentPhotoIndex, (newIndex) => {
             :profile="headerProfile"
             :album-route="albumRoute"
             :globe-route="globeRoute"
+            :people-route="peopleRoute"
           />
         </div>
 

@@ -3,6 +3,12 @@ CREATE TABLE "users" (
   "name" text NOT NULL UNIQUE,
   "email" text NOT NULL UNIQUE,
   "password" text,
+  "public_id" text UNIQUE,
+  "display_name" text,
+  "profile_title" text,
+  "profile_slogan" text,
+  "profile_bio" text,
+  "homepage_visibility" text DEFAULT 'private' NOT NULL,
   "avatar" text,
   "created_at" timestamptz NOT NULL,
   "is_admin" integer DEFAULT 0 NOT NULL,
@@ -10,8 +16,22 @@ CREATE TABLE "users" (
   "disabled_at" timestamptz
 );
 --> statement-breakpoint
+CREATE TABLE "user_invites" (
+  "id" serial PRIMARY KEY,
+  "email" text NOT NULL,
+  "token_hash" text NOT NULL UNIQUE,
+  "role" text DEFAULT 'user' NOT NULL,
+  "expires_at" timestamptz NOT NULL,
+  "accepted_at" timestamptz,
+  "accepted_by_user_id" integer REFERENCES "users"("id") ON DELETE set null,
+  "created_by_user_id" integer REFERENCES "users"("id") ON DELETE set null,
+  "created_at" timestamptz DEFAULT now() NOT NULL,
+  "revoked_at" timestamptz
+);
+--> statement-breakpoint
 CREATE TABLE "photos" (
   "id" text PRIMARY KEY,
+  "source_type" text DEFAULT 'image' NOT NULL,
   "title" text,
   "description" text,
   "width" integer,
@@ -19,13 +39,21 @@ CREATE TABLE "photos" (
   "aspect_ratio" real,
   "date_taken" text,
   "storage_key" text,
+  "display_storage_key" text,
+  "display_mime_type" text,
+  "display_file_size" integer,
+  "display_width" integer,
+  "display_height" integer,
   "thumbnail_key" text,
   "file_size" integer,
   "last_modified" text,
   "original_url" text,
   "thumbnail_url" text,
   "thumbnail_hash" text,
+  "image_variants" jsonb,
   "tags" jsonb,
+  "ai_tags" jsonb,
+  "ai_analysis" jsonb,
   "exif" jsonb,
   "latitude" double precision,
   "longitude" double precision,
@@ -40,6 +68,20 @@ CREATE TABLE "photos" (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX "photos_id_unique" ON "photos" ("id");
+--> statement-breakpoint
+CREATE TABLE "photo_assets" (
+  "id" serial PRIMARY KEY,
+  "photo_id" text NOT NULL REFERENCES "photos"("id") ON DELETE cascade,
+  "kind" text DEFAULT 'uploaded-render' NOT NULL,
+  "storage_key" text NOT NULL,
+  "file_name" text NOT NULL,
+  "mime_type" text NOT NULL,
+  "file_size" integer NOT NULL,
+  "width" integer NOT NULL,
+  "height" integer NOT NULL,
+  "is_primary" boolean DEFAULT false NOT NULL,
+  "created_at" timestamptz DEFAULT now() NOT NULL
+);
 --> statement-breakpoint
 CREATE TABLE "pipeline_queue" (
   "id" serial PRIMARY KEY,
@@ -83,6 +125,20 @@ CREATE TABLE "album_photos" (
   "position" real DEFAULT 1000000 NOT NULL,
   "added_at" timestamptz DEFAULT now() NOT NULL
 );
+--> statement-breakpoint
+CREATE TABLE "people" (
+  "id" serial PRIMARY KEY,
+  "owner_user_id" integer REFERENCES "users"("id") ON DELETE cascade,
+  "name" text,
+  "cover_photo_id" text REFERENCES "photos"("id") ON DELETE set null,
+  "is_hidden" boolean DEFAULT true NOT NULL,
+  "is_favorite" boolean DEFAULT false NOT NULL,
+  "birth_date" text,
+  "created_at" timestamptz DEFAULT now() NOT NULL,
+  "updated_at" timestamptz DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE INDEX "idx_people_owner_user_id" ON "people" ("owner_user_id");
 --> statement-breakpoint
 CREATE TABLE "settings" (
   "id" serial PRIMARY KEY,

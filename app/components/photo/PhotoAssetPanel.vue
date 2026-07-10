@@ -14,6 +14,15 @@ type QueueTaskStatus = {
   errorMessage?: string | null
 }
 
+type PhotoMlTaskStatus = QueueTaskStatus & {
+  id: number
+  type: 'photo-ml-index' | 'photo-face-detect'
+}
+
+type PhotoMlTasksResponse = {
+  tasks?: PhotoMlTaskStatus[]
+}
+
 const assets = ref<any[]>([])
 const loading = ref(false)
 const uploading = ref(false)
@@ -22,6 +31,7 @@ const processingStage = ref<string | null>(null)
 const errorMessage = ref('')
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const statusCheckInterval = ref<ReturnType<typeof setInterval> | null>(null)
+const faceRefreshRunId = ref(0)
 
 const isRawPhoto = computed(() => props.photo?.sourceType === 'raw')
 const isProcessing = computed(() => processingTaskId.value !== null)
@@ -36,6 +46,10 @@ const clearVariantTaskStatusCheck = () => {
   }
   processingTaskId.value = null
   processingStage.value = null
+}
+
+const cancelFaceRefreshCheck = () => {
+  faceRefreshRunId.value += 1
 }
 
 const loadAssets = async () => {
@@ -58,6 +72,7 @@ watch(
   () => props.photo?.id,
   () => {
     clearVariantTaskStatusCheck()
+    cancelFaceRefreshCheck()
     assets.value = []
     loadAssets()
   },
@@ -66,28 +81,77 @@ watch(
 
 onUnmounted(() => {
   clearVariantTaskStatusCheck()
+  cancelFaceRefreshCheck()
 })
 
-const refreshPhotoAfterVariantTask = async () => {
-  if (!props.photo?.id) return
+const refreshPhotoAfterVariantTask = async (photoId = props.photo?.id) => {
+  if (!photoId) return
 
   try {
     const response = await $fetch<{ photo?: Photo }>(
-      `/api/photos/${props.photo.id}/detail`,
+      `/api/photos/${photoId}/detail`,
     )
     const refreshedPhoto = response.photo
-    if (refreshedPhoto) {
+    if (refreshedPhoto && props.photo?.id === photoId) {
       emit('photo-updated', refreshedPhoto)
     }
-    await loadAssets()
+    if (props.photo?.id === photoId) {
+      await loadAssets()
+    }
   } catch (error) {
     errorMessage.value =
       (error as Error)?.message || $t('photo.rawVersions.reloadFailed')
   }
 }
 
+const wait = (ms: number) =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+
+const findTask = (
+  tasks: PhotoMlTaskStatus[] | undefined,
+  type: PhotoMlTaskStatus['type'],
+) => tasks?.find((task) => task.type === type)
+
+const refreshPhotoAfterFaceTask = async (photoId: string, afterTaskId: number) => {
+  const runId = (faceRefreshRunId.value += 1)
+  let failedChecks = 0
+
+  for (let attempt = 0; attempt < 45; attempt += 1) {
+    await wait(1500)
+    if (faceRefreshRunId.value !== runId || props.photo?.id !== photoId) return
+
+    try {
+      const response = await $fetch<PhotoMlTasksResponse>(
+        `/api/photos/${photoId}/ml-tasks?afterId=${encodeURIComponent(String(afterTaskId))}`,
+      )
+      failedChecks = 0
+      const faceTask = findTask(response.tasks, 'photo-face-detect')
+      const mlTask = findTask(response.tasks, 'photo-ml-index')
+
+      if (
+        faceTask?.status === 'completed' ||
+        faceTask?.status === 'failed' ||
+        mlTask?.status === 'failed'
+      ) {
+        await refreshPhotoAfterVariantTask(photoId)
+        return
+      }
+    } catch {
+      failedChecks += 1
+      if (failedChecks >= 3) break
+    }
+  }
+
+  if (faceRefreshRunId.value === runId && props.photo?.id === photoId) {
+    await refreshPhotoAfterVariantTask(photoId)
+  }
+}
+
 const startVariantTaskStatusCheck = (taskId: number) => {
   clearVariantTaskStatusCheck()
+  cancelFaceRefreshCheck()
   processingTaskId.value = taskId
   processingStage.value = null
 
@@ -100,8 +164,12 @@ const startVariantTaskStatusCheck = (taskId: number) => {
         response.status === 'in-stages' ? response.statusStage || null : null
 
       if (response.status === 'completed') {
+        const photoId = props.photo?.id
         clearVariantTaskStatusCheck()
-        await refreshPhotoAfterVariantTask()
+        await refreshPhotoAfterVariantTask(photoId)
+        if (photoId) {
+          void refreshPhotoAfterFaceTask(photoId, taskId)
+        }
       } else if (response.status === 'failed') {
         clearVariantTaskStatusCheck()
         errorMessage.value =

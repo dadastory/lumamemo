@@ -13,6 +13,14 @@ export const buildPublicPhotoRoute = (publicId: string, photoId: string) =>
 export const buildPublicAlbumsRoute = (publicId: string) =>
   `${buildPublicProfileRoute(publicId)}/albums`
 
+export const buildPublicPeopleRoute = (publicId: string) =>
+  `${buildPublicProfileRoute(publicId)}/people`
+
+export const buildPublicPersonRoute = (
+  publicId: string,
+  personId: string | number,
+) => `${buildPublicPeopleRoute(publicId)}/${encodeSegment(personId)}`
+
 export const buildPublicAlbumDetailRoute = (
   publicId: string,
   albumId: string | number,

@@ -1,4 +1,5 @@
 import { deletePhotoFiles } from '~~/server/utils/photo-delete'
+import { getVectorStore } from '~~/server/services/ml/vector-store'
 
 export default eventHandler(async (event) => {
   const session = await requireActiveUserSession(event)
@@ -39,15 +40,24 @@ export default eventHandler(async (event) => {
     .from(tables.photoAssets)
     .where(eq(tables.photoAssets.photoId, photoId))
     .all()
+  const vectorStore = await getVectorStore()
+  const photoFaces = await vectorStore
+    .listFacePayloads({ photoIds: [photoId], includeUnassigned: true })
+    .catch(() => [])
 
   if (photo.storageKey) {
     logger.image.info(`Deleting photo files for ${photoId} from storage`)
     await deletePhotoFiles(
       storageProvider,
-      { ...photo, photoAssets },
+      { ...photo, photoAssets, photoFaces },
       { strict: false },
     )
   }
+
+  await Promise.all([
+    vectorStore.deletePhotoEmbeddings(photoId),
+    vectorStore.deleteFaceEmbeddingsForPhoto(photoId),
+  ]).catch(() => null)
 
   await useDB().delete(tables.photos).where(eq(tables.photos.id, photoId)).run()
 

@@ -13,20 +13,27 @@
           "cameras": "カメラ",
           "lenses": "レンズ",
           "cities": "場所",
-          "ratings": "評価"
+          "ratings": "評価",
+          "people": "人物"
         },
         "empty": {
           "tags": "タグなし",
           "cameras": "カメラ情報なし",
           "lenses": "レンズ情報なし",
-          "cities": "位置情報なし"
+          "cities": "位置情報なし",
+          "people": "人物はまだありません"
         },
         "rating": {
           "showAll": "すべての写真を表示",
           "showStarsAndAbove": "{count} 星以上の写真を表示"
         },
-        "searchPlaceholder": "ファイル名などで検索...",
-        "shuffleTooltip": "リストをシャッフル"
+        "searchPlaceholder": "ファイル名またはタグで検索...",
+        "semanticSearchDegraded": "セマンティック検索は現在利用できません。キーワード検索を使用しています。",
+        "shuffleTooltip": "リストをシャッフル",
+        "searchMode": {
+          "keyword": "キーワード検索",
+          "semantic": "高度な検索"
+        }
       },
       "sort": {
         "tooltip": "写真の並び替え",
@@ -392,6 +399,7 @@
     "queue": "キュー管理",
     "logs": "システムログ",
     "albums": "アルバム",
+    "people": "People",
     "users": "ユーザー管理",
     "profile": "プロフィール",
     "siteAdministration": "サイト設定",
@@ -401,7 +409,10 @@
     "mapAndLocation": "地図と場所",
     "location": "位置情報サービス",
     "storageSettings": "ストレージ設定",
-    "systemSettings": "システム設定"
+    "systemSettings": "システム設定",
+    "thirdPartyLoginSettings": "外部ログイン",
+    "dataMaintenance": "データメンテナンス",
+    "aiSettings": "AI Settings"
   },
   "auth": {
     "form": {
@@ -551,6 +562,7 @@
           "fileSize": "ファイルサイズ",
           "colorSpace": "カラースペース",
           "imageVariants": "画像バリアント",
+          "mlStatus": "ML Status",
           "reactions": "リアクション",
           "actions": "操作"
         },
@@ -572,13 +584,21 @@
         "thumbnailAlt": "写真サムネイル"
       },
       "actions": {
-        "reprocess": "写真を再処理",
-        "rebuildVariants": "画像バリアントを再生成",
+        "reprocess": "写真を再分析",
+        "reanalyze": "写真を再分析",
+        "rebuildVariants": "表示画像を再生成",
+        "analyzeWithAI": "Analyze with AI",
+        "extractAiTags": "Re-extract Tags",
+        "buildSemanticIndex": "Regenerate Semantic Index",
+        "detectFaces": "Re-extract Faces",
+        "clusterFaces": "Rebuild People Album",
         "refreshLocation": "都市情報を再取得",
         "eraseLocationInfo": "位置情報を抹消",
         "delete": "削除",
         "editMetadata": "メタデータを編集",
-        "previewPhoto": "プレビュー写真"
+        "previewPhoto": "プレビュー写真",
+        "generateAiAnalysis": "Regenerate AI analysis",
+        "generateAiDescription": "Regenerate AI description"
       },
       "selection": {
         "selected": "{count} / {total}行選択済み",
@@ -643,11 +663,11 @@
       "messages": {
         "uploadSuccess": "写真が正常にアップロードされました。処理中です...",
         "uploadMultipleSuccess": "{count}枚の写真が正常にアップロードされました。処理中です...",
-        "reprocessSuccess": "再処理タスクが追加されました",
+        "reprocessSuccess": "再分析タスクが追加されました",
         "rebuildVariantsSuccess": "画像バリアント再生成タスクが追加されました",
-        "batchReprocessSuccess": "{count}枚の写真の再処理タスクをキューに正常に送信しました",
+        "batchReprocessSuccess": "{count}枚の写真の再分析タスクをキューに正常に送信しました",
         "batchRebuildVariantsSuccess": "{count}枚の写真を画像バリアント再生成キューに送信しました",
-        "batchReprocessing": "再処理タスクを送信しています...",
+        "batchReprocessing": "再分析タスクを送信しています...",
         "reprocessTaskId": "タスク ID：{taskId}",
         "deleteSuccess": "写真が正常に削除されました",
         "batchDeleteSuccess": "{count}枚の写真を正常に削除しました",
@@ -668,9 +688,9 @@
         "error": "エラーが発生しました",
         "deleteFailed": "写真の削除に失敗しました",
         "batchDeleteFailed": "一括削除に失敗しました",
-        "batchReprocessFailed": "一括再処理に失敗しました",
+        "batchReprocessFailed": "一括再分析に失敗しました",
         "batchRebuildVariantsFailed": "画像バリアントの一括再生成に失敗しました",
-        "reprocessFailed": "写真の再処理に失敗しました",
+        "reprocessFailed": "写真の再分析に失敗しました",
         "rebuildVariantsFailed": "画像バリアントの再生成に失敗しました",
         "livePhotoNotFound": "ライブフォトではありません",
         "livePhotoLoadError": "ライブフォト情報を読み込めません",
@@ -686,9 +706,23 @@
         "eraseLocationFailed": "位置情報の抹消タスクの追加に失敗しました",
         "batchEraseLocationQueued": "{count} 件の位置情報抹消タスクをキューに追加しました",
         "batchEraseLocationFailed": "位置情報抹消タスクの一括追加に失敗しました",
+        "mlAnalyzeQueued": "AI analysis task queued",
+        "mlAnalyzeFailed": "Failed to queue AI analysis",
+        "mlAutoTagsQueued": "AI tag extraction task queued",
+        "mlAutoTagsFailed": "Failed to queue AI tag extraction",
+        "mlSemanticQueued": "Semantic index task queued",
+        "mlSemanticFailed": "Failed to queue semantic index",
+        "faceDetectQueued": "Face extraction task queued",
+        "faceDetectFailed": "Failed to queue face extraction",
+        "faceClusterQueued": "Face clustering task queued",
+        "faceClusterFailed": "Failed to queue face clustering",
         "taskSubmitFailed": "タスクの送信に失敗しました",
         "taskStatusCheckFailed": "タスク状態の確認に失敗しました",
-        "uploadFailed": "アップロードに失敗しました"
+        "uploadFailed": "アップロードに失敗しました",
+        "aiAnalysisQueued": "AI image analysis task queued",
+        "aiAnalysisFailed": "Failed to queue AI image analysis",
+        "aiDescriptionQueued": "AI description task queued",
+        "aiDescriptionFailed": "Failed to queue AI description"
       },
       "errors": {
         "noSelection": "アップロードする写真を選択してください",
@@ -719,6 +753,20 @@
         "complete": "完了",
         "missing": "未生成",
         "partial": "{count}/{total}"
+      },
+      "mlStatus": {
+        "notIndexed": "Not indexed",
+        "processing": "Processing",
+        "indexed": "Indexed",
+        "failed": "Failed",
+        "unsupported": "Unavailable",
+        "autoTags": "{count} tags",
+        "semanticIndexed": "Semantic indexed",
+        "semanticMissing": "Semantic missing",
+        "faces": "{count} faces",
+        "people": "{count} people",
+        "descriptionReady": "Description ready",
+        "descriptionMissing": "No description"
       },
       "uploadQueue": {
         "clearCompleted": "完了したタスクをクリア",
@@ -768,7 +816,12 @@
           "variants": "画像バリアント生成",
           "exif": "EXIF 処理",
           "reverseGeocoding": "逆ジオコーディング",
-          "livePhoto": "Live Photo 検出"
+          "livePhoto": "Live Photo 検出",
+          "mlIndex": "ML インデックス",
+          "mlBackfill": "ML バックフィル",
+          "faceDetection": "顔検出",
+          "faceRecognition": "顔認識",
+          "faceCluster": "顔クラスタリング"
         },
         "actions": {
           "abort": "中止",
@@ -802,6 +855,36 @@
         }
       },
       "previewTitle": "写真プレビュー"
+    },
+    "people": {
+      "title": "People",
+      "listTitle": "Face albums",
+      "description": "People are created from face detection and clustering after AI analysis.",
+      "loading": "Loading people...",
+      "empty": "No face albums yet. Run AI analysis and face clustering first.",
+      "unnamed": "Person {id}",
+      "faceCount": "{count} faces",
+      "noPhotos": "No photos are linked to this person.",
+      "faceSamples": "顔サンプル",
+      "fields": {
+        "name": "Person name"
+      },
+      "actions": {
+        "openQueue": "Queue",
+        "backfill": "Analyze Photos",
+        "cluster": "Cluster Faces",
+        "saveName": "Save",
+        "favorite": "Favorite",
+        "hide": "自分だけ",
+        "show": "公開表示"
+      },
+      "messages": {
+        "saved": "Person updated",
+        "saveFailed": "Failed to update person",
+        "backfillQueued": "AI analysis queued",
+        "clusterQueued": "Face clustering queued",
+        "operationFailed": "Operation failed"
+      }
     },
     "albums": {
       "title": "アルバム管理",
@@ -935,6 +1018,52 @@
       },
       "memoryUnavailable": "メモリ情報を取得できません"
     },
+    "maintenance": {
+      "description": "生成データに関する破壊的な管理メンテナンスを実行します。",
+      "dangerous": "危険な操作",
+      "aiCleanup": {
+        "title": "AI データのクリーンアップ",
+        "description": "生成済みの AI インデックスと顔関連データを削除し、きれいに再生成できるようにします。",
+        "warningTitle": "生成済み AI データを完全に削除します",
+        "warningDescription": "写真本体は削除されません。セマンティックベクトル、顔ベクトル、顔切り抜き、AI 説明、未編集の人物、完了または失敗した AI キュータスクが削除される可能性があります。",
+        "scopeLabel": "クリーンアップ範囲",
+        "userIdLabel": "ユーザー ID",
+        "userIdError": "正の数値ユーザー ID を入力してください",
+        "photoIdLabel": "写真 ID",
+        "confirmLabel": "{text} と入力して確認",
+        "action": "AI データをクリーンアップ",
+        "protectionNote": "名前付き、 お気に入り、または手動編集された人物は保持されます。",
+        "deletesTitle": "この操作で削除されるもの",
+        "scopes": {
+          "all": "すべての写真",
+          "user": "指定ユーザー",
+          "photo": "指定写真"
+        },
+        "deletes": {
+          "photoEmbeddings": "写真セマンティックベクトル",
+          "faceEmbeddings": "顔ベクトル",
+          "faceCrops": "生成済み顔切り抜き",
+          "aiDescription": "AI 説明",
+          "people": "未編集の人物レコード",
+          "queueTasks": "完了または失敗した AI キュータスク"
+        },
+        "result": {
+          "photos": "写真",
+          "photoEmbeddings": "写真ベクトル",
+          "faceEmbeddings": "顔ベクトル",
+          "faceCrops": "顔切り抜き",
+          "aiMetadata": "AI メタデータ",
+          "people": "人物",
+          "queueTasks": "キュータスク"
+        },
+        "messages": {
+          "success": "AI データのクリーンアップが完了しました",
+          "partialSuccess": "AI データのクリーンアップが警告付きで完了しました",
+          "failed": "AI データのクリーンアップに失敗しました",
+          "errorCount": "{count} 件のストレージクリーンアップエラー"
+        }
+      }
+    },
     "queue": {
       "title": "キュー管理",
       "indicator": {
@@ -981,7 +1110,15 @@
         "live-photo-video": "LivePhoto動画",
         "photo-reverse-geocoding": "写真の逆ジオコーディング",
         "photo-variants": "写真バリアント生成",
-        "photo-erase-location": "写真位置情報の抹消"
+        "photo-erase-location": "写真位置情報の抹消",
+        "photo-ml-index": "写真 ML インデックス",
+        "photo-ml-auto-tags": "Photo AI Tag Extraction",
+        "photo-ml-semantic-embedding": "Photo Semantic Index",
+        "photo-face-detect": "Face Extraction",
+        "photo-ml-backfill": "写真 ML バックフィル",
+        "photo-face-cluster": "顔クラスタリング",
+        "photo-ai-analysis": "Photo AI Image Analysis",
+        "photo-ai-description": "Photo AI Description"
       },
       "stages": {
         "preprocessing": "前処理",
@@ -992,7 +1129,21 @@
         "motion-photo": "モーションフォト処理",
         "reverse-geocoding": "地理解析",
         "live-photo": "LivePhoto処理",
-        "location-erase": "位置情報の抹消"
+        "location-erase": "位置情報の抹消",
+        "ml-index": "ML インデックス",
+        "ml-auto-tags": "AI Tag Extraction",
+        "ml-semantic-embedding": "Semantic Index",
+        "ml-backfill": "ML バックフィル",
+        "face-detection": "顔検出",
+        "face-recognition": "顔認識",
+        "face-cluster": "顔クラスタリング",
+        "ml-ai-analysis": "AI Image Analysis",
+        "ml-ai-analysis-tags": "AI Tags",
+        "ml-ai-analysis-description": "AI Description",
+        "ml-ai-analysis-score": "AI Score",
+        "ml-ai-analysis-critique": "AI Critique",
+        "ml-ai-analysis-suggestions": "Photo Suggestions",
+        "ml-ai-description": "AI Description"
       },
       "buttons": {
         "retry": "再試行",
@@ -1207,6 +1358,7 @@
       "sections": {
         "thirdPartyLogin": "外部ログイン",
         "fileProcessing": "ファイル処理",
+        "machineLearning": "機械学習",
         "debugSettings": "デバッグ設定"
       },
       "upload": {
@@ -1227,6 +1379,232 @@
             }
           }
         }
+      },
+      "ml": {
+        "groups": {
+          "base": {
+            "title": "基本設定",
+            "description": "AI 機能を有効化し、ローカルサービスの入口を設定します。"
+          },
+          "vision": {
+            "title": "Vision 理解",
+            "description": "画像理解、自動タグ、AI 説明に使う Vision モデルを設定します。"
+          },
+          "semantic": {
+            "title": "意味検索",
+            "description": "写真ベクトルと高度な検索に使う Jina embedding を設定します。"
+          },
+          "face": {
+            "title": "顔アルバム",
+            "description": "顔抽出、人物アルバム、似ている顔の整理を設定します。"
+          },
+          "vector": {
+            "title": "ベクトルストア",
+            "description": "Qdrant 接続とベクトルデータの名前空間を設定します。"
+          },
+          "actions": {
+            "title": "メンテナンス操作",
+            "description": "各 AI サービスの可用性を確認するか、既存写真を再キューします。"
+          }
+        },
+        "language": {
+          "label": "AI 出力言語",
+          "description": "自動タグ、AI 説明、写真講評に使用する言語",
+          "help": "画面の言語や地図のジオコーディング言語は変更しません。"
+        },
+        "enabled": {
+          "label": "機械学習を有効化",
+          "description": "ChronoFrame AI サービスで自動タグ、意味検索、顔アルバムを使用します",
+          "help": "PostgreSQL、Qdrant、LocalAI が必要です。外部 VLM 設定は外部 Vision provider を使う場合のみ必要です。"
+        },
+        "vlmProvider": {
+          "label": "Vision provider",
+          "description": "画像理解と自動タグに使用するプロバイダー",
+          "options": {
+            "openai": "OpenAI",
+            "openaiCompatible": "OpenAI compatible",
+            "localai": "LocalAI"
+          }
+        },
+        "vlmBaseUrl": {
+          "label": "VLM API ベース URL",
+          "description": "OpenAI 互換 chat completions サービスのベース URL",
+          "help": "クライアントはこのベース URL 配下の /chat/completions を呼び出します"
+        },
+        "vlmApiKey": {
+          "label": "VLM API キー",
+          "description": "Vision API キー",
+          "help": "シークレットのシステム設定として保存されます"
+        },
+        "vlmModel": {
+          "label": "VLM モデル",
+          "description": "画像理解と自動タグに使用するモデル",
+          "options": {
+            "qwen3Vl2b": "Qwen3-VL 2B",
+            "qwen3Vl4b": "Qwen3-VL 4B",
+            "qwen3Vl8b": "Qwen3-VL 8B",
+            "qwen3Vl2bThinking": "Qwen3-VL 2B Thinking",
+            "qwen3Vl8bThinking": "Qwen3-VL 8B Thinking"
+          },
+          "descriptions": {
+            "qwen3Vl2b": "小さめの GPU 向けの軽量ローカル VLM。",
+            "qwen3Vl4b": "バランス型のローカル VLM。",
+            "qwen3Vl8b": "より高品質で VRAM 使用量が多いローカル VLM。",
+            "qwen3Vl2bThinking": "ローカル画像解析向けの推論版。",
+            "qwen3Vl8bThinking": "より高品質なローカル画像推論版。"
+          }
+        },
+        "vectorProvider": {
+          "label": "Vector provider",
+          "description": "意味検索と顔埋め込みに使用する外部ベクトルデータベース",
+          "options": {
+            "qdrant": "Qdrant"
+          }
+        },
+        "vectorBaseUrl": {
+          "label": "ベクトルストア URL",
+          "description": "Qdrant サービスの内部 URL",
+          "help": "組み込み Docker サービスでは http://chronoframe-qdrant:6333 を使用します"
+        },
+        "vectorApiKey": {
+          "label": "ベクトルストア API キー",
+          "description": "Qdrant の任意の API キー",
+          "help": "組み込みローカル Qdrant サービスでは空のままで構いません"
+        },
+        "vectorCollectionPrefix": {
+          "label": "Collection プレフィックス",
+          "description": "ChronoFrame が Qdrant collection を作成するときに使うプレフィックス",
+          "help": "変更すると別のベクトル名前空間が作成されます"
+        },
+        "faceModel": {
+          "label": "顔モデル",
+          "description": "LocalAI で顔の検出、埋め込み、クラスタリングに使うモデル",
+          "help": "Buffalo-L は高精度ですが研究/テスト向けです。商用では OpenCV または YuNet/SFace を使用してください。GPU/CPU は LOCALAI_IMAGE で切り替えます。",
+          "options": {
+            "insightfaceBuffaloL": "InsightFace Buffalo-L",
+            "insightfaceBuffaloM": "InsightFace Buffalo-M",
+            "insightfaceBuffaloS": "InsightFace Buffalo-S",
+            "insightfaceBuffaloSc": "InsightFace Buffalo-SC",
+            "insightfaceAntelopeV2": "InsightFace AntelopeV2",
+            "insightfaceOpencv": "InsightFace OpenCV"
+          }
+        },
+        "autoTag": {
+          "enabled": {
+            "label": "自動タグを生成",
+            "description": "アップロード後に機械生成タグを作成します"
+          },
+          "minScore": {
+            "label": "最小タグスコア",
+            "description": "この信頼度を下回るタグは無視されます",
+            "help": "0 から 1 の値を指定します"
+          }
+        },
+        "semanticSearch": {
+          "enabled": {
+            "label": "意味検索を有効化",
+            "description": "ファイル名だけでなく意味で写真を検索します"
+          }
+        },
+        "faceAlbum": {
+          "enabled": {
+            "label": "顔アルバムを有効化",
+            "description": "似ている顔を専用の人物アルバムに自動でまとめます",
+            "help": "有効にすると、アップロード後に顔クラスタリングタスクをキューに追加できます"
+          }
+        },
+        "faceCluster": {
+          "threshold": {
+            "label": "顔クラスタリング閾値",
+            "description": "顔をグループ化するときの類似度閾値",
+            "help": "値が高いほどグループ化は厳密になり、通常は小さなグループになります"
+          }
+        },
+        "ocr": {
+          "enabled": {
+            "label": "OCR インデックスを有効化",
+            "description": "画像内テキストの認識と検索インデックス機能を予約します"
+          }
+        },
+        "actions": {
+          "health": "ヘルスチェック",
+          "healthVlm": "Vision を確認",
+          "healthEmbedding": "意味検索を確認",
+          "healthFace": "顔サービスを確認",
+          "testVlm": "Vision モデルをテスト",
+          "testEmbedding": "意味ベクトルをテスト",
+          "testFace": "顔モデルをテスト",
+          "backfill": "写真を再インデックス",
+          "clusterFaces": "人物アルバムを再構築",
+          "healthSuccess": "機械学習サービスに接続できます",
+          "healthFailed": "機械学習ヘルスチェックに失敗しました",
+          "testSuccess": "AI モデルテストに成功しました",
+          "testFailed": "AI モデルテストに失敗しました",
+          "embeddingRequired": "意味検索には Jina のベース URL、API キー、モデル名が必要です",
+          "embeddingImageModelRequired": "写真の意味検索には、画像入力に対応した Jina モデルが必要です。例: jina-embeddings-v5-omni-small",
+          "testUsesUnsaved": "未保存の設定でテストしています",
+          "enqueueSuccess": "機械学習タスクをキューに追加しました",
+          "enqueueFailed": "機械学習タスクの追加に失敗しました"
+        },
+        "modelBrowser": {
+          "open": "LocalAI モデルを閲覧",
+          "title": "LocalAI モデルギャラリー",
+          "description": "LocalAI 公式モデル API でモデルを確認してインストールします。",
+          "search": "モデルを検索",
+          "load": "モデルを読み込む",
+          "jobs": "ジョブを更新",
+          "empty": "モデルはまだ読み込まれていません。検索するか LocalAI ギャラリーを読み込んでください。",
+          "installed": "インストール済み",
+          "apply": "インストール",
+          "select": "名前を使用",
+          "close": "閉じる",
+          "loadFailed": "LocalAI モデルを読み込めません",
+          "applySuccess": "LocalAI モデルのインストールジョブを送信しました",
+          "applyFailed": "LocalAI モデルのインストール要求に失敗しました",
+          "jobsFailed": "LocalAI モデルジョブを読み込めません",
+          "jobFinished": "LocalAI モデルのインストールジョブが完了しました",
+          "jobStillRunning": "LocalAI はまだインストールジョブを処理しています。後でジョブを更新してください。",
+          "jobPollFailed": "LocalAI インストールジョブの追跡に失敗しました",
+          "jobPollRetrying": "LocalAI ジョブ状態をまだ読み取れません。再試行しています。",
+          "jobIdMissing": "LocalAI がジョブ ID を返しませんでした。ジョブを更新するか LocalAI ログを確認してください。",
+          "jobInvalid": "LocalAI が空のインストールジョブを返し、モデル項目を特定できませんでした。",
+          "jobCancelled": "LocalAI モデルのインストールジョブはキャンセルされました。",
+          "jobCompletedWithoutArtifact": "LocalAI は完了を報告しましたが、{model} のダウンロード成果物を報告しませんでした。モデル一覧を更新するか LocalAI ログを確認してください。"
+        },
+        "localAiBaseUrl": {
+          "label": "LocalAI URL",
+          "description": "LocalAI service URL for local face, VLM, and embedding models",
+          "help": "The built-in Docker service uses http://chronoframe-localai:8080"
+        },
+        "aiDescription": {
+          "enabled": {
+            "label": "Generate AI description and critique",
+            "description": "Use the VLM to generate photo descriptions, critiques, and summaries",
+            "help": "Only queues work when enabled; existing results are retained when disabled."
+          }
+        },
+        "embeddingBaseUrl": {
+          "label": "Jina embedding ベース URL",
+          "description": "Jina AI embedding API のベース URL",
+          "help": "ChronoFrame はこのベース URL 配下の /embeddings を呼び出します"
+        },
+        "embeddingApiKey": {
+          "label": "Jina API キー",
+          "description": "Jina AI embeddings の API キー",
+          "help": "意味検索を有効にする場合は必須です"
+        },
+        "embeddingModel": {
+          "label": "Semantic embedding model",
+          "description": "写真ベクトルと検索テキストベクトルに使う Jina マルチモーダル embedding モデル",
+          "help": "Jina のモデル名を手動で入力してください"
+        },
+        "sectionDescription": "自動タグ、セマンティック検索、顔アルバム、AI 説明、ローカルまたは外部モデルサービスを設定します。"
+      },
+      "mlCleanup": {
+        "action": "ML データをクリーンアップ",
+        "success": "機械学習データのクリーンアップが完了しました",
+        "failed": "機械学習データのクリーンアップに失敗しました",
+        "summary": "{photos} photos, {faces} faces, {people} people"
       },
       "webglImageViewerDebug": {
         "label": "WebGL Image Viewer デバッグモード",
@@ -1513,7 +1891,8 @@
     "form": {
       "loadFailed": "設定の読み込みに失敗しました",
       "saveSuccess": "設定が保存されました",
-      "saveFailed": "設定の保存に失敗しました"
+      "saveFailed": "設定の保存に失敗しました",
+      "customValue": "カスタムモデル名"
     }
   },
   "wizard": {
@@ -1778,6 +2157,25 @@
     },
     "image": {
       "loadError": "画像の読み込み失敗"
+    },
+    "faces": "顔",
+    "aiAnalysis": {
+      "title": "AI Image Analysis",
+      "description": "AI Description",
+      "evaluation": "Photo Critique",
+      "suggestions": "Suggestions",
+      "failed": "Generation failed",
+      "empty": "AI 分析はまだありません。必要に応じて再生成できます。",
+      "retryAll": "Retry all",
+      "retryQueued": "AI analysis task queued",
+      "retryFailed": "Failed to queue AI analysis",
+      "score": {
+        "title": "AI Score",
+        "composition": "Composition",
+        "lighting": "Lighting",
+        "color": "Color",
+        "sharpness": "Sharpness"
+      }
     }
   }
 }

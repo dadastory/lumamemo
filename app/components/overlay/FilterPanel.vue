@@ -9,6 +9,12 @@ const {
   clearAllFilters,
   hasActiveFilters,
   activeFilters,
+  semanticLoading,
+  semanticError,
+  semanticResultIds,
+  smartSearch,
+  advancedSearchEnabled,
+  loadPeopleFilters,
 } = usePhotoFilters()
 
 const { shufflePhotos } = usePhotoSort()
@@ -19,6 +25,10 @@ const isSearchMode = ref(false)
 const searchQuery = computed({
   get: () => activeFilters.value.search,
   set: (value: string) => {
+    if (value !== activeFilters.value.search) {
+      semanticResultIds.value = null
+      semanticError.value = null
+    }
     activeFilters.value.search = value
   },
 })
@@ -60,6 +70,13 @@ const tabItems = computed<TabsItem[]>(() => [
     slot: 'cities',
   },
   {
+    label: $t('ui.action.filter.tabs.people'),
+    value: 'people',
+    badge: selectedCounts.value.people || undefined,
+    icon: 'tabler:users',
+    slot: 'people',
+  },
+  {
     label: $t('ui.action.filter.tabs.ratings'),
     value: 'ratings',
     badge: selectedCounts.value.ratings || undefined,
@@ -75,6 +92,10 @@ const handleToggleFilter = (type: string, value: string | number) => {
 const onShuffle = () => {
   shufflePhotos()
 }
+
+onMounted(() => {
+  loadPeopleFilters()
+})
 </script>
 
 <template>
@@ -111,7 +132,18 @@ const onShuffle = () => {
             icon="tabler:search"
             :placeholder="$t('ui.action.filter.searchPlaceholder')"
             class="w-32"
+            :loading="semanticLoading"
+            @keydown.enter="smartSearch"
             @keydown.escape="isSearchMode = false"
+          />
+          <UButton
+            size="sm"
+            :variant="advancedSearchEnabled ? 'soft' : 'ghost'"
+            :color="advancedSearchEnabled ? 'primary' : 'neutral'"
+            icon="tabler:sparkles"
+            :title="$t('ui.action.filter.searchMode.semantic')"
+            :loading="semanticLoading"
+            @click="smartSearch"
           />
           <UButton
             size="sm"
@@ -144,6 +176,12 @@ const onShuffle = () => {
           />
         </UTooltip>
       </div>
+    </div>
+    <div
+      v-if="semanticError"
+      class="mx-2 rounded-md border border-warning-300/60 bg-warning-50/80 px-2.5 py-1.5 text-xs text-warning-700 dark:border-warning-700/60 dark:bg-warning-950/40 dark:text-warning-300"
+    >
+      {{ semanticError }}
     </div>
     <!-- 标签页 -->
     <UTabs
@@ -184,6 +222,42 @@ const onShuffle = () => {
             class="text-center text-sm text-neutral-500 dark:text-neutral-400 py-4"
           >
             {{ $t('ui.action.filter.empty.tags') }}
+          </div>
+        </div>
+      </template>
+
+      <!-- 人物面板 -->
+      <template #people>
+        <div class="space-y-0.5 max-h-64 overflow-y-auto">
+          <div
+            v-for="person in availableFilters.people"
+            :key="person.id"
+            class="flex min-w-0 items-center justify-between gap-2 cursor-pointer select-none hover:bg-neutral-400/30 dark:hover:bg-info-800/30 rounded-lg px-2 py-2"
+            :class="
+              isFilterSelected('people', person.id)
+                ? 'bg-neutral-400/30 dark:bg-info-800/30'
+                : ''
+            "
+            @click="handleToggleFilter('people', person.id)"
+          >
+            <span
+              class="min-w-0 flex-1 text-sm text-default font-medium truncate"
+              :title="person.label"
+            >
+              {{ person.label }}
+            </span>
+            <span class="text-xs text-muted shrink-0">{{ person.count }}</span>
+            <Icon
+              v-if="isFilterSelected('people', person.id)"
+              name="tabler:check"
+              class="size-4 shrink-0 text-green-500"
+            />
+          </div>
+          <div
+            v-if="availableFilters.people.length === 0"
+            class="text-center text-sm text-neutral-500 dark:text-neutral-400 py-4"
+          >
+            {{ $t('ui.action.filter.empty.people') }}
           </div>
         </div>
       </template>

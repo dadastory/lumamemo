@@ -36,12 +36,22 @@ const navItems = computed<NavigationMenuItem[][]>(() => {
       icon: 'tabler:album',
       to: '/dashboard/albums',
     },
+    {
+      label: $t('title.people'),
+      icon: 'tabler:face-id',
+      to: '/dashboard/people',
+    },
     ...(isAdmin.value
       ? [
           {
             label: $t('title.queue'),
             icon: 'tabler:list-check',
             to: '/dashboard/queue',
+          },
+          {
+            label: $t('title.dataMaintenance'),
+            icon: 'tabler:tool',
+            to: '/dashboard/maintenance',
           },
           {
             label: $t('title.logs'),
@@ -77,6 +87,16 @@ const navItems = computed<NavigationMenuItem[][]>(() => {
                 label: $t('title.mapAndLocation'),
                 icon: 'tabler:map-pin',
                 to: '/dashboard/settings/map',
+              },
+              {
+                label: $t('title.thirdPartyLoginSettings'),
+                icon: 'tabler:login-2',
+                to: '/dashboard/settings/login',
+              },
+              {
+                label: $t('title.aiSettings'),
+                icon: 'tabler:sparkles',
+                to: '/dashboard/settings/ai',
               },
               {
                 label: $t('title.systemSettings'),

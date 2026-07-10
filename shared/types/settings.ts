@@ -32,6 +32,7 @@ export type FieldUIType =
   | 'url' // URL 输入
   | 'textarea' // 文本域
   | 'select' // 下拉选择
+  | 'select-custom' // 下拉选择 + 手动输入
   | 'radio' // 单选按钮
   | 'tabs' // 标签页选择
   | 'toggle' // 开关

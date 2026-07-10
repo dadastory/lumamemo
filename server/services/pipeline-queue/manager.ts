@@ -2,13 +2,14 @@ import type { ConsolaInstance } from 'consola'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'path'
-import { and, asc, desc, eq, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, lte, sql } from 'drizzle-orm'
 import { exiftool } from 'exiftool-vendored'
 import type {
   NewPipelineQueueItem,
   PipelineQueueItem,
   Photo,
 } from '~~/server/utils/db'
+import type { PhotoAiAnalysisStage } from '~~/shared/types/photo'
 import { compressUint8Array } from '~~/shared/utils/u8array'
 import {
   preprocessImageWithJpegUpload,
@@ -20,6 +21,14 @@ import {
   extractLocationFromGPS,
   parseGPSCoordinates,
 } from '../location/geocoding'
+import {
+  clusterFacesForOwner,
+  indexPhotoAiAnalysis,
+  indexPhotoAutoTags,
+  indexPhotoFaces,
+  indexPhotoSemanticEmbedding,
+} from '../ml/photo-indexer'
+import { getVectorStore } from '../ml/vector-store'
 import { settingsManager } from '../settings/settingsManager'
 import { findLivePhotoVideoForImage } from '../video/livephoto'
 import { processMotionPhotoFromXmp } from '../video/motion-photo'
@@ -125,6 +134,13 @@ export class QueueManager {
     payload: any,
     options?: Partial<NewPipelineQueueItem>,
   ): Promise<number> {
+    if (payload?.type === 'photo-face-cluster') {
+      const existingClusterTaskId = await this.findPendingFaceClusterTask(
+        payload.ownerUserId,
+      )
+      if (existingClusterTaskId) return existingClusterTaskId
+    }
+
     const db = useDB()
     const result = await db
       .insert(tables.pipelineQueue)
@@ -135,6 +151,192 @@ export class QueueManager {
       .returning({ id: tables.pipelineQueue.id })
       .get()
     return result.id
+  }
+
+  async enqueueMachineLearningIndexTask(
+    photoId: string,
+    ownerUserId?: number | null,
+  ) {
+    const mlEnabled =
+      (await settingsManager.get<boolean>('system', 'ml.enabled')) ?? false
+    if (!mlEnabled) return null
+
+    return await this.addTask(
+      {
+        type: 'photo-ml-index',
+        photoId,
+        ownerUserId,
+      },
+      {
+        priority: 1,
+        maxAttempts: 3,
+      },
+    )
+  }
+
+  async enqueueMachineLearningAutoTagTask(
+    photoId: string,
+    ownerUserId?: number | null,
+  ) {
+    const mlEnabled =
+      (await settingsManager.get<boolean>('system', 'ml.enabled')) ?? false
+    const enabled =
+      (await settingsManager.get<boolean>('system', 'ml.autoTag.enabled')) ??
+      true
+    if (!mlEnabled || !enabled) return null
+
+    return await this.addTask(
+      {
+        type: 'photo-ml-auto-tags',
+        photoId,
+        ownerUserId,
+      },
+      {
+        priority: 1,
+        maxAttempts: 3,
+      },
+    )
+  }
+
+  async enqueueMachineLearningSemanticEmbeddingTask(
+    photoId: string,
+    ownerUserId?: number | null,
+  ) {
+    const mlEnabled =
+      (await settingsManager.get<boolean>('system', 'ml.enabled')) ?? false
+    const enabled =
+      (await settingsManager.get<boolean>(
+        'system',
+        'ml.semanticSearch.enabled',
+      )) ?? true
+    if (!mlEnabled || !enabled) return null
+
+    return await this.addTask(
+      {
+        type: 'photo-ml-semantic-embedding',
+        photoId,
+        ownerUserId,
+      },
+      {
+        priority: 1,
+        maxAttempts: 3,
+      },
+    )
+  }
+
+  async enqueuePhotoAiAnalysisTask(
+    photoId: string,
+    ownerUserId?: number | null,
+    stages?: PhotoAiAnalysisStage[],
+  ) {
+    const mlEnabled =
+      (await settingsManager.get<boolean>('system', 'ml.enabled')) ?? false
+    const enabled =
+      (await settingsManager.get<boolean>('system', 'ml.aiDescription.enabled')) ??
+      false
+    if (!mlEnabled || !enabled) return null
+
+    return await this.addTask(
+      {
+        type: 'photo-ai-analysis',
+        photoId,
+        ownerUserId,
+        ...(stages && stages.length > 0 ? { stages } : {}),
+      },
+      {
+        priority: 1,
+        maxAttempts: 3,
+      },
+    )
+  }
+
+  async enqueuePhotoAiDescriptionTask(
+    photoId: string,
+    ownerUserId?: number | null,
+  ) {
+    return await this.enqueuePhotoAiAnalysisTask(photoId, ownerUserId, [
+      'description',
+    ])
+  }
+
+  async enqueueFaceDetectTask(photoId: string, ownerUserId?: number | null) {
+    const mlEnabled =
+      (await settingsManager.get<boolean>('system', 'ml.enabled')) ?? false
+    const faceAlbumEnabled =
+      (await settingsManager.get<boolean>('system', 'ml.faceAlbum.enabled')) ??
+      false
+    if (!mlEnabled || !faceAlbumEnabled) return null
+
+    return await this.addTask(
+      {
+        type: 'photo-face-detect',
+        photoId,
+        ownerUserId,
+      },
+      {
+        priority: 1,
+        maxAttempts: 3,
+      },
+    )
+  }
+
+  async enqueueFaceClusterTask(ownerUserId?: number | null) {
+    const mlEnabled =
+      (await settingsManager.get<boolean>('system', 'ml.enabled')) ?? false
+    const faceAlbumEnabled =
+      (await settingsManager.get<boolean>('system', 'ml.faceAlbum.enabled')) ??
+      false
+    if (!mlEnabled || !faceAlbumEnabled) return null
+
+    const existingClusterTaskId = await this.findPendingFaceClusterTask(
+      ownerUserId,
+    )
+    if (existingClusterTaskId) return existingClusterTaskId
+
+    return await this.addTask(
+      {
+        type: 'photo-face-cluster',
+        ownerUserId,
+      },
+      {
+        priority: 0,
+        maxAttempts: 3,
+      },
+    )
+  }
+
+  async findPendingFaceClusterTask(ownerUserId?: number | null) {
+    const tasks = await useDB().select().from(tables.pipelineQueue).all()
+    const normalizedOwnerUserId = ownerUserId ?? null
+    const existing = tasks.find((task) => {
+      if (task.payload?.type !== 'photo-face-cluster') return false
+      if (!(task.status === 'pending' || task.status === 'in-stages')) {
+        return false
+      }
+      return (task.payload.ownerUserId ?? null) === normalizedOwnerUserId
+    })
+    return existing?.id ?? null
+  }
+
+  async enqueueMachineLearningBackfillTask(ownerUserId?: number | null) {
+    const mlEnabled =
+      (await settingsManager.get<boolean>('system', 'ml.enabled')) ?? false
+    if (!mlEnabled) return null
+
+    return await this.addTask(
+      {
+        type: 'photo-ml-backfill',
+        ownerUserId,
+      },
+      {
+        priority: 1,
+        maxAttempts: 3,
+      },
+    )
+  }
+
+  private async countIndexedFacesForOwner(ownerUserId?: number | null) {
+    return await (await getVectorStore()).countFacePayloads({ ownerUserId })
   }
 
   /**
@@ -163,7 +365,12 @@ export class QueueManager {
       const highestPriorityPendingTask = await tx
         .select()
         .from(tables.pipelineQueue)
-        .where(eq(tables.pipelineQueue.status, 'pending'))
+        .where(
+          and(
+            eq(tables.pipelineQueue.status, 'pending'),
+            lte(tables.pipelineQueue.createdAt, new Date()),
+          ),
+        )
         // 优先处理高优先级和较早创建的任务
         .orderBy(
           desc(tables.pipelineQueue.priority),
@@ -182,6 +389,7 @@ export class QueueManager {
           and(
             eq(tables.pipelineQueue.id, task.id),
             eq(tables.pipelineQueue.status, 'pending'),
+            lte(tables.pipelineQueue.createdAt, new Date()),
           ),
         )
         .returning({ id: tables.pipelineQueue.id })
@@ -561,6 +769,15 @@ export class QueueManager {
             }
           }
 
+          try {
+            await this.enqueueMachineLearningIndexTask(photoId, ownerUserId)
+          } catch (enqueueError) {
+            this.logger.warn(
+              `[${taskId}:ml-index] failed to enqueue machine learning index task for ${photoId}`,
+              enqueueError,
+            )
+          }
+
           this.logger.success(`Task ${taskId} processed successfully`)
           return result
         } catch (error) {
@@ -661,6 +878,17 @@ export class QueueManager {
             })
             .where(eq(tables.photos.id, photo.id))
             .run()
+
+          if (payload.reindexMlAfterVariants) {
+            try {
+              await this.enqueueMachineLearningIndexTask(photo.id, ownerUserId)
+            } catch (enqueueError) {
+              this.logger.warn(
+                `[${taskId}:ml-index] failed to enqueue machine learning reindex task for ${photo.id}`,
+                enqueueError,
+              )
+            }
+          }
 
           this.logger.success(
             `Image variants task ${taskId} processed successfully for ${photo.id}`,
@@ -777,6 +1005,209 @@ export class QueueManager {
             error,
           )
           throw error
+        }
+      },
+      machineLearningIndex: async (task: PipelineQueueItem) => {
+        const { id: taskId, payload } = task
+        if (payload.type !== 'photo-ml-index') {
+          throw new Error(
+            `Invalid payload type for ML index task: ${payload.type}`,
+          )
+        }
+
+        await this.updateTaskStage(taskId, 'ml-index')
+        this.logger.info(
+          `[${taskId}:in-stage] machine learning fan-out for photo ${payload.photoId}`,
+        )
+
+        await this.enqueueMachineLearningSemanticEmbeddingTask(
+          payload.photoId,
+          payload.ownerUserId,
+        )
+        await this.enqueuePhotoAiAnalysisTask(
+          payload.photoId,
+          payload.ownerUserId,
+        )
+        await this.enqueueFaceDetectTask(payload.photoId, payload.ownerUserId)
+        this.logger.success(
+          `[${taskId}:ml-index] queued independent ML tasks for photo ${payload.photoId}`,
+        )
+      },
+      machineLearningAutoTags: async (task: PipelineQueueItem) => {
+        const { id: taskId, payload } = task
+        if (payload.type !== 'photo-ml-auto-tags') {
+          throw new Error(
+            `Invalid payload type for ML auto tag task: ${payload.type}`,
+          )
+        }
+
+        await this.updateTaskStage(taskId, 'ml-auto-tags')
+        const result = await indexPhotoAutoTags(payload.photoId)
+        this.logger.success(
+          `[${taskId}:ml-auto-tags] indexed ${result.tags ?? 0} tags for photo ${payload.photoId}`,
+        )
+      },
+      machineLearningSemanticEmbedding: async (task: PipelineQueueItem) => {
+        const { id: taskId, payload } = task
+        if (payload.type !== 'photo-ml-semantic-embedding') {
+          throw new Error(
+            `Invalid payload type for ML semantic embedding task: ${payload.type}`,
+          )
+        }
+
+        await this.updateTaskStage(taskId, 'ml-semantic-embedding')
+        const result = await indexPhotoSemanticEmbedding(payload.photoId)
+        if (result.skipped) {
+          this.logger.info(
+            `[${taskId}:ml-semantic-embedding] skipped photo ${payload.photoId}: ${result.reason}`,
+          )
+        } else {
+          this.logger.success(
+            `[${taskId}:ml-semantic-embedding] indexed ${result.embeddingDim} dimensions for photo ${payload.photoId}`,
+          )
+        }
+      },
+      photoAiAnalysis: async (task: PipelineQueueItem) => {
+        const { id: taskId, payload } = task
+        if (payload.type !== 'photo-ai-analysis') {
+          throw new Error(
+            `Invalid payload type for AI analysis task: ${payload.type}`,
+          )
+        }
+
+        await this.updateTaskStage(taskId, 'ml-ai-analysis')
+        const result = await indexPhotoAiAnalysis(
+          payload.photoId,
+          payload.stages,
+          async (stage) => {
+            await this.updateTaskStage(taskId, `ml-ai-analysis-${stage}` as any)
+          },
+        )
+        if (result.skipped) {
+          this.logger.info(
+            `[${taskId}:ml-ai-analysis] skipped photo ${payload.photoId}: ${result.reason}`,
+          )
+        } else {
+          this.logger.success(
+            `[${taskId}:ml-ai-analysis] analyzed photo ${payload.photoId}`,
+          )
+        }
+      },
+      faceDetect: async (task: PipelineQueueItem) => {
+        const { id: taskId, payload } = task
+        if (payload.type !== 'photo-face-detect') {
+          throw new Error(
+            `Invalid payload type for face detect task: ${payload.type}`,
+          )
+        }
+
+        await this.updateTaskStage(taskId, 'face-detection')
+        const result = await indexPhotoFaces(payload.photoId)
+        if (result.skipped) {
+          this.logger.info(
+            `[${taskId}:face-detection] skipped photo ${payload.photoId}: ${result.reason}`,
+          )
+        } else {
+          this.logger.success(
+            `[${taskId}:face-detection] indexed ${result.faces} faces for photo ${payload.photoId}`,
+          )
+          await this.enqueueFaceClusterTask(payload.ownerUserId)
+        }
+      },
+      machineLearningBackfill: async (task: PipelineQueueItem) => {
+        const db = useDB()
+        const { id: taskId, payload } = task
+        if (payload.type !== 'photo-ml-backfill') {
+          throw new Error(
+            `Invalid payload type for ML backfill task: ${payload.type}`,
+          )
+        }
+
+        await this.updateTaskStage(taskId, 'ml-backfill')
+        this.logger.info(`[${taskId}:in-stage] machine learning backfill`)
+
+        const ownerUserId = Number(payload.ownerUserId)
+        const photosQuery = db
+          .select({
+            id: tables.photos.id,
+            ownerUserId: tables.photos.ownerUserId,
+          })
+          .from(tables.photos)
+
+        const photos =
+          Number.isSafeInteger(ownerUserId) && ownerUserId > 0
+            ? await photosQuery
+                .where(eq(tables.photos.ownerUserId, ownerUserId))
+                .all()
+            : await photosQuery.all()
+
+        for (const photo of photos) {
+          await this.enqueueMachineLearningSemanticEmbeddingTask(
+            photo.id,
+            photo.ownerUserId,
+          )
+          await this.enqueuePhotoAiAnalysisTask(photo.id, photo.ownerUserId)
+          await this.enqueueFaceDetectTask(photo.id, photo.ownerUserId)
+        }
+      },
+      faceCluster: async (task: PipelineQueueItem) => {
+        const { id: taskId, payload } = task
+        if (payload.type !== 'photo-face-cluster') {
+          throw new Error(
+            `Invalid payload type for face cluster task: ${payload.type}`,
+          )
+        }
+
+        await this.updateTaskStage(taskId, 'face-cluster')
+        const mlEnabled =
+          (await settingsManager.get<boolean>('system', 'ml.enabled')) ?? false
+        if (!mlEnabled) {
+          this.logger.info(
+            `[${taskId}:face-cluster] skipped: Machine learning is disabled`,
+          )
+          return
+        }
+
+        const faceAlbumEnabled =
+          (await settingsManager.get<boolean>(
+            'system',
+            'ml.faceAlbum.enabled',
+          )) ?? false
+        if (!faceAlbumEnabled) {
+          this.logger.info(`[${taskId}:face-cluster] skipped: disabled`)
+          return
+        }
+
+        this.logger.info(
+          `[${taskId}:face-cluster] face clustering requested for owner ${payload.ownerUserId ?? 'all'}`,
+        )
+
+        const indexedFaceCount = await this.countIndexedFacesForOwner(
+          payload.ownerUserId,
+        )
+        if (indexedFaceCount === 0) {
+          const backfillTaskId = await this.enqueueMachineLearningBackfillTask(
+            payload.ownerUserId,
+          )
+          this.logger.warn(
+            `[${taskId}:face-cluster] no-indexed-faces: 0 indexed faces available for clustering; queued photo-face-detect backfill via photo-ml-backfill task ${backfillTaskId ?? 'none'}`,
+          )
+          return
+        }
+
+        const result = await clusterFacesForOwner(payload.ownerUserId)
+        if (result.skipped) {
+          this.logger.info(
+            `[${taskId}:face-cluster] skipped: ${result.reason}`,
+          )
+        } else {
+          const faceSummary =
+            result.faces === 0
+              ? '0 indexed faces available for clustering'
+              : `clustered ${result.faces} faces into ${result.people} people`
+          this.logger.success(
+            `[${taskId}:face-cluster] ${faceSummary}`,
+          )
         }
       },
       eraseLocation: async (task: PipelineQueueItem) => {
@@ -1004,6 +1435,27 @@ export class QueueManager {
             break
           case 'photo-reverse-geocoding':
             await this.processors.reverseGeocoding(task)
+            break
+          case 'photo-ml-index':
+            await this.processors.machineLearningIndex(task)
+            break
+          case 'photo-ml-auto-tags':
+            await this.processors.machineLearningAutoTags(task)
+            break
+          case 'photo-ml-semantic-embedding':
+            await this.processors.machineLearningSemanticEmbedding(task)
+            break
+          case 'photo-ai-analysis':
+            await this.processors.photoAiAnalysis(task)
+            break
+          case 'photo-face-detect':
+            await this.processors.faceDetect(task)
+            break
+          case 'photo-ml-backfill':
+            await this.processors.machineLearningBackfill(task)
+            break
+          case 'photo-face-cluster':
+            await this.processors.faceCluster(task)
             break
           case 'photo-erase-location':
             await this.processors.eraseLocation(task)

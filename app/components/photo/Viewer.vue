@@ -21,6 +21,7 @@ interface Props {
   isOpen: boolean
   globeRoute?: string | null
   albumRoute?: string | null
+  publicProfileId?: string | null
 }
 
 const props = defineProps<Props>()
@@ -31,7 +32,7 @@ const emit = defineEmits<{
 }>()
 
 const toast = useToast()
-const { loggedIn } = useUserSession()
+const { loggedIn, user } = useUserSession()
 
 const containerRef = ref<HTMLDivElement>()
 const swiperRef = ref<SwiperType>()
@@ -96,6 +97,66 @@ const { convertMovToMp4, getProcessingState } = useLivePhotoProcessor()
 // Computed
 const currentPhoto = computed(() => props.photos[props.currentIndex])
 const isMobile = useMediaQuery('(max-width: 768px)')
+
+const photoDetailRequests = ref<Record<string, boolean>>({})
+const hydratedPhotoDetailIds = ref<Record<string, boolean>>({})
+
+const canHydrateOwnerPhotoDetails = (photo: Photo | undefined) => {
+  const ownerUserId = (photo as any)?.ownerUserId
+  const userId = user.value?.id
+  return Boolean(
+    props.isOpen &&
+    loggedIn.value &&
+    photo &&
+    ownerUserId != null &&
+    userId != null &&
+    Number(ownerUserId) === Number(userId),
+  )
+}
+
+const getPublicPhotoDetailEndpoint = (photo: Photo | undefined) => {
+  const publicProfileId = props.publicProfileId
+  if (!props.isOpen || !photo || !publicProfileId) return null
+  return `/api/public/profiles/${encodeURIComponent(publicProfileId)}/photos/${encodeURIComponent(photo.id)}/detail`
+}
+
+const getCurrentPhotoDetailEndpoint = (photo: Photo | undefined) => {
+  if (!photo) return null
+  if (canHydrateOwnerPhotoDetails(photo)) return `/api/photos/${photo.id}/detail`
+  return getPublicPhotoDetailEndpoint(photo)
+}
+
+const hydrateCurrentPhotoDetails = async (
+  options: { force?: boolean } = {},
+) => {
+  const photo = currentPhoto.value
+  const endpoint = getCurrentPhotoDetailEndpoint(photo)
+  if (!photo || !endpoint) return
+  if (!options.force && hydratedPhotoDetailIds.value[photo.id]) return
+  if (photoDetailRequests.value[photo.id]) return
+
+  photoDetailRequests.value = {
+    ...photoDetailRequests.value,
+    [photo.id]: true,
+  }
+
+  try {
+    const response = await $fetch<{ photo?: Photo }>(
+      endpoint,
+    )
+    if (currentPhoto.value?.id !== photo.id || !response.photo) return
+    hydratedPhotoDetailIds.value = {
+      ...hydratedPhotoDetailIds.value,
+      [photo.id]: true,
+    }
+    emit('photo-updated', response.photo)
+  } catch (error) {
+    console.warn('Failed to hydrate photo details in viewer:', error)
+  } finally {
+    const { [photo.id]: _completed, ...remaining } = photoDetailRequests.value
+    photoDetailRequests.value = remaining
+  }
+}
 
 const rawDisplayRefreshTokens = ref<Record<string, number>>({})
 
@@ -216,6 +277,20 @@ watch(
       processCurrentLivePhoto()
     })
   },
+)
+
+watch(
+  [
+    () => props.isOpen,
+    () => currentPhoto.value?.id,
+    () => loggedIn.value,
+    () => user.value?.id,
+    () => props.publicProfileId,
+  ],
+  () => {
+    void hydrateCurrentPhotoDetails()
+  },
+  { immediate: true },
 )
 
 // 当图片缩放状态改变时，控制 Swiper 的触摸行为
@@ -406,7 +481,23 @@ const handleRawPhotoUpdated = (photo: Photo) => {
   const current = currentPhoto.value
   if (!current || current.id !== photo.id) return
   currentBlobSrc.value = null
+  const { [photo.id]: _completed, ...remaining } = photoDetailRequests.value
+  photoDetailRequests.value = remaining
+  const { [photo.id]: _hydrated, ...otherHydrated } =
+    hydratedPhotoDetailIds.value
+  hydratedPhotoDetailIds.value = otherHydrated
   refreshRawDisplay(photo.id)
+  emit('photo-updated', photo)
+  void nextTick(() => hydrateCurrentPhotoDetails({ force: true }))
+}
+
+const handleInfoPanelPhotoUpdated = (photo: Photo) => {
+  const current = currentPhoto.value
+  if (!current || current.id !== photo.id) return
+  hydratedPhotoDetailIds.value = {
+    ...hydratedPhotoDetailIds.value,
+    [photo.id]: true,
+  }
   emit('photo-updated', photo)
 }
 
@@ -1181,6 +1272,7 @@ const swiperModules = [Navigation, Keyboard, Virtual]
               :globe-route="globeRoute"
               :album-route="albumRoute"
               :on-close="() => (showExifPanel = false)"
+              @photo-updated="handleInfoPanelPhotoUpdated"
             />
           </AnimatePresence>
           <InfoPanel
@@ -1189,6 +1281,7 @@ const swiperModules = [Navigation, Keyboard, Virtual]
             :exif-data="currentPhoto?.exif"
             :globe-route="globeRoute"
             :album-route="albumRoute"
+            @photo-updated="handleInfoPanelPhotoUpdated"
           />
         </div>
       </motion.div>

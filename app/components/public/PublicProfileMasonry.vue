@@ -2,6 +2,7 @@
 import {
   buildPublicAlbumsRoute,
   buildPublicGlobeRoute,
+  buildPublicPeopleRoute,
   buildPublicProfileRoute,
 } from '~/utils/public-profile-routes'
 
@@ -120,6 +121,7 @@ watch(
           :header-profile="headerProfile"
           :album-route="buildPublicAlbumsRoute(publicId)"
           :globe-route="buildPublicGlobeRoute(publicId)"
+          :people-route="buildPublicPeopleRoute(publicId)"
           :photo-route-base="profileRoute"
           :return-route="profileRoute"
         />

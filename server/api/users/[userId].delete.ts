@@ -4,7 +4,11 @@ import {
   getPhotoStorageKeys,
   getUserOwnedPhotoStorageKeys,
 } from '~~/server/utils/photo-delete'
+import { getVectorStore } from '~~/server/services/ml/vector-store'
+import { getDatabaseProvider } from '~~/server/utils/db'
 import { useStorageProvider } from '~~/server/utils/useStorageProvider'
+import { logger } from '~~/server/utils/logger'
+import { people as postgresPeople } from '~~/server/database/schema/postgres'
 
 const paramsSchema = z.object({
   userId: z
@@ -62,15 +66,40 @@ export default eventHandler(async (event) => {
     .where(eq(tables.albums.ownerUserId, userId))
     .all()
 
+  const vectorStore =
+    getDatabaseProvider() === 'postgres' ? await getVectorStore() : null
+  const vectorFaces = vectorStore
+    ? await vectorStore
+        .listFacePayloads({ ownerUserId: userId, includeUnassigned: true })
+        .catch((error) => {
+          logger.image.warn(
+            `Failed to list vector face payloads for user ${userId}: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          )
+          return []
+        })
+    : []
+  const photoFacesByPhotoId = new Map<string, typeof vectorFaces>()
+  for (const face of vectorFaces) {
+    const list = photoFacesByPhotoId.get(face.photoId) || []
+    list.push(face)
+    photoFacesByPhotoId.set(face.photoId, list)
+  }
+  const photosWithVectorFaces = photos.map((photo: any) => ({
+    ...photo,
+    photoFaces: photoFacesByPhotoId.get(photo.id) || [],
+  }))
+
   const storageKeys = [
     ...new Set(
-      photos.flatMap((photo: any) =>
+      photosWithVectorFaces.flatMap((photo: any) =>
         getUserOwnedPhotoStorageKeys(photo, userId),
       ),
     ),
   ]
   const skippedStorageFiles = [
-    ...new Set(photos.flatMap(getPhotoStorageKeys)),
+    ...new Set(photosWithVectorFaces.flatMap(getPhotoStorageKeys)),
   ].filter((key: string) => !storageKeys.includes(key)).length
 
   const queueItems = await db.select().from(tables.pipelineQueue).all()
@@ -83,6 +112,14 @@ export default eventHandler(async (event) => {
       )
     })
     .map((item: any) => item.id)
+  const isPostgres = getDatabaseProvider() === 'postgres'
+  const peopleRows = isPostgres
+    ? await db
+        .select()
+        .from(postgresPeople)
+        .where(eq(postgresPeople.ownerUserId, userId))
+        .all()
+    : []
 
   await db.transaction(async (tx: any) => {
     for (const album of albums) {
@@ -109,6 +146,13 @@ export default eventHandler(async (event) => {
         .run()
     }
 
+    if (isPostgres) {
+      await tx
+        .delete(postgresPeople)
+        .where(eq(postgresPeople.ownerUserId, userId))
+        .run()
+    }
+
     await tx
       .delete(tables.userInvites)
       .where(
@@ -122,6 +166,25 @@ export default eventHandler(async (event) => {
 
     await tx.delete(tables.users).where(eq(tables.users.id, userId)).run()
   })
+
+  if (vectorStore) {
+    await Promise.all(
+      photos.map(async (photo: any) => {
+        try {
+          await Promise.all([
+            vectorStore.deletePhotoEmbeddings(photo.id),
+            vectorStore.deleteFaceEmbeddingsForPhoto(photo.id),
+          ])
+        } catch (error) {
+          logger.image.warn(
+            `Failed to delete vector data for photo ${photo.id}: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          )
+        }
+      }),
+    )
+  }
 
   const { storageProvider } = useStorageProvider(event)
   const fileDeleteErrors = []
@@ -142,6 +205,7 @@ export default eventHandler(async (event) => {
       userId,
       photos: photos.length,
       albums: albums.length,
+      people: peopleRows.length,
       queueTasks: deletedQueueIds.length,
       storageFiles: storageKeys.length - fileDeleteErrors.length,
       skippedStorageFiles,

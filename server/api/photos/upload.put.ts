@@ -33,10 +33,7 @@ export default eventHandler(async (event) => {
     })
   }
 
-  if (
-    !isAdminUser(session.user) &&
-    !isStorageKeyInUserNamespace(storageKey, session.user.id)
-  ) {
+  if (!isStorageKeyInUserNamespace(storageKey, session.user.id)) {
     throw createError({
       statusCode: 403,
       statusMessage: 'Cannot upload to another user namespace',

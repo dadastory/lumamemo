@@ -31,6 +31,7 @@ const columnNameMap = computed<Record<string, string>>(() => ({
   fileSize: $t('dashboard.photos.table.columns.fileSize'),
   colorSpace: $t('dashboard.photos.table.columns.colorSpace'),
   imageVariants: $t('dashboard.photos.table.columns.imageVariants'),
+  mlStatus: $t('dashboard.photos.table.columns.mlStatus'),
   reactions: $t('dashboard.photos.table.columns.reactions'),
   actions: $t('dashboard.photos.table.columns.actions'),
 }))
@@ -587,6 +588,7 @@ const columnVisibility = ref({
   fileSize: true,
   colorSpace: true,
   imageVariants: true,
+  mlStatus: true,
   reactions: true,
 })
 
@@ -632,6 +634,120 @@ const getImageVariantStatus = (photo: Photo) => {
   }
 }
 
+type MlStageKey =
+  | 'autoTags'
+  | 'semantic'
+  | 'description'
+  | 'faces'
+  | 'people'
+
+const mlStages: Array<{ key: MlStageKey; icon: string }> = [
+  { key: 'autoTags', icon: 'tabler:tags' },
+  { key: 'semantic', icon: 'tabler:database-search' },
+  { key: 'description', icon: 'tabler:message-2' },
+  { key: 'faces', icon: 'tabler:face-id' },
+  { key: 'people', icon: 'tabler:users' },
+]
+
+const getPhotoMlStatus = (photo: Photo) => {
+  const status = (photo as any).mlStatus || {}
+  const autoTagCount = Number(status.autoTagCount || 0)
+  const faceCount = Number(status.faceCount || 0)
+  const personCount = Number(status.personCount || 0)
+
+  return {
+    stages: status.stages || {
+      autoTags: {
+        state: autoTagCount > 0 ? 'ready' : status.state || 'missing',
+        count: autoTagCount,
+      },
+      semantic: {
+        state: status.hasEmbedding ? 'ready' : status.state || 'missing',
+        hasEmbedding: Boolean(status.hasEmbedding),
+      },
+      description: {
+        state: (photo as any).aiAnalysis?.description
+          ? 'ready'
+          : status.state || 'missing',
+        hasDescription: Boolean((photo as any).aiAnalysis?.description),
+      },
+      faces: {
+        state: faceCount > 0 ? 'ready' : status.state || 'missing',
+        count: faceCount,
+      },
+      people: {
+        state: personCount > 0 ? 'ready' : status.state || 'missing',
+        count: personCount,
+      },
+    },
+    latestTask: status.latestTask || null,
+  }
+}
+
+const getMlStageVisual = (stageKey: MlStageKey, stage: any) => {
+  const state = stage?.state || 'missing'
+  const count = Number(stage?.count || 0)
+
+  if (state === 'processing') {
+    return {
+      label: $t('dashboard.photos.mlStatus.processing'),
+      color: 'info',
+    }
+  }
+  if (state === 'failed') {
+    return {
+      label: $t('dashboard.photos.mlStatus.failed'),
+      color: 'error',
+    }
+  }
+  if (state === 'unsupported') {
+    return {
+      label: $t('dashboard.photos.mlStatus.unsupported'),
+      color: 'neutral',
+    }
+  }
+
+  if (stageKey === 'semantic') {
+    return stage?.hasEmbedding || state === 'ready'
+      ? {
+          label: $t('dashboard.photos.mlStatus.semanticIndexed'),
+          color: 'success',
+        }
+      : {
+          label: $t('dashboard.photos.mlStatus.semanticMissing'),
+          color: 'neutral',
+        }
+  }
+
+  if (stageKey === 'description') {
+    return stage?.hasDescription || state === 'ready'
+      ? {
+          label: $t('dashboard.photos.mlStatus.descriptionReady'),
+          color: 'success',
+        }
+      : {
+          label: $t('dashboard.photos.mlStatus.descriptionMissing'),
+          color: 'neutral',
+        }
+  }
+
+  const labels: Record<Exclude<MlStageKey, 'semantic' | 'description'>, string> = {
+    autoTags: $t('dashboard.photos.mlStatus.autoTags', { count }),
+    faces: $t('dashboard.photos.mlStatus.faces', { count }),
+    people: $t('dashboard.photos.mlStatus.people', { count }),
+  }
+  const colors: Record<Exclude<MlStageKey, 'semantic' | 'description'>, string> = {
+    autoTags: count > 0 ? 'success' : 'neutral',
+    faces: count > 0 ? 'info' : 'neutral',
+    people: count > 0 ? 'warning' : 'neutral',
+  }
+
+  return {
+    label: labels[stageKey],
+    color: colors[stageKey],
+  }
+}
+
 const photoFilter = ref<'all' | 'livephoto' | 'static'>('all')
 
 const filteredData = computed(() => {
@@ -661,6 +777,29 @@ watch(
 
 // 状态检查间隔 Map，每个任务对应一个定时器
 const statusIntervals = ref<Map<number, NodeJS.Timeout>>(new Map())
+const queuedPhotoTaskIntervals = ref<Map<number, NodeJS.Timeout>>(new Map())
+
+const watchQueuedPhotoTask = (taskId?: number | null) => {
+  if (typeof taskId !== 'number' || queuedPhotoTaskIntervals.value.has(taskId)) {
+    return
+  }
+
+  const intervalId = setInterval(async () => {
+    try {
+      const response = await $fetch(`/api/queue/stats/${taskId}`)
+      if (response.status === 'completed' || response.status === 'failed') {
+        clearInterval(intervalId)
+        queuedPhotoTaskIntervals.value.delete(taskId)
+        await refresh()
+      }
+    } catch {
+      clearInterval(intervalId)
+      queuedPhotoTaskIntervals.value.delete(taskId)
+    }
+  }, 1500)
+
+  queuedPhotoTaskIntervals.value.set(taskId, intervalId)
+}
 
 // 启动任务状态检查
 const startTaskStatusCheck = (taskId: number, fileId: string) => {
@@ -1102,6 +1241,45 @@ const columns = computed<TableColumn<Photo>[]>(() => [
     },
   },
   {
+    id: 'mlStatus',
+    accessorKey: 'mlStatus',
+    header: $t('dashboard.photos.table.columns.mlStatus'),
+    cell: ({ row }) => {
+      const status = getPhotoMlStatus(row.original)
+      return h('div', { class: 'flex min-w-[14rem] flex-col gap-1' }, [
+        h(
+          'div',
+          { class: 'flex flex-wrap items-center gap-1 text-[11px]' },
+          mlStages.map((stageDefinition) => {
+            const visual = getMlStageVisual(
+              stageDefinition.key,
+              status.stages[stageDefinition.key],
+            )
+            return h(UBadge, {
+              key: stageDefinition.key,
+              label: visual.label,
+              color: visual.color as any,
+              variant: 'soft',
+              size: 'sm',
+              icon: stageDefinition.icon,
+              class: 'w-fit',
+            })
+          }),
+        ),
+        status.latestTask?.errorMessage
+          ? h(
+              'span',
+              {
+                class: 'block max-w-[12rem] truncate text-[11px] text-error',
+                title: status.latestTask.errorMessage,
+              },
+              status.latestTask.errorMessage,
+            )
+          : null,
+      ])
+    },
+  },
+  {
     accessorKey: 'reactions',
     header: $t('dashboard.photos.table.columns.reactions'),
     cell: ({ row }) => {
@@ -1376,7 +1554,7 @@ const handleUpload = async () => {
 const openMetadataEditor = (photo: Photo) => {
   const initialTitle = photo.title?.trim() ?? ''
   const initialDescription = photo.description?.trim() ?? ''
-  const initialTags = normalizeTagList(photo.tags ?? [])
+  const initialTags = normalizeTagList((photo as any).userTags ?? photo.tags ?? [])
   const hasCoordinates =
     typeof photo.latitude === 'number' && typeof photo.longitude === 'number'
 
@@ -1510,6 +1688,7 @@ const saveMetadataChanges = async () => {
             : '',
         color: 'success',
       })
+      watchQueuedPhotoTask(taskId)
       hasAnySuccessfulAction = true
     }
 
@@ -1581,6 +1760,7 @@ const handleReverseGeocodeRequest = async (photo: Photo) => {
             : '',
         color: 'success',
       })
+      watchQueuedPhotoTask(result.taskId)
     } else {
       toast.add({
         title: $t('dashboard.photos.messages.reverseGeocodeFailed'),
@@ -1625,6 +1805,7 @@ const handleEraseLocationRequest = async (photo: Photo) => {
           : '',
       color: 'success',
     })
+    watchQueuedPhotoTask(taskId)
   } catch (error: any) {
     console.error('Failed to enqueue erase location task:', error)
     const message =
@@ -1681,6 +1862,7 @@ const handleReprocessSingle = async (photo: Photo) => {
         }),
         color: 'success',
       })
+      watchQueuedPhotoTask(result.taskId)
     } else {
       toast.update(reprocessToast.id, {
         title: $t('dashboard.photos.messages.error'),
@@ -1729,6 +1911,7 @@ const handleRebuildVariantsSingle = async (photo: Photo) => {
         }),
         color: 'success',
       })
+      watchQueuedPhotoTask(result.taskId)
       refresh()
     } else {
       toast.add({
@@ -1747,6 +1930,105 @@ const handleRebuildVariantsSingle = async (photo: Photo) => {
   }
 }
 
+const enqueuePhotoMachineLearningTask = async (
+  photo: Photo,
+  type:
+    | 'photo-ai-analysis'
+    | 'photo-ml-semantic-embedding'
+    | 'photo-face-detect',
+  successKey:
+    | 'mlAutoTagsQueued'
+    | 'mlSemanticQueued'
+    | 'aiAnalysisQueued'
+    | 'faceDetectQueued',
+  failedKey:
+    | 'mlAutoTagsFailed'
+    | 'mlSemanticFailed'
+    | 'aiAnalysisFailed'
+    | 'faceDetectFailed',
+  stages?: Array<'tags' | 'description' | 'score' | 'critique' | 'suggestions'>,
+) => {
+  try {
+    if (!photo?.id) return
+
+    const result = await $fetch('/api/queue/add-task', {
+      method: 'POST',
+      body: {
+        payload: {
+          type,
+          photoId: photo.id,
+          ownerUserId: photo.ownerUserId,
+          ...(stages && stages.length > 0 ? { stages } : {}),
+        },
+        priority: 1,
+        maxAttempts: 3,
+      },
+    })
+
+    toast.add({
+      title: $t(`dashboard.photos.messages.${successKey}`),
+      description: $t('dashboard.photos.messages.reprocessTaskId', {
+        taskId: result.taskId,
+      }),
+      color: 'success',
+    })
+    watchQueuedPhotoTask(result.taskId)
+    await refresh()
+  } catch (error: any) {
+    toast.add({
+      title: $t(`dashboard.photos.messages.${failedKey}`),
+      description:
+        error?.data?.statusMessage ||
+        error?.statusMessage ||
+        error?.message ||
+        $t('dashboard.photos.messages.error'),
+      color: 'error',
+    })
+  }
+}
+
+const handleMachineLearningAutoTagsSingle = async (photo: Photo) =>
+  enqueuePhotoMachineLearningTask(
+    photo,
+    'photo-ai-analysis',
+    'mlAutoTagsQueued',
+    'mlAutoTagsFailed',
+    ['tags'],
+  )
+
+const handleMachineLearningSemanticSingle = async (photo: Photo) =>
+  enqueuePhotoMachineLearningTask(
+    photo,
+    'photo-ml-semantic-embedding',
+    'mlSemanticQueued',
+    'mlSemanticFailed',
+  )
+
+const handleAiDescriptionSingle = async (photo: Photo) =>
+  enqueuePhotoMachineLearningTask(
+    photo,
+    'photo-ai-analysis',
+    'aiAnalysisQueued',
+    'aiAnalysisFailed',
+    ['description'],
+  )
+
+const handleAiAnalysisSingle = async (photo: Photo) =>
+  enqueuePhotoMachineLearningTask(
+    photo,
+    'photo-ai-analysis',
+    'aiAnalysisQueued',
+    'aiAnalysisFailed',
+  )
+
+const handleFaceDetectSingle = async (photo: Photo) =>
+  enqueuePhotoMachineLearningTask(
+    photo,
+    'photo-face-detect',
+    'faceDetectQueued',
+    'faceDetectFailed',
+  )
+
 const getRowActions = (photo: Photo) => {
   const isReverseLoading = !!reverseGeocodeLoading.value[photo.id]
   const isEraseLocationLoading = !!eraseLocationLoading.value[photo.id]
@@ -1761,12 +2043,21 @@ const getRowActions = (photo: Photo) => {
         },
       },
       {
-        label: $t('dashboard.photos.actions.reprocess'),
+        label: $t('dashboard.photos.actions.reanalyze'),
         icon: 'tabler:refresh',
         onSelect() {
           handleReprocessSingle(photo)
         },
       },
+      {
+        label: $t('dashboard.photos.actions.previewPhoto'),
+        icon: 'tabler:photo',
+        onSelect() {
+          openImagePreview(photo)
+        },
+      },
+    ],
+    [
       {
         label: $t('dashboard.photos.actions.rebuildVariants'),
         icon: 'tabler:photo-cog',
@@ -1790,11 +2081,41 @@ const getRowActions = (photo: Photo) => {
           handleEraseLocationRequest(photo)
         },
       },
+    ],
+    [
       {
-        label: $t('dashboard.photos.actions.previewPhoto'),
-        icon: 'tabler:photo',
+        label: $t('dashboard.photos.actions.extractAiTags'),
+        icon: 'tabler:tags',
         onSelect() {
-          openImagePreview(photo)
+          handleMachineLearningAutoTagsSingle(photo)
+        },
+      },
+      {
+        label: $t('dashboard.photos.actions.buildSemanticIndex'),
+        icon: 'tabler:vector-triangle',
+        onSelect() {
+          handleMachineLearningSemanticSingle(photo)
+        },
+      },
+      {
+        label: $t('dashboard.photos.actions.generateAiAnalysis'),
+        icon: 'tabler:sparkles',
+        onSelect() {
+          handleAiAnalysisSingle(photo)
+        },
+      },
+      {
+        label: $t('dashboard.photos.actions.generateAiDescription'),
+        icon: 'tabler:message-2',
+        onSelect() {
+          handleAiDescriptionSingle(photo)
+        },
+      },
+      {
+        label: $t('dashboard.photos.actions.detectFaces'),
+        icon: 'tabler:face-id',
+        onSelect() {
+          handleFaceDetectSingle(photo)
         },
       },
     ],
@@ -2304,6 +2625,10 @@ onUnmounted(() => {
     clearInterval(intervalId)
   })
   statusIntervals.value.clear()
+  queuedPhotoTaskIntervals.value.forEach((intervalId) => {
+    clearInterval(intervalId)
+  })
+  queuedPhotoTaskIntervals.value.clear()
 })
 </script>
 

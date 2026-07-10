@@ -1,4 +1,4 @@
-FROM node:22.22.3-alpine AS base
+FROM node:22-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 ENV NPM_CONFIG_REGISTRY="https://registry.npmmirror.com"
@@ -23,7 +23,7 @@ RUN NODE_OPTIONS="--max-old-space-size=4096" pnpm run build:deps
 RUN NODE_OPTIONS="--max-old-space-size=8192" pnpm run build
 RUN find ./.output -type f -name '*.map' -delete
 
-FROM node:22.22.3-alpine AS runtime_deps
+FROM node:22-alpine AS runtime_deps
 ARG APK_MIRROR="https://mirrors.aliyun.com/alpine"
 RUN sed -i "s#https://dl-cdn.alpinelinux.org/alpine#${APK_MIRROR}#g" /etc/apk/repositories \
 	&& apk add --no-cache ca-certificates perl exiftool \

@@ -1,6 +1,7 @@
 import {
   boolean,
   doublePrecision,
+  index,
   integer,
   jsonb,
   pgTable,
@@ -10,7 +11,12 @@ import {
   timestamp,
   uniqueIndex,
 } from 'drizzle-orm/pg-core'
-import type { NeededExif, PhotoImageVariants } from '~~/shared/types/photo'
+import type {
+  NeededExif,
+  PhotoAiAnalysis,
+  PhotoAiAnalysisStage,
+  PhotoImageVariants,
+} from '~~/shared/types/photo'
 import type { StorageConfig } from '../../services/storage'
 
 type PipelineQueuePayload =
@@ -38,6 +44,41 @@ type PipelineQueuePayload =
   | {
       type: 'photo-variants'
       photoId: string
+      ownerUserId?: number | null
+      reindexMlAfterVariants?: boolean
+    }
+  | {
+      type: 'photo-ml-index'
+      photoId: string
+      ownerUserId?: number | null
+    }
+  | {
+      type: 'photo-ml-auto-tags'
+      photoId: string
+      ownerUserId?: number | null
+    }
+  | {
+      type: 'photo-ml-semantic-embedding'
+      photoId: string
+      ownerUserId?: number | null
+    }
+  | {
+      type: 'photo-ai-analysis'
+      photoId: string
+      ownerUserId?: number | null
+      stages?: PhotoAiAnalysisStage[]
+    }
+  | {
+      type: 'photo-face-detect'
+      photoId: string
+      ownerUserId?: number | null
+    }
+  | {
+      type: 'photo-ml-backfill'
+      ownerUserId?: number | null
+    }
+  | {
+      type: 'photo-face-cluster'
       ownerUserId?: number | null
     }
 
@@ -111,6 +152,8 @@ export const photos = pgTable('photos', {
   thumbnailHash: text('thumbnail_hash'),
   imageVariants: jsonb('image_variants').$type<PhotoImageVariants>(),
   tags: jsonb('tags').$type<string[]>(),
+  aiTags: jsonb('ai_tags').$type<string[]>(),
+  aiAnalysis: jsonb('ai_analysis').$type<PhotoAiAnalysis>(),
   exif: jsonb('exif').$type<NeededExif>(),
   latitude: doublePrecision('latitude'),
   longitude: doublePrecision('longitude'),
@@ -176,6 +219,19 @@ export const pipelineQueue = pgTable('pipeline_queue', {
       'reverse-geocoding',
       'live-photo',
       'location-erase',
+      'ml-index',
+      'ml-auto-tags',
+      'ml-semantic-embedding',
+      'ml-ai-description',
+      'ml-ai-analysis',
+      'ml-ai-analysis-tags',
+      'ml-ai-analysis-description',
+      'ml-ai-analysis-score',
+      'ml-ai-analysis-critique',
+      'ml-ai-analysis-suggestions',
+      'ml-backfill',
+      'face-detection',
+      'face-cluster',
     ],
   }),
   errorMessage: text('error_message'),
@@ -234,6 +290,30 @@ export const albumPhotos = pgTable('album_photos', {
   position: real('position').notNull().default(1000000),
   addedAt: timestamp('added_at', { withTimezone: true }).notNull().defaultNow(),
 })
+
+export const people = pgTable(
+  'people',
+  {
+    id: serial('id').primaryKey(),
+    ownerUserId: integer('owner_user_id').references(() => users.id, {
+      onDelete: 'cascade',
+    }),
+    name: text('name'),
+    coverPhotoId: text('cover_photo_id').references(() => photos.id, {
+      onDelete: 'set null',
+    }),
+    isHidden: boolean('is_hidden').default(true).notNull(),
+    isFavorite: boolean('is_favorite').default(false).notNull(),
+    birthDate: text('birth_date'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index('idx_people_owner_user_id').on(t.ownerUserId)],
+)
 
 export const settings = pgTable(
   'settings',

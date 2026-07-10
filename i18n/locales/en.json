@@ -13,20 +13,27 @@
           "cameras": "Cameras",
           "lenses": "Lenses",
           "cities": "Locations",
-          "ratings": "Ratings"
+          "ratings": "Ratings",
+          "people": "People"
         },
         "empty": {
           "tags": "No tags",
           "cameras": "No camera information",
           "lenses": "No lens information",
-          "cities": "No location information"
+          "cities": "No location information",
+          "people": "No people yet"
         },
         "rating": {
           "showAll": "Show all photos",
           "showStarsAndAbove": "Show {count} star(s) and above photos"
         },
-        "searchPlaceholder": "Search filenames, etc...",
-        "shuffleTooltip": "Shuffle list"
+        "searchPlaceholder": "Search filenames or tags...",
+        "semanticSearchDegraded": "Semantic search is unavailable. Keyword search is being used.",
+        "shuffleTooltip": "Shuffle list",
+        "searchMode": {
+          "keyword": "Keyword search",
+          "semantic": "Advanced search"
+        }
       },
       "sort": {
         "tooltip": "Photo Sorting",
@@ -392,6 +399,7 @@
     "queue": "Queue Management",
     "logs": "System Logs",
     "albums": "Albums",
+    "people": "People",
     "users": "Users",
     "profile": "Profile",
     "siteAdministration": "Site settings",
@@ -401,7 +409,10 @@
     "privacySettings": "Privacy Settings",
     "mapAndLocation": "Map & Location",
     "storageSettings": "Storage Settings",
-    "systemSettings": "System Settings"
+    "systemSettings": "System Settings",
+    "thirdPartyLoginSettings": "Third-Party Login",
+    "dataMaintenance": "Data Maintenance",
+    "aiSettings": "AI Settings"
   },
   "auth": {
     "form": {
@@ -625,6 +636,7 @@
           "fileSize": "File Size",
           "colorSpace": "Color Space",
           "imageVariants": "Image Versions",
+          "mlStatus": "ML Status",
           "reactions": "Reactions",
           "actions": "Actions"
         },
@@ -646,13 +658,21 @@
         "thumbnailAlt": "Photo Thumbnail"
       },
       "actions": {
-        "reprocess": "Reprocess Photo",
-        "rebuildVariants": "Rebuild Image Versions",
+        "reprocess": "Reanalyze Photo",
+        "reanalyze": "Reanalyze Photo",
+        "rebuildVariants": "Rebuild Display Images",
+        "analyzeWithAI": "Analyze with AI",
+        "extractAiTags": "Re-extract Tags",
+        "generateAiAnalysis": "Regenerate AI analysis",
+        "buildSemanticIndex": "Regenerate Semantic Index",
+        "detectFaces": "Re-extract Faces",
+        "clusterFaces": "Rebuild People Album",
         "refreshLocation": "Re-fetch City",
         "eraseLocationInfo": "Erase location info",
         "delete": "Delete",
         "editMetadata": "Edit Metadata",
-        "previewPhoto": "Photo Preview"
+        "previewPhoto": "Photo Preview",
+        "generateAiDescription": "Regenerate AI description"
       },
       "selection": {
         "selected": "{count} / {total} rows selected",
@@ -717,9 +737,9 @@
       "messages": {
         "uploadSuccess": "Photo uploaded successfully, processing...",
         "uploadMultipleSuccess": "{count} photos uploaded successfully, processing...",
-        "reprocessSuccess": "Reprocessing task added",
-        "batchReprocessSuccess": "Successfully submitted {count} photos to the reprocessing queue",
-        "batchReprocessing": "Submitting reprocessing tasks...",
+        "reprocessSuccess": "Reanalysis task added",
+        "batchReprocessSuccess": "Successfully submitted {count} photos to the reanalysis queue",
+        "batchReprocessing": "Submitting reanalysis tasks...",
         "reprocessTaskId": "Task ID: {taskId}",
         "rebuildVariantsSuccess": "Image version rebuild task added",
         "batchRebuildVariantsSuccess": "Submitted {count} photos to the image version rebuild queue",
@@ -744,8 +764,8 @@
         "error": "An error occurred",
         "deleteFailed": "Failed to delete photo",
         "batchDeleteFailed": "Batch delete failed",
-        "batchReprocessFailed": "Batch reprocess failed",
-        "reprocessFailed": "Failed to reprocess photo",
+        "batchReprocessFailed": "Batch reanalysis failed",
+        "reprocessFailed": "Failed to reanalyze photo",
         "livePhotoNotFound": "Not a Live Photo",
         "livePhotoLoadError": "Unable to load Live Photo information",
         "metadataUpdateSuccess": "Photo metadata updated",
@@ -760,14 +780,42 @@
         "eraseLocationFailed": "Failed to queue erase location info task",
         "batchEraseLocationQueued": "Queued {count} erase-location task(s)",
         "batchEraseLocationFailed": "Failed to queue batch erase-location tasks",
+        "mlAnalyzeQueued": "AI analysis task queued",
+        "mlAnalyzeFailed": "Failed to queue AI analysis",
+        "mlAutoTagsQueued": "AI tag extraction task queued",
+        "mlAutoTagsFailed": "Failed to queue AI tag extraction",
+        "mlSemanticQueued": "Semantic index task queued",
+        "mlSemanticFailed": "Failed to queue semantic index",
+        "faceDetectQueued": "Face extraction task queued",
+        "faceDetectFailed": "Failed to queue face extraction",
+        "faceClusterQueued": "Face clustering task queued",
+        "faceClusterFailed": "Failed to queue face clustering",
         "taskSubmitFailed": "Failed to submit task",
         "taskStatusCheckFailed": "Failed to check task status",
-        "uploadFailed": "Upload failed"
+        "uploadFailed": "Upload failed",
+        "aiAnalysisQueued": "AI image analysis task queued",
+        "aiAnalysisFailed": "Failed to queue AI image analysis",
+        "aiDescriptionQueued": "AI description task queued",
+        "aiDescriptionFailed": "Failed to queue AI description"
       },
       "imageVariants": {
         "complete": "Complete",
         "missing": "Missing",
         "partial": "{count}/{total}"
+      },
+      "mlStatus": {
+        "notIndexed": "Not indexed",
+        "processing": "Processing",
+        "indexed": "Indexed",
+        "failed": "Failed",
+        "unsupported": "Unavailable",
+        "autoTags": "{count} tags",
+        "semanticIndexed": "Semantic indexed",
+        "semanticMissing": "Semantic missing",
+        "faces": "{count} faces",
+        "people": "{count} people",
+        "descriptionReady": "Description ready",
+        "descriptionMissing": "No description"
       },
       "errors": {
         "noSelection": "Please select photos to upload",
@@ -842,7 +890,12 @@
           "variants": "Generating image variants",
           "exif": "Processing EXIF",
           "reverseGeocoding": "Reverse geocoding",
-          "livePhoto": "Detecting Live Photo"
+          "livePhoto": "Detecting Live Photo",
+          "mlIndex": "ML Indexing",
+          "mlBackfill": "ML Backfill",
+          "faceDetection": "Face Detection",
+          "faceRecognition": "Face Recognition",
+          "faceCluster": "Face Clustering"
         },
         "actions": {
           "abort": "Abort",
@@ -876,6 +929,36 @@
         }
       },
       "previewTitle": "Photo Preview"
+    },
+    "people": {
+      "title": "People",
+      "listTitle": "Face albums",
+      "description": "People are created from face detection and clustering after AI analysis.",
+      "loading": "Loading people...",
+      "empty": "No face albums yet. Run AI analysis and face clustering first.",
+      "unnamed": "Person {id}",
+      "faceCount": "{count} faces",
+      "noPhotos": "No photos are linked to this person.",
+      "faceSamples": "Face samples",
+      "fields": {
+        "name": "Person name"
+      },
+      "actions": {
+        "openQueue": "Queue",
+        "backfill": "Analyze Photos",
+        "cluster": "Cluster Faces",
+        "saveName": "Save",
+        "favorite": "Favorite",
+        "hide": "Only me",
+        "show": "Show publicly"
+      },
+      "messages": {
+        "saved": "Person updated",
+        "saveFailed": "Failed to update person",
+        "backfillQueued": "AI analysis queued",
+        "clusterQueued": "Face clustering queued",
+        "operationFailed": "Operation failed"
+      }
     },
     "albums": {
       "title": "Album Management",
@@ -1009,6 +1092,52 @@
       },
       "memoryUnavailable": "memory info not available"
     },
+    "maintenance": {
+      "description": "Run destructive administrator maintenance tasks for generated data.",
+      "dangerous": "Dangerous",
+      "aiCleanup": {
+        "title": "AI data cleanup",
+        "description": "Remove generated AI indexes and face artifacts so they can be rebuilt cleanly.",
+        "warningTitle": "This permanently deletes generated AI data",
+        "warningDescription": "Photos are not deleted. Semantic vectors, face vectors, generated face crops, AI descriptions, unedited people, and completed or failed AI queue tasks can be removed.",
+        "scopeLabel": "Cleanup scope",
+        "userIdLabel": "User ID",
+        "userIdError": "Enter a positive numeric user ID",
+        "photoIdLabel": "Photo ID",
+        "confirmLabel": "Type {text} to confirm",
+        "action": "Clean AI data",
+        "protectionNote": "Named, favorite, or manually edited people are preserved.",
+        "deletesTitle": "This action removes",
+        "scopes": {
+          "all": "All photos",
+          "user": "Specified user",
+          "photo": "Specified photo"
+        },
+        "deletes": {
+          "photoEmbeddings": "Photo semantic vectors",
+          "faceEmbeddings": "Face vectors",
+          "faceCrops": "Generated face crops",
+          "aiDescription": "AI descriptions",
+          "people": "Unedited people records",
+          "queueTasks": "Completed or failed AI queue tasks"
+        },
+        "result": {
+          "photos": "Photos",
+          "photoEmbeddings": "Photo vectors",
+          "faceEmbeddings": "Face vectors",
+          "faceCrops": "Face crops",
+          "aiMetadata": "AI metadata",
+          "people": "People",
+          "queueTasks": "Queue tasks"
+        },
+        "messages": {
+          "success": "AI data cleanup finished",
+          "partialSuccess": "AI data cleanup finished with warnings",
+          "failed": "AI data cleanup failed",
+          "errorCount": "{count} storage cleanup error(s)"
+        }
+      }
+    },
     "queue": {
       "title": "Queue Management",
       "indicator": {
@@ -1055,7 +1184,15 @@
         "live-photo-video": "LivePhoto Video",
         "photo-reverse-geocoding": "Photo Reverse Geocoding",
         "photo-variants": "Photo Variant Generation",
-        "photo-erase-location": "Photo Location Erasure"
+        "photo-erase-location": "Photo Location Erasure",
+        "photo-ml-index": "Photo ML Index",
+        "photo-ml-auto-tags": "Photo AI Tag Extraction",
+        "photo-ml-semantic-embedding": "Photo Semantic Index",
+        "photo-face-detect": "Face Extraction",
+        "photo-ml-backfill": "Photo ML Backfill",
+        "photo-face-cluster": "Face Clustering",
+        "photo-ai-analysis": "Photo AI Image Analysis",
+        "photo-ai-description": "Photo AI Description"
       },
       "stages": {
         "preprocessing": "Preprocessing",
@@ -1066,7 +1203,21 @@
         "motion-photo": "Motion Photo Processing",
         "reverse-geocoding": "Geocoding",
         "live-photo": "LivePhoto Processing",
-        "location-erase": "Location Erasure"
+        "location-erase": "Location Erasure",
+        "ml-index": "ML Indexing",
+        "ml-auto-tags": "AI Tag Extraction",
+        "ml-semantic-embedding": "Semantic Index",
+        "ml-backfill": "ML Backfill",
+        "ml-ai-analysis": "AI Image Analysis",
+        "ml-ai-analysis-tags": "AI Tags",
+        "ml-ai-analysis-description": "AI Description",
+        "ml-ai-analysis-score": "AI Score",
+        "ml-ai-analysis-critique": "AI Critique",
+        "ml-ai-analysis-suggestions": "Photo Suggestions",
+        "face-detection": "Face Detection",
+        "face-recognition": "Face Recognition",
+        "face-cluster": "Face Clustering",
+        "ml-ai-description": "AI Description"
       },
       "buttons": {
         "retry": "Retry",
@@ -1281,6 +1432,7 @@
       "sections": {
         "thirdPartyLogin": "Third-Party Login",
         "fileProcessing": "File Processing",
+        "machineLearning": "Machine Learning",
         "debugSettings": "Debug Settings"
       },
       "upload": {
@@ -1301,6 +1453,232 @@
             }
           }
         }
+      },
+      "ml": {
+        "groups": {
+          "base": {
+            "title": "Basics",
+            "description": "Enable AI features and configure the local service entry point."
+          },
+          "vision": {
+            "title": "Vision understanding",
+            "description": "Configure the vision model used for image understanding, auto tags, and AI descriptions."
+          },
+          "semantic": {
+            "title": "Semantic search",
+            "description": "Configure Jina embeddings for photo vectors and advanced search."
+          },
+          "face": {
+            "title": "Face albums",
+            "description": "Configure face extraction, people albums, and similar-face grouping."
+          },
+          "vector": {
+            "title": "Vector store",
+            "description": "Configure the Qdrant connection and vector namespace."
+          },
+          "actions": {
+            "title": "Maintenance actions",
+            "description": "Check AI service availability or requeue existing photos."
+          }
+        },
+        "language": {
+          "label": "AI output language",
+          "description": "Language used for automatic tags, AI descriptions, and photo critique",
+          "help": "This does not change the interface language or map geocoding language."
+        },
+        "enabled": {
+          "label": "Enable machine learning",
+          "description": "Use ChronoFrame AI services for automatic tags, semantic search, and face albums",
+          "help": "Requires PostgreSQL, Qdrant, and LocalAI. External VLM settings are only needed when using an external vision provider."
+        },
+        "vlmProvider": {
+          "label": "Vision provider",
+          "description": "Provider used for image understanding and automatic tags",
+          "options": {
+            "openai": "OpenAI",
+            "openaiCompatible": "OpenAI compatible",
+            "localai": "LocalAI"
+          }
+        },
+        "vlmBaseUrl": {
+          "label": "VLM API base URL",
+          "description": "Base URL for an OpenAI-compatible chat completions service",
+          "help": "The client calls /chat/completions under this base URL"
+        },
+        "vlmApiKey": {
+          "label": "VLM API key",
+          "description": "Vision API key",
+          "help": "Stored as a secret system setting"
+        },
+        "vlmModel": {
+          "label": "VLM model",
+          "description": "Model used for image understanding and automatic tags",
+          "options": {
+            "qwen3Vl2b": "Qwen3-VL 2B",
+            "qwen3Vl4b": "Qwen3-VL 4B",
+            "qwen3Vl8b": "Qwen3-VL 8B",
+            "qwen3Vl2bThinking": "Qwen3-VL 2B Thinking",
+            "qwen3Vl8bThinking": "Qwen3-VL 8B Thinking"
+          },
+          "descriptions": {
+            "qwen3Vl2b": "Light local vision-language model for smaller GPUs.",
+            "qwen3Vl4b": "Balanced local vision-language model.",
+            "qwen3Vl8b": "Higher quality local vision-language model with more VRAM use.",
+            "qwen3Vl2bThinking": "Reasoning variant for local visual analysis.",
+            "qwen3Vl8bThinking": "Higher quality reasoning variant for local visual analysis."
+          }
+        },
+        "vectorProvider": {
+          "label": "Vector provider",
+          "description": "External vector database used for semantic and face embeddings",
+          "options": {
+            "qdrant": "Qdrant"
+          }
+        },
+        "vectorBaseUrl": {
+          "label": "Vector store URL",
+          "description": "Internal URL of the Qdrant service",
+          "help": "Use http://chronoframe-qdrant:6333 for the bundled Docker service"
+        },
+        "vectorApiKey": {
+          "label": "Vector store API key",
+          "description": "Optional API key for Qdrant",
+          "help": "Leave empty for the bundled local Qdrant service"
+        },
+        "vectorCollectionPrefix": {
+          "label": "Collection prefix",
+          "description": "Prefix for Qdrant collections created by ChronoFrame",
+          "help": "Changing this creates a separate vector namespace"
+        },
+        "faceModel": {
+          "label": "Face model",
+          "description": "LocalAI model used to detect, embed, and cluster faces",
+          "help": "Buffalo-L is more accurate but research/testing only. Use OpenCV or YuNet/SFace for commercial-safe deployments. Switch GPU/CPU with LOCALAI_IMAGE.",
+          "options": {
+            "insightfaceBuffaloL": "InsightFace Buffalo-L",
+            "insightfaceBuffaloM": "InsightFace Buffalo-M",
+            "insightfaceBuffaloS": "InsightFace Buffalo-S",
+            "insightfaceBuffaloSc": "InsightFace Buffalo-SC",
+            "insightfaceAntelopeV2": "InsightFace AntelopeV2",
+            "insightfaceOpencv": "InsightFace OpenCV"
+          }
+        },
+        "autoTag": {
+          "enabled": {
+            "label": "Generate automatic tags",
+            "description": "Create machine-generated tags after upload"
+          },
+          "minScore": {
+            "label": "Minimum tag score",
+            "description": "Tags below this confidence score are ignored",
+            "help": "Use a value from 0 to 1"
+          }
+        },
+        "semanticSearch": {
+          "enabled": {
+            "label": "Enable semantic search",
+            "description": "Search photos by meaning instead of filename only"
+          }
+        },
+        "faceAlbum": {
+          "enabled": {
+            "label": "Enable face albums",
+            "description": "Automatically group similar faces into a dedicated people album",
+            "help": "When enabled, new face clustering tasks can be queued after uploads"
+          }
+        },
+        "faceCluster": {
+          "threshold": {
+            "label": "Face cluster threshold",
+            "description": "Similarity threshold used when grouping faces",
+            "help": "Higher values create stricter, smaller face groups"
+          }
+        },
+        "ocr": {
+          "enabled": {
+            "label": "Enable OCR indexing",
+            "description": "Reserve OCR indexing for searchable text in images"
+          }
+        },
+        "actions": {
+          "health": "Check health",
+          "healthVlm": "Check vision",
+          "healthEmbedding": "Check semantic search",
+          "healthFace": "Check face service",
+          "testVlm": "Test vision model",
+          "testEmbedding": "Test semantic vectors",
+          "testFace": "Test face model",
+          "backfill": "Re-index photos",
+          "clusterFaces": "Rebuild people album",
+          "healthSuccess": "Machine learning service is reachable",
+          "healthFailed": "Machine learning health check failed",
+          "testSuccess": "AI model test succeeded",
+          "testFailed": "AI model test failed",
+          "embeddingRequired": "Semantic search requires a Jina base URL, API key, and model",
+          "embeddingImageModelRequired": "Photo semantic search requires a Jina image embedding model, for example jina-embeddings-v5-omni-small",
+          "testUsesUnsaved": "testing unsaved settings",
+          "enqueueSuccess": "Machine learning task queued",
+          "enqueueFailed": "Failed to queue machine learning task"
+        },
+        "modelBrowser": {
+          "open": "Browse LocalAI models",
+          "title": "LocalAI model gallery",
+          "description": "Preview and install models through LocalAI's official gallery APIs.",
+          "search": "Search models",
+          "load": "Load models",
+          "jobs": "Refresh jobs",
+          "empty": "No models loaded. Search or load the LocalAI gallery.",
+          "installed": "Installed",
+          "apply": "Install",
+          "select": "Use name",
+          "close": "Close",
+          "loadFailed": "Unable to load LocalAI models",
+          "applySuccess": "LocalAI model install task submitted",
+          "applyFailed": "Failed to request LocalAI model install",
+          "jobsFailed": "Failed to load LocalAI model jobs",
+          "jobFinished": "LocalAI model install task finished",
+          "jobStillRunning": "LocalAI is still processing the install task. Refresh jobs later.",
+          "jobPollFailed": "Failed to track the LocalAI install task",
+          "jobPollRetrying": "Unable to read the LocalAI job status yet. Retrying.",
+          "jobIdMissing": "LocalAI did not return a job ID. Refresh jobs or check LocalAI logs.",
+          "jobInvalid": "LocalAI returned an empty install task and did not identify a model entry.",
+          "jobCancelled": "LocalAI model install task was cancelled.",
+          "jobCompletedWithoutArtifact": "LocalAI reported completion but did not report a downloaded artifact for {model}. Refresh models or check LocalAI logs."
+        },
+        "localAiBaseUrl": {
+          "label": "LocalAI URL",
+          "description": "LocalAI service URL for local face, VLM, and embedding models",
+          "help": "The built-in Docker service uses http://chronoframe-localai:8080"
+        },
+        "aiDescription": {
+          "enabled": {
+            "label": "Generate AI description and critique",
+            "description": "Use the VLM to generate photo descriptions, critiques, and summaries",
+            "help": "Only queues work when enabled; existing results are retained when disabled."
+          }
+        },
+        "embeddingBaseUrl": {
+          "label": "Jina embedding base URL",
+          "description": "Jina AI embedding API base URL",
+          "help": "ChronoFrame calls /embeddings under this base URL"
+        },
+        "embeddingApiKey": {
+          "label": "Jina API key",
+          "description": "API key for Jina AI embeddings",
+          "help": "Required when semantic search is enabled"
+        },
+        "embeddingModel": {
+          "label": "Semantic embedding model",
+          "description": "Jina multimodal embedding model used for photo vectors and text query vectors",
+          "help": "Enter the Jina model name manually"
+        },
+        "sectionDescription": "Configure auto tags, semantic search, face albums, AI descriptions, and local or external model services."
+      },
+      "mlCleanup": {
+        "action": "Clean ML data",
+        "success": "Machine learning data cleanup finished",
+        "failed": "Machine learning data cleanup failed",
+        "summary": "{photos} photos, {faces} faces, {people} people"
       },
       "webglImageViewerDebug": {
         "label": "WebGL Image Viewer debug mode",
@@ -1587,7 +1965,8 @@
     "form": {
       "loadFailed": "Failed to load settings",
       "saveSuccess": "Settings saved",
-      "saveFailed": "Failed to save settings"
+      "saveFailed": "Failed to save settings",
+      "customValue": "Custom model name"
     }
   },
   "wizard": {
@@ -1778,6 +2157,25 @@
     },
     "image": {
       "loadError": "Failed to load image"
+    },
+    "faces": "Faces",
+    "aiAnalysis": {
+      "title": "AI Image Analysis",
+      "description": "AI Description",
+      "evaluation": "Photo Critique",
+      "suggestions": "Suggestions",
+      "failed": "Generation failed",
+      "empty": "No AI analysis yet. Regenerate it when needed.",
+      "retryAll": "Retry all",
+      "retryQueued": "AI analysis task queued",
+      "retryFailed": "Failed to queue AI analysis",
+      "score": {
+        "title": "AI Score",
+        "composition": "Composition",
+        "lighting": "Lighting",
+        "color": "Color",
+        "sharpness": "Sharpness"
+      }
     }
   }
 }

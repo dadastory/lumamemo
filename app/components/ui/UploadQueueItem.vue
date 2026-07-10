@@ -114,6 +114,15 @@ const getStageText = (stage: string) => {
       'dashboard.photos.uploadQueueItem.stage.reverseGeocoding',
     ),
     'live-photo': $t('dashboard.photos.uploadQueueItem.stage.livePhoto'),
+    'ml-index': $t('dashboard.photos.uploadQueueItem.stage.mlIndex'),
+    'ml-backfill': $t('dashboard.photos.uploadQueueItem.stage.mlBackfill'),
+    'face-detection': $t(
+      'dashboard.photos.uploadQueueItem.stage.faceDetection',
+    ),
+    'face-recognition': $t(
+      'dashboard.photos.uploadQueueItem.stage.faceRecognition',
+    ),
+    'face-cluster': $t('dashboard.photos.uploadQueueItem.stage.faceCluster'),
   }
   return stageMap[stage] || stage
 }

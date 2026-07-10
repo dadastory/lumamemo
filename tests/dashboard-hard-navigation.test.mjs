@@ -19,6 +19,8 @@ describe('dashboard hard navigation from non-dashboard pages', () => {
     const source = readSource('app/components/masonry/item/Header.vue')
 
     assert.match(source, /:to="albumRoute"/)
+    assert.match(source, /v-if="albumRoute"/)
+    assert.doesNotMatch(source, /albumRoute: '\/albums'/)
     assert.match(source, /:to="globeRoute"/)
   })
 

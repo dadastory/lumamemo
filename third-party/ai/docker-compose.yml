@@ -1,0 +1,51 @@
+services:
+  chronoframe-qdrant:
+    image: ${QDRANT_IMAGE:-qdrant/qdrant:v1.18.2}
+    container_name: chronoframe_qdrant
+    restart: unless-stopped
+    expose:
+      - '6333'
+    volumes:
+      - ./data/ai/qdrant:/qdrant/storage
+
+  chronoframe-localai:
+    image: ${LOCALAI_IMAGE:-localai/localai:v4.6.0-gpu-nvidia-cuda-12}
+    container_name: chronoframe_localai
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities:
+                - gpu
+    ports:
+      - '${LOCALAI_PORT:-18080}:8080'
+    environment:
+      MODELS_PATH: /models
+      LOCALAI_BACKENDS_PATH: /tmp/localai/backends
+      DEBUG: ${LOCALAI_DEBUG:-false}
+      LOCALAI_DISABLE_HARDWARE_DEFAULTS: ${LOCALAI_DISABLE_HARDWARE_DEFAULTS:-true}
+      GALLERIES: '[{"name":"localai","url":"github:mudler/LocalAI/gallery/index.yaml@master"}]'
+      HF_ENDPOINT: ${HF_ENDPOINT:-https://hf-mirror.com}
+      HF_HOME: /root/.cache/huggingface
+      MODELSCOPE_CACHE: /root/.cache/modelscope
+      HF_HUB_DISABLE_XET: '1'
+      LOCALAI_MAX_ACTIVE_BACKENDS: ${LOCALAI_MAX_ACTIVE_BACKENDS:-1}
+      LOCALAI_WATCHDOG_IDLE: ${LOCALAI_WATCHDOG_IDLE:-true}
+      LOCALAI_WATCHDOG_IDLE_TIMEOUT: ${LOCALAI_WATCHDOG_IDLE_TIMEOUT:-15m}
+      LOCALAI_WATCHDOG_BUSY: ${LOCALAI_WATCHDOG_BUSY:-true}
+      LOCALAI_WATCHDOG_BUSY_TIMEOUT: ${LOCALAI_WATCHDOG_BUSY_TIMEOUT:-10m}
+      HTTPS_PROXY: ''
+      HTTP_PROXY: ''
+      ALL_PROXY: ''
+      https_proxy: ''
+      http_proxy: ''
+      all_proxy: ''
+      NO_PROXY: '*'
+      no_proxy: '*'
+    volumes:
+      - ./data/ai/localai/models:/models
+      - ./data/ai/localai/backend_data:/tmp/localai
+      - ./data/ai/localai/cache:/root/.cache

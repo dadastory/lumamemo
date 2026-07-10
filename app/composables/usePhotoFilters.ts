@@ -5,8 +5,10 @@ interface FilterOptions {
   cameras: string[]
   lenses: string[]
   cities: string[]
+  people: number[]
   ratings: number // 改为单个数字，表示最低评分
   search: string // 搜索关键词
+  advancedSearch: boolean
 }
 
 interface FilterStats {
@@ -17,19 +19,44 @@ interface FilterStats {
   ratings: Map<number, number>
 }
 
+interface PersonFilterOption {
+  id: number
+  label?: string
+  name?: string | null
+  count: number
+  faceCount?: number
+}
+
+interface SemanticSearchResponse {
+  query: string
+  results?: Array<{ id: string }>
+  degraded?: boolean
+  reason?: 'semantic-unavailable'
+}
+
 // 全局筛选状态管理
 const globalFilters = ref<FilterOptions>({
   tags: [],
   cameras: [],
   lenses: [],
   cities: [],
+  people: [],
   ratings: 0,
   search: '',
+  advancedSearch: false,
 })
+
+const semanticResultIds = ref<Set<string> | null>(null)
+const semanticLoading = ref(false)
+const semanticError = ref<string | null>(null)
+const peopleFilters = ref<PersonFilterOption[]>([])
+const SEMANTIC_SEARCH_LIMIT = 30
 
 export function usePhotoFilters() {
   const { photos } = usePhotos()
   const { sortedPhotos } = usePhotoSort()
+  const route = useRoute()
+  const { t } = useI18n()
 
   // 使用全局筛选状态
   const activeFilters = globalFilters
@@ -108,6 +135,8 @@ export function usePhotoFilters() {
       ratings: Array.from(filterStats.value.ratings.entries())
         .sort((a, b) => b[0] - a[0]) // 按评分降序排列
         .map(([rating, count]) => ({ label: rating, count })),
+
+      people: peopleFilters.value,
     }
   })
 
@@ -118,10 +147,26 @@ export function usePhotoFilters() {
       cameras: activeFilters.value.cameras.length,
       lenses: activeFilters.value.lenses.length,
       cities: activeFilters.value.cities.length,
+      people: activeFilters.value.people.length,
       ratings: activeFilters.value.ratings > 0 ? 1 : 0,
       search: activeFilters.value.search.length > 0 ? 1 : 0,
     }
   })
+
+  const keywordSearchMatches = (photo: any, rawTerm: string) => {
+    const searchTerm = rawTerm.trim().toLowerCase()
+    if (!searchTerm) return true
+
+    const fileName = String(photo.storageKey || '').split('/').pop() || ''
+    const searchableFields = [
+      photo.tags?.join(' ') || '',
+      fileName,
+    ]
+      .join(' ')
+      .toLowerCase()
+
+    return searchableFields.includes(searchTerm)
+  }
 
   // 筛选后的照片（应用排序）
   const filteredPhotos = computed(() => {
@@ -129,24 +174,14 @@ export function usePhotoFilters() {
     return sortedPhotos.value.filter((photo) => {
       // 搜索筛选
       if (activeFilters.value.search) {
-        const searchTerm = activeFilters.value.search.toLowerCase()
-        const searchableFields = [
-          photo.tags?.join(' ') || '',
-          photo.exif?.Make || '',
-          photo.exif?.Model || '',
-          photo.exif?.LensMake || '',
-          photo.exif?.LensModel || '',
-          photo.city || '',
-          photo.country || '',
-          photo.title || '',
-          photo.description || '',
-          photo.storageKey || '',
-          photo.locationName || '',
-        ]
-          .join(' ')
-          .toLowerCase()
-
-        if (!searchableFields.includes(searchTerm)) {
+        const keywordMatch = keywordSearchMatches(
+          photo,
+          activeFilters.value.search,
+        )
+        const semanticMatch =
+          activeFilters.value.advancedSearch &&
+          (semanticResultIds.value?.has(photo.id) || false)
+        if (!keywordMatch && !semanticMatch) {
           return false
         }
       }
@@ -196,6 +231,22 @@ export function usePhotoFilters() {
         }
       }
 
+      if (activeFilters.value.people.length > 0) {
+        const photoFaces = (photo as any).photoFaces
+        const personIds = Array.isArray(photoFaces)
+          ? photoFaces
+              .map((face: any) => Number(face.personId))
+              .filter(Number.isFinite)
+          : []
+        if (
+          !activeFilters.value.people.some((personId) =>
+            personIds.includes(personId),
+          )
+        ) {
+          return false
+        }
+      }
+
       // 评分筛选
       if (activeFilters.value.ratings > 0) {
         const photoRating = photo.exif?.Rating || 0
@@ -227,15 +278,24 @@ export function usePhotoFilters() {
       cameras: [],
       lenses: [],
       cities: [],
+      people: [],
       ratings: 0,
       search: '',
+      advancedSearch: false,
     }
+    semanticResultIds.value = null
+    semanticError.value = null
   }
 
   // 清除指定类型的筛选
   const clearFilterType = (type: keyof FilterOptions) => {
     if (type === 'ratings' || type === 'search') {
       ;(activeFilters.value as any)[type] = type === 'ratings' ? 0 : ''
+      if (type === 'search') {
+        semanticResultIds.value = null
+        semanticError.value = null
+        activeFilters.value.advancedSearch = false
+      }
     } else {
       ;(activeFilters.value as any)[type] = []
     }
@@ -256,10 +316,78 @@ export function usePhotoFilters() {
       activeFilters.value.cameras.length > 0 ||
       activeFilters.value.lenses.length > 0 ||
       activeFilters.value.cities.length > 0 ||
+      activeFilters.value.people.length > 0 ||
       activeFilters.value.ratings > 0 ||
       activeFilters.value.search.length > 0
     )
   })
+
+  const getPublicProfileId = () => {
+    const segments = route.path.split('/').filter(Boolean)
+    return segments[0] === 'u' ? segments[1] : null
+  }
+
+  const semanticSearch = async () => {
+    const query = activeFilters.value.search.trim()
+    semanticError.value = null
+    semanticResultIds.value = null
+    if (!query) return
+    if (!activeFilters.value.advancedSearch) {
+      semanticResultIds.value = null
+      semanticError.value = null
+      return
+    }
+
+    semanticLoading.value = true
+    try {
+      const publicId = getPublicProfileId()
+      const response = await $fetch<SemanticSearchResponse>(
+        publicId
+          ? `/api/public/profiles/${encodeURIComponent(publicId)}/photos/search/semantic`
+          : '/api/photos/search/semantic',
+        {
+          query: {
+            q: query,
+            limit: SEMANTIC_SEARCH_LIMIT,
+          },
+        },
+      )
+      if (response.degraded) {
+        semanticError.value = t('ui.action.filter.semanticSearchDegraded')
+        semanticResultIds.value = null
+        return
+      }
+
+      semanticResultIds.value = new Set(
+        (response.results || []).map((photo) => photo.id).filter(Boolean),
+      )
+    } catch {
+      semanticError.value = t('ui.action.filter.semanticSearchDegraded')
+      semanticResultIds.value = null
+    } finally {
+      semanticLoading.value = false
+    }
+  }
+
+  const smartSearch = async () => {
+    activeFilters.value.advancedSearch = true
+    await semanticSearch()
+  }
+
+  const loadPeopleFilters = async () => {
+    try {
+      const people = await $fetch<PersonFilterOption[]>('/api/people', {
+        query: { includeHidden: false },
+      })
+      peopleFilters.value = people.map((person) => ({
+        id: person.id,
+        label: person.label || person.name || `Person ${person.id}`,
+        count: person.count ?? (person as any).faceCount ?? 0,
+      }))
+    } catch {
+      peopleFilters.value = []
+    }
+  }
 
   return {
     activeFilters: activeFilters,
@@ -267,6 +395,23 @@ export function usePhotoFilters() {
     selectedCounts,
     filteredPhotos,
     hasActiveFilters,
+    semanticResultIds,
+    semanticLoading,
+    semanticError,
+    semanticSearch,
+    smartSearch,
+    advancedSearchEnabled: computed({
+      get: () => activeFilters.value.advancedSearch,
+      set: (enabled: boolean) => {
+        activeFilters.value.advancedSearch = enabled
+        if (!enabled) {
+          semanticResultIds.value = null
+          semanticError.value = null
+        }
+      },
+    }),
+    keywordSearchMatches,
+    loadPeopleFilters,
     toggleFilter,
     clearAllFilters,
     clearFilterType,

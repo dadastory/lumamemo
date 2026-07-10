@@ -19,13 +19,13 @@ const props = withDefaults(
     }
     dateRangeText: string
     profile?: HeaderProfile
-    albumRoute?: string
+    albumRoute?: string | null
     globeRoute?: string
+    peopleRoute?: string
     loginRoute?: string
     dashboardRoute?: string
   }>(),
   {
-    albumRoute: '/albums',
     globeRoute: '/globe',
     loginRoute: '/signin',
     dashboardRoute: '/dashboard',
@@ -167,12 +167,23 @@ const displayAvatarUrl = computed(
             </UTooltip>
             <UTooltip :text="$t('title.albums')">
               <UButton
+                v-if="albumRoute"
                 variant="soft"
                 color="neutral"
                 class="bg-transparent rounded-full cursor-pointer"
                 icon="tabler:photo"
                 size="sm"
                 :to="albumRoute"
+              />
+            </UTooltip>
+            <UTooltip :text="$t('title.people')">
+              <UButton
+                variant="soft"
+                color="neutral"
+                class="bg-transparent rounded-full cursor-pointer"
+                icon="tabler:face-id"
+                size="sm"
+                :to="peopleRoute"
               />
             </UTooltip>
             <UPopover>

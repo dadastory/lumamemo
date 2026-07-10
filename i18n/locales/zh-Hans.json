@@ -21,7 +21,8 @@
           "cameras": "没有相机信息",
           "cities": "没有位置信息",
           "lenses": "没有镜头信息",
-          "tags": "没有标签"
+          "tags": "没有标签",
+          "people": "暂无人物"
         },
         "rating": {
           "showAll": "展示所有照片",
@@ -32,13 +33,19 @@
           "cities": "位置",
           "lenses": "镜头",
           "ratings": "评分",
-          "tags": "标签"
+          "tags": "标签",
+          "people": "人物"
         },
         "title": "筛选照片",
         "tooltip": "筛选照片",
         "clearAll": "清除全部",
-        "searchPlaceholder": "搜索文件名等...",
-        "shuffleTooltip": "打乱列表"
+        "searchPlaceholder": "搜索文件名或标签...",
+        "semanticSearchDegraded": "语义搜索暂不可用，已使用关键词搜索。",
+        "shuffleTooltip": "打乱列表",
+        "searchMode": {
+          "keyword": "关键词搜索",
+          "semantic": "高级检索"
+        }
       },
       "logout": {
         "tooltip": "登出"
@@ -392,6 +399,7 @@
     "queue": "队列管理",
     "logs": "系统日志",
     "albums": "相簿",
+    "people": "人脸相册",
     "users": "用户管理",
     "profile": "个人资料",
     "siteAdministration": "站点设置",
@@ -400,8 +408,11 @@
     "storageSettings": "存储设置",
     "privacySettings": "隐私设置",
     "systemSettings": "系统设置",
+    "thirdPartyLoginSettings": "第三方登录",
+    "dataMaintenance": "数据维护",
     "mapAndLocation": "地图和位置",
-    "location": "位置服务"
+    "location": "位置服务",
+    "aiSettings": "AI 设置"
   },
   "auth": {
     "form": {
@@ -625,6 +636,7 @@
           "fileSize": "文件大小",
           "colorSpace": "颜色空间",
           "imageVariants": "图片版本",
+          "mlStatus": "AI 状态",
           "reactions": "表态",
           "actions": "操作"
         },
@@ -646,13 +658,21 @@
         "thumbnailAlt": "照片缩略图"
       },
       "actions": {
-        "reprocess": "重新处理照片",
-        "rebuildVariants": "重建多尺寸图片",
+        "reprocess": "重新分析照片",
+        "reanalyze": "重新分析照片",
+        "rebuildVariants": "重建显示图片",
+        "analyzeWithAI": "重新进行 AI 分析",
+        "extractAiTags": "重新提取标签",
+        "generateAiAnalysis": "重新生成 AI 分析",
+        "buildSemanticIndex": "重新生成语义索引",
+        "detectFaces": "重新提取人脸",
+        "clusterFaces": "重新整理人物相册",
         "refreshLocation": "重新获取城市",
         "eraseLocationInfo": "抹除位置信息",
         "delete": "删除",
         "editMetadata": "编辑信息",
-        "previewPhoto": "预览照片"
+        "previewPhoto": "预览照片",
+        "generateAiDescription": "重新生成 AI 描述"
       },
       "selection": {
         "selected": "{count} / {total} 行已选择",
@@ -717,9 +737,9 @@
       "messages": {
         "uploadSuccess": "照片已成功上传，正在处理中...",
         "uploadMultipleSuccess": "已成功上传 {count} 张照片，正在处理中...",
-        "reprocessSuccess": "已添加重新处理任务",
-        "batchReprocessSuccess": "已成功提交 {count} 张照片至重新处理队列",
-        "batchReprocessing": "正在提交重新处理任务...",
+        "reprocessSuccess": "已添加重新分析任务",
+        "batchReprocessSuccess": "已成功提交 {count} 张照片至重新分析队列",
+        "batchReprocessing": "正在提交重新分析任务...",
         "reprocessTaskId": "任务ID: {taskId}",
         "rebuildVariantsSuccess": "已添加多尺寸图片重建任务",
         "batchRebuildVariantsSuccess": "已成功提交 {count} 张照片至多尺寸图片重建队列",
@@ -744,8 +764,8 @@
         "error": "发生错误",
         "deleteFailed": "删除照片失败",
         "batchDeleteFailed": "批量删除失败",
-        "batchReprocessFailed": "批量重新处理失败",
-        "reprocessFailed": "重新处理失败",
+        "batchReprocessFailed": "批量重新分析失败",
+        "reprocessFailed": "重新分析失败",
         "livePhotoNotFound": "不是 Live Photo",
         "livePhotoLoadError": "无法获取 Live Photo 信息",
         "metadataUpdateSuccess": "照片信息已更新",
@@ -760,14 +780,42 @@
         "eraseLocationFailed": "抹除位置信息任务添加失败",
         "batchEraseLocationQueued": "已加入 {count} 条抹除位置信息任务",
         "batchEraseLocationFailed": "批量抹除位置信息任务添加失败",
+        "mlAnalyzeQueued": "已加入 AI 分析任务",
+        "mlAnalyzeFailed": "AI 分析任务提交失败",
+        "mlAutoTagsQueued": "已加入 AI 标签提取任务",
+        "mlAutoTagsFailed": "AI 标签提取任务提交失败",
+        "mlSemanticQueued": "已加入语义索引任务",
+        "mlSemanticFailed": "语义索引任务提交失败",
+        "faceDetectQueued": "已加入人脸提取任务",
+        "faceDetectFailed": "人脸提取任务提交失败",
+        "faceClusterQueued": "已加入人脸聚类任务",
+        "faceClusterFailed": "人脸聚类任务提交失败",
         "taskSubmitFailed": "提交任务失败",
         "taskStatusCheckFailed": "检查任务状态失败",
-        "uploadFailed": "上传失败"
+        "uploadFailed": "上传失败",
+        "aiAnalysisQueued": "已加入 AI 影像分析任务",
+        "aiAnalysisFailed": "AI 影像分析任务提交失败",
+        "aiDescriptionQueued": "已加入 AI 描述任务",
+        "aiDescriptionFailed": "AI 描述任务提交失败"
       },
       "imageVariants": {
         "complete": "完整",
         "missing": "缺失",
         "partial": "{count}/{total}"
+      },
+      "mlStatus": {
+        "notIndexed": "未分析",
+        "processing": "处理中",
+        "indexed": "已分析",
+        "failed": "失败",
+        "unsupported": "不可用",
+        "autoTags": "{count} 标签",
+        "semanticIndexed": "语义已建",
+        "semanticMissing": "语义未建",
+        "faces": "{count} 人脸",
+        "people": "{count} 人物",
+        "descriptionReady": "描述已生成",
+        "descriptionMissing": "描述未生成"
       },
       "errors": {
         "noSelection": "请选择要上传的照片",
@@ -842,7 +890,12 @@
           "variants": "生成多尺寸图片",
           "exif": "处理 EXIF",
           "reverseGeocoding": "地理解析",
-          "livePhoto": "检测 LivePhoto"
+          "livePhoto": "检测 LivePhoto",
+          "mlIndex": "机器学习索引",
+          "mlBackfill": "机器学习回填",
+          "faceDetection": "人脸检测",
+          "faceRecognition": "人脸识别",
+          "faceCluster": "人脸聚类"
         },
         "actions": {
           "abort": "中止",
@@ -876,6 +929,36 @@
         }
       },
       "previewTitle": "照片预览"
+    },
+    "people": {
+      "title": "人脸相册",
+      "listTitle": "人物列表",
+      "description": "开启 AI 分析和人脸相册后，系统会根据人脸检测和聚类自动生成。",
+      "loading": "正在加载人物...",
+      "empty": "暂无人脸相册。请先执行 AI 分析和人脸聚类。",
+      "unnamed": "人物 {id}",
+      "faceCount": "{count} 张人脸",
+      "noPhotos": "这个人物还没有关联照片。",
+      "faceSamples": "人脸样本",
+      "fields": {
+        "name": "人物名称"
+      },
+      "actions": {
+        "openQueue": "队列",
+        "backfill": "分析照片",
+        "cluster": "聚类人脸",
+        "saveName": "保存",
+        "favorite": "收藏",
+        "hide": "仅自己可见",
+        "show": "公开展示"
+      },
+      "messages": {
+        "saved": "人物已更新",
+        "saveFailed": "人物更新失败",
+        "backfillQueued": "已加入 AI 分析任务",
+        "clusterQueued": "已加入人脸聚类任务",
+        "operationFailed": "操作失败"
+      }
     },
     "albums": {
       "title": "相簿管理",
@@ -1009,6 +1092,52 @@
       },
       "memoryUnavailable": "无法获取内存信息"
     },
+    "maintenance": {
+      "description": "执行生成数据相关的破坏性管理员维护任务。",
+      "dangerous": "危险操作",
+      "aiCleanup": {
+        "title": "AI 数据清理",
+        "description": "删除已生成的 AI 索引和人脸产物，以便重新干净生成。",
+        "warningTitle": "这会永久删除已生成的 AI 数据",
+        "warningDescription": "不会删除照片本体。语义向量、人脸向量、人脸裁剪图、AI 描述、未编辑人物以及已完成或失败的 AI 队列任务可能会被删除。",
+        "scopeLabel": "清理范围",
+        "userIdLabel": "用户 ID",
+        "userIdError": "请输入正整数用户 ID",
+        "photoIdLabel": "照片 ID",
+        "confirmLabel": "输入 {text} 确认",
+        "action": "清理 AI 数据",
+        "protectionNote": "已命名、收藏或手动编辑过的人物会被保留。",
+        "deletesTitle": "此操作会删除",
+        "scopes": {
+          "all": "全部照片",
+          "user": "指定用户",
+          "photo": "指定照片"
+        },
+        "deletes": {
+          "photoEmbeddings": "照片语义向量",
+          "faceEmbeddings": "人脸向量",
+          "faceCrops": "已生成人脸裁剪图",
+          "aiDescription": "AI 描述",
+          "people": "未编辑人物记录",
+          "queueTasks": "已完成或失败的 AI 队列任务"
+        },
+        "result": {
+          "photos": "照片",
+          "photoEmbeddings": "照片向量",
+          "faceEmbeddings": "人脸向量",
+          "faceCrops": "人脸裁剪图",
+          "aiMetadata": "AI 元数据",
+          "people": "人物",
+          "queueTasks": "队列任务"
+        },
+        "messages": {
+          "success": "AI 数据清理完成",
+          "partialSuccess": "AI 数据清理完成，但存在警告",
+          "failed": "AI 数据清理失败",
+          "errorCount": "{count} 个存储清理错误"
+        }
+      }
+    },
     "queue": {
       "title": "队列管理",
       "indicator": {
@@ -1055,7 +1184,15 @@
         "live-photo-video": "LivePhoto视频",
         "photo-reverse-geocoding": "照片逆地理编码",
         "photo-variants": "照片多尺寸生成",
-        "photo-erase-location": "照片位置信息抹除"
+        "photo-erase-location": "照片位置信息抹除",
+        "photo-ml-index": "照片机器学习索引",
+        "photo-ml-auto-tags": "照片 AI 标签提取",
+        "photo-ml-semantic-embedding": "照片语义索引",
+        "photo-face-detect": "人脸提取",
+        "photo-ml-backfill": "照片机器学习回填",
+        "photo-face-cluster": "人脸聚类",
+        "photo-ai-analysis": "照片 AI 影像分析",
+        "photo-ai-description": "照片 AI 描述"
       },
       "stages": {
         "preprocessing": "预处理",
@@ -1066,7 +1203,21 @@
         "motion-photo": "动态照片处理",
         "reverse-geocoding": "地理解析",
         "live-photo": "LivePhoto处理",
-        "location-erase": "位置信息抹除"
+        "location-erase": "位置信息抹除",
+        "ml-index": "机器学习索引",
+        "ml-auto-tags": "AI 标签提取",
+        "ml-semantic-embedding": "语义索引",
+        "ml-backfill": "机器学习回填",
+        "ml-ai-analysis": "AI 影像分析",
+        "ml-ai-analysis-tags": "AI 标签",
+        "ml-ai-analysis-description": "AI 描述",
+        "ml-ai-analysis-score": "AI 评分",
+        "ml-ai-analysis-critique": "AI 评价",
+        "ml-ai-analysis-suggestions": "摄影建议",
+        "face-detection": "人脸检测",
+        "face-recognition": "人脸识别",
+        "face-cluster": "人脸聚类",
+        "ml-ai-description": "AI 描述"
       },
       "buttons": {
         "retry": "重试",
@@ -1281,6 +1432,7 @@
       "sections": {
         "thirdPartyLogin": "第三方登录",
         "fileProcessing": "文件处理",
+        "machineLearning": "机器学习",
         "debugSettings": "调试设置"
       },
       "upload": {
@@ -1301,6 +1453,232 @@
             }
           }
         }
+      },
+      "ml": {
+        "groups": {
+          "base": {
+            "title": "基础设置",
+            "description": "开启 AI 能力并配置本地服务入口。"
+          },
+          "vision": {
+            "title": "视觉理解",
+            "description": "配置图片理解、自动标签和 AI 描述使用的视觉模型。"
+          },
+          "semantic": {
+            "title": "语义搜索",
+            "description": "配置 Jina embedding，用于照片向量和高级检索。"
+          },
+          "face": {
+            "title": "人脸相册",
+            "description": "配置人脸提取、人物相册和相似人脸整理。"
+          },
+          "vector": {
+            "title": "向量库",
+            "description": "配置 Qdrant 连接和向量数据命名空间。"
+          },
+          "actions": {
+            "title": "维护操作",
+            "description": "检测各 AI 服务是否可用，或重新排队已有照片。"
+          }
+        },
+        "language": {
+          "label": "AI 输出语言",
+          "description": "用于自动标签、AI 描述和照片评价的语言",
+          "help": "不会改变界面语言，也不会影响地图地理编码语言。"
+        },
+        "enabled": {
+          "label": "启用机器学习",
+          "description": "使用 ChronoFrame AI 服务生成自动标签、语义搜索和人脸相册",
+          "help": "需要 PostgreSQL、Qdrant 和 LocalAI；只有选择外部视觉供应商时才需要填写外部 VLM 设置。"
+        },
+        "vlmProvider": {
+          "label": "视觉供应商",
+          "description": "用于图片理解和自动标签的服务提供方",
+          "options": {
+            "openai": "OpenAI",
+            "openaiCompatible": "OpenAI 兼容",
+            "localai": "LocalAI"
+          }
+        },
+        "vlmBaseUrl": {
+          "label": "视觉模型 API 地址",
+          "description": "OpenAI 兼容 chat completions 服务的基础 URL",
+          "help": "客户端会在该基础地址下调用 /chat/completions"
+        },
+        "vlmApiKey": {
+          "label": "视觉模型 API Key",
+          "description": "视觉 API Key",
+          "help": "将作为系统密钥设置保存"
+        },
+        "vlmModel": {
+          "label": "视觉语言模型",
+          "description": "用于图片理解和自动标签的模型",
+          "options": {
+            "qwen3Vl2b": "Qwen3-VL 2B",
+            "qwen3Vl4b": "Qwen3-VL 4B",
+            "qwen3Vl8b": "Qwen3-VL 8B",
+            "qwen3Vl2bThinking": "Qwen3-VL 2B Thinking",
+            "qwen3Vl8bThinking": "Qwen3-VL 8B Thinking"
+          },
+          "descriptions": {
+            "qwen3Vl2b": "轻量本地视觉语言模型，适合较小显存。",
+            "qwen3Vl4b": "均衡的本地视觉语言模型。",
+            "qwen3Vl8b": "质量更高的本地视觉语言模型，需要更多显存。",
+            "qwen3Vl2bThinking": "适合本地视觉分析的推理版本。",
+            "qwen3Vl8bThinking": "质量更高的本地视觉推理版本。"
+          }
+        },
+        "vectorProvider": {
+          "label": "向量库供应商",
+          "description": "用于语义和人脸向量的外部向量数据库",
+          "options": {
+            "qdrant": "Qdrant"
+          }
+        },
+        "vectorBaseUrl": {
+          "label": "向量库地址",
+          "description": "Qdrant 服务的内部 URL",
+          "help": "内置 Docker 服务使用 http://chronoframe-qdrant:6333"
+        },
+        "vectorApiKey": {
+          "label": "向量库 API Key",
+          "description": "Qdrant 的可选 API Key",
+          "help": "使用内置本地 Qdrant 服务时可留空"
+        },
+        "vectorCollectionPrefix": {
+          "label": "Collection 前缀",
+          "description": "ChronoFrame 创建 Qdrant collection 时使用的前缀",
+          "help": "修改后会创建独立的向量命名空间"
+        },
+        "faceModel": {
+          "label": "人脸模型",
+          "description": "LocalAI 用于检测、嵌入和聚类人脸的模型",
+          "help": "默认 Buffalo-L 精度较高但仅适合研究/测试；商用可切 OpenCV 或 YuNet/SFace。GPU/CPU 通过 LOCALAI_IMAGE 切换。",
+          "options": {
+            "insightfaceBuffaloL": "InsightFace Buffalo-L",
+            "insightfaceBuffaloM": "InsightFace Buffalo-M",
+            "insightfaceBuffaloS": "InsightFace Buffalo-S",
+            "insightfaceBuffaloSc": "InsightFace Buffalo-SC",
+            "insightfaceAntelopeV2": "InsightFace AntelopeV2",
+            "insightfaceOpencv": "InsightFace OpenCV"
+          }
+        },
+        "autoTag": {
+          "enabled": {
+            "label": "生成自动标签",
+            "description": "上传后自动生成机器标签"
+          },
+          "minScore": {
+            "label": "最低标签置信度",
+            "description": "低于该置信度的标签会被忽略",
+            "help": "取值范围为 0 到 1"
+          }
+        },
+        "semanticSearch": {
+          "enabled": {
+            "label": "启用语义搜索",
+            "description": "按语义搜索照片，而不只是匹配文件名"
+          }
+        },
+        "faceAlbum": {
+          "enabled": {
+            "label": "启用人脸相册",
+            "description": "自动把相似人脸归档到独立人物相册",
+            "help": "开启后可在上传后排队执行人脸聚类任务"
+          }
+        },
+        "faceCluster": {
+          "threshold": {
+            "label": "人脸聚类阈值",
+            "description": "对人脸分组时使用的相似度阈值",
+            "help": "值越高，分组越严格、数量通常越多"
+          }
+        },
+        "ocr": {
+          "enabled": {
+            "label": "启用 OCR 索引",
+            "description": "预留图片文字识别和搜索索引能力"
+          }
+        },
+        "actions": {
+          "health": "检查健康状态",
+          "healthVlm": "检测视觉模型",
+          "healthEmbedding": "检测语义搜索",
+          "healthFace": "检测人脸服务",
+          "testVlm": "测试视觉模型",
+          "testEmbedding": "测试语义向量",
+          "testFace": "测试人脸模型",
+          "backfill": "重新索引照片",
+          "clusterFaces": "重新整理人物相册",
+          "healthSuccess": "机器学习服务可用",
+          "healthFailed": "机器学习健康检查失败",
+          "testSuccess": "AI 模型测试成功",
+          "testFailed": "AI 模型测试失败",
+          "embeddingRequired": "语义搜索需要填写 Jina 地址、API Key 和模型名称",
+          "embeddingImageModelRequired": "照片语义搜索需要使用支持图片输入的 Jina 模型，例如 jina-embeddings-v5-omni-small",
+          "testUsesUnsaved": "正在使用未保存配置检测",
+          "enqueueSuccess": "已加入机器学习任务队列",
+          "enqueueFailed": "加入机器学习任务失败"
+        },
+        "modelBrowser": {
+          "open": "浏览 LocalAI 模型",
+          "title": "LocalAI 模型库",
+          "description": "通过 LocalAI 官方模型接口预览和安装模型。",
+          "search": "搜索模型",
+          "load": "加载模型",
+          "jobs": "刷新任务",
+          "empty": "尚未加载模型。请搜索或加载 LocalAI 模型库。",
+          "installed": "已安装",
+          "apply": "安装",
+          "select": "使用名称",
+          "close": "关闭",
+          "loadFailed": "无法加载 LocalAI 模型",
+          "applySuccess": "已提交 LocalAI 模型安装任务",
+          "applyFailed": "请求 LocalAI 安装模型失败",
+          "jobsFailed": "加载 LocalAI 模型任务失败",
+          "jobFinished": "LocalAI 模型安装任务已完成",
+          "jobStillRunning": "LocalAI 仍在处理安装任务，请稍后刷新任务状态。",
+          "jobPollFailed": "跟踪 LocalAI 安装任务失败",
+          "jobPollRetrying": "暂时无法读取 LocalAI 任务状态，正在重试。",
+          "jobIdMissing": "LocalAI 未返回任务 ID，请刷新任务或查看 LocalAI 日志。",
+          "jobInvalid": "LocalAI 返回了空安装任务，未定位到模型条目。",
+          "jobCancelled": "LocalAI 模型安装任务已取消。",
+          "jobCompletedWithoutArtifact": "LocalAI 返回已完成，但未报告 {model} 的下载产物；请刷新模型列表或查看 LocalAI 日志。"
+        },
+        "localAiBaseUrl": {
+          "label": "LocalAI 地址",
+          "description": "内置 LocalAI 服务地址，用于本地人脸、VLM 和 embedding 模型",
+          "help": "内置 Docker 服务使用 http://chronoframe-localai:8080"
+        },
+        "aiDescription": {
+          "enabled": {
+            "label": "生成 AI 描述和评价",
+            "description": "使用 VLM 为照片生成描述、评价和摘要",
+            "help": "仅启用后才会排队处理；关闭后已有结果保留但不展示入口。"
+          }
+        },
+        "embeddingBaseUrl": {
+          "label": "Jina Embedding 服务地址",
+          "description": "Jina AI embedding API 基础地址",
+          "help": "ChronoFrame 会在该基础地址下调用 /embeddings"
+        },
+        "embeddingApiKey": {
+          "label": "Jina API Key",
+          "description": "Jina AI embedding 服务的 API Key",
+          "help": "启用语义搜索时必填"
+        },
+        "embeddingModel": {
+          "label": "语义 embedding 模型",
+          "description": "用于生成照片向量和搜索文本向量的 Jina 多模态 embedding 模型",
+          "help": "请手动填写 Jina 模型名称"
+        },
+        "sectionDescription": "配置自动标签、语义搜索、人脸相册、AI 描述以及本地或外部模型服务。"
+      },
+      "mlCleanup": {
+        "action": "清理机器学习数据",
+        "success": "机器学习数据清理完成",
+        "failed": "机器学习数据清理失败",
+        "summary": "照片 {photos} 张，人脸 {faces} 条，人物 {people} 个"
       },
       "webglImageViewerDebug": {
         "label": "WebGL Image Viewer 调试模式",
@@ -1587,7 +1965,8 @@
     "form": {
       "loadFailed": "加载设置失败",
       "saveSuccess": "设置已保存",
-      "saveFailed": "保存设置失败"
+      "saveFailed": "保存设置失败",
+      "customValue": "自定义模型名"
     }
   },
   "wizard": {
@@ -1778,6 +2157,25 @@
     },
     "image": {
       "loadError": "图片加载失败"
+    },
+    "faces": "人脸",
+    "aiAnalysis": {
+      "title": "AI 影像分析",
+      "description": "AI 描述",
+      "evaluation": "摄影评价",
+      "suggestions": "摄影建议",
+      "failed": "生成失败",
+      "empty": "暂无 AI 分析内容，可按需重新生成。",
+      "retryAll": "重试全部",
+      "retryQueued": "已加入 AI 分析任务",
+      "retryFailed": "AI 分析任务提交失败",
+      "score": {
+        "title": "AI 评分",
+        "composition": "构图",
+        "lighting": "光线",
+        "color": "色彩",
+        "sharpness": "清晰度"
+      }
     }
   }
 }

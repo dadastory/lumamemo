@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import type { Album, Photo } from '~~/server/utils/db'
 import type { FormSubmitEvent, FormError } from '@nuxt/ui'
+import { buildPublicAlbumDetailRoute } from '~/utils/public-profile-routes'
 
 definePageMeta({
   layout: 'dashboard',
@@ -26,6 +27,7 @@ const albums = ref<AlbumItem[]>([])
 const isLoadingAlbums = ref(false)
 const allPhotos = ref<Photo[]>([])
 const isLoadingPhotos = ref(false)
+const { user } = useUserSession()
 
 const isAlbumSlideoverOpen = ref(false)
 const isDeleteConfirmOpen = ref(false)
@@ -466,7 +468,13 @@ const columns = computed<any[]>(() => [
 
             <template #title-cell="{ row }">
               <NuxtLink
-                :to="`/albums/${(row.original as unknown as AlbumItem).id}`"
+                v-if="user?.publicId"
+                :to="
+                  buildPublicAlbumDetailRoute(
+                    user.publicId,
+                    (row.original as unknown as AlbumItem).id,
+                  )
+                "
                 target="_blank"
                 class="font-medium text-primary-600 dark:text-primary-400 hover:underline cursor-pointer inline-flex items-center gap-2"
               >
@@ -477,6 +485,12 @@ const columns = computed<any[]>(() => [
                   class="shrink-0 opacity-60 hover:opacity-100 transition-opacity"
                 />
               </NuxtLink>
+              <span
+                v-else
+                class="font-medium text-gray-900 dark:text-gray-100"
+              >
+                {{ (row.original as unknown as AlbumItem).title }}
+              </span>
             </template>
 
             <template #description-cell="{ row }">

@@ -40,7 +40,7 @@ useHead({
 // 根据用户登录状态和当前路由决定使用哪个 API
 // 登录用户或后台管理页面显示所有照片，未登录用户在前端页面只显示可见照片
 const route = useRoute()
-const { loggedIn } = useUserSession()
+const { loggedIn, user } = useUserSession()
 const isPublicProfileRoute = computed(() => route.path.startsWith('/u/'))
 const publicProfileId = computed(() => {
   if (!isPublicProfileRoute.value) return ''
@@ -233,9 +233,14 @@ provide(
           :current-index="currentPhotoIndex"
           :is-open="isViewerOpen"
           :globe-route="globeRoute"
+          :public-profile-id="publicProfileId || null"
           :album-route="
             albumRoute ||
-            (publicProfileId ? buildPublicAlbumsRoute(publicProfileId) : null)
+            (publicProfileId
+              ? buildPublicAlbumsRoute(publicProfileId)
+              : user?.publicId
+                ? buildPublicAlbumsRoute(user.publicId)
+                : null)
           "
           @close="handleClose"
           @index-change="handleIndexChange"

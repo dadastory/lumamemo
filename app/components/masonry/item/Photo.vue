@@ -633,20 +633,13 @@ onUnmounted(() => {
               </span>
             </div>
           </div>
-          <div
+          <PhotoTagOverflowList
             v-if="photo.tags?.length"
-            class="mt-1 flex items-center gap-1"
-          >
-            <UBadge
-              v-for="tag in photo.tags"
-              :key="tag"
-              size="sm"
-              color="neutral"
-              class="bg-white/20 text-white/80 backdrop-blur-3xl"
-            >
-              {{ tag }}
-            </UBadge>
-          </div>
+            :tags="photo.tags"
+            class="mt-1"
+            badge-class="bg-white/20 text-white/80 backdrop-blur-3xl"
+            counter-class="bg-white/15 text-white/70 backdrop-blur-3xl"
+          />
           <div>
             <!-- Camera info from EXIF if available -->
             <div

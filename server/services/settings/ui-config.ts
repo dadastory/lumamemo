@@ -147,6 +147,157 @@ export const SYSTEM_SETTINGS_UI: Record<string, FieldUIConfig> = {
     ],
     help: 'settings.system.upload.duplicateCheck.mode.help',
   },
+  'ml.language': {
+    type: 'select',
+    options: [
+      { label: 'English', value: 'en' },
+      { label: '简体中文 (Simplified Chinese)', value: 'zh-CN' },
+      { label: '繁體中文 (Traditional Chinese)', value: 'zh-TW' },
+      { label: '日本語 (Japanese)', value: 'ja' },
+    ],
+    help: 'settings.system.ml.language.help',
+  },
+  'ml.enabled': {
+    type: 'toggle',
+    help: 'settings.system.ml.enabled.help',
+  },
+  'ml.localAiBaseUrl': {
+    type: 'url',
+    placeholder: 'http://chronoframe-localai:8080',
+    required: true,
+    visibleIf: { fieldKey: 'ml.enabled', value: true },
+    help: 'settings.system.ml.localAiBaseUrl.help',
+  },
+  'ml.vlmProvider': {
+    type: 'select',
+    visibleIf: { fieldKey: 'ml.enabled', value: true },
+    options: [
+      {
+        label: 'settings.system.ml.vlmProvider.options.openai',
+        value: 'openai',
+        icon: 'simple-icons:openai',
+      },
+      {
+        label: 'settings.system.ml.vlmProvider.options.openaiCompatible',
+        value: 'openai-compatible',
+        icon: 'tabler:plug-connected',
+      },
+      {
+        label: 'settings.system.ml.vlmProvider.options.localai',
+        value: 'localai',
+        icon: 'tabler:server-cog',
+      },
+    ],
+  },
+  'ml.vlmBaseUrl': {
+    type: 'url',
+    placeholder: 'https://api.openai.com/v1',
+    visibleIf: { fieldKey: 'ml.enabled', value: true },
+    help: 'settings.system.ml.vlmBaseUrl.help',
+  },
+  'ml.vlmApiKey': {
+    type: 'password',
+    placeholder: 'sk-...',
+    visibleIf: { fieldKey: 'ml.enabled', value: true },
+    help: 'settings.system.ml.vlmApiKey.help',
+  },
+  'ml.vlmModel': {
+    type: 'input',
+    placeholder: 'Model name',
+    visibleIf: { fieldKey: 'ml.enabled', value: true },
+  },
+  'ml.embeddingBaseUrl': {
+    type: 'url',
+    placeholder: 'https://api.jina.ai/v1',
+    required: true,
+    visibleIf: { fieldKey: 'ml.enabled', value: true },
+    help: 'settings.system.ml.embeddingBaseUrl.help',
+  },
+  'ml.embeddingApiKey': {
+    type: 'password',
+    placeholder: 'jina_...',
+    required: true,
+    visibleIf: { fieldKey: 'ml.enabled', value: true },
+    help: 'settings.system.ml.embeddingApiKey.help',
+  },
+  'ml.embeddingModel': {
+    type: 'input',
+    placeholder: 'jina-embeddings-v5-omni-small',
+    required: true,
+    visibleIf: { fieldKey: 'ml.enabled', value: true },
+    help: 'settings.system.ml.embeddingModel.help',
+  },
+  'ml.vectorProvider': {
+    type: 'select',
+    visibleIf: { fieldKey: 'ml.enabled', value: true },
+    options: [
+      {
+        label: 'settings.system.ml.vectorProvider.options.qdrant',
+        value: 'qdrant',
+        icon: 'tabler:database',
+      },
+    ],
+  },
+  'ml.vectorBaseUrl': {
+    type: 'url',
+    placeholder: 'http://chronoframe-qdrant:6333',
+    visibleIf: { fieldKey: 'ml.enabled', value: true },
+    help: 'settings.system.ml.vectorBaseUrl.help',
+  },
+  'ml.vectorApiKey': {
+    type: 'password',
+    placeholder: 'Optional Qdrant API key',
+    visibleIf: { fieldKey: 'ml.enabled', value: true },
+    help: 'settings.system.ml.vectorApiKey.help',
+  },
+  'ml.vectorCollectionPrefix': {
+    type: 'input',
+    placeholder: 'chronoframe',
+    visibleIf: { fieldKey: 'ml.enabled', value: true },
+    help: 'settings.system.ml.vectorCollectionPrefix.help',
+  },
+  'ml.faceModel': {
+    type: 'input',
+    placeholder: 'LocalAI face model name',
+    visibleIf: { fieldKey: 'ml.enabled', value: true },
+    help: 'settings.system.ml.faceModel.help',
+  },
+  'ml.autoTag.enabled': {
+    type: 'toggle',
+    visibleIf: { fieldKey: 'ml.enabled', value: true },
+  },
+  'ml.autoTag.minScore': {
+    type: 'number',
+    min: 0,
+    max: 1,
+    visibleIf: { fieldKey: 'ml.enabled', value: true },
+    help: 'settings.system.ml.autoTag.minScore.help',
+  },
+  'ml.semanticSearch.enabled': {
+    type: 'toggle',
+    visibleIf: { fieldKey: 'ml.enabled', value: true },
+  },
+  'ml.aiDescription.enabled': {
+    type: 'toggle',
+    visibleIf: { fieldKey: 'ml.enabled', value: true },
+    help: 'settings.system.ml.aiDescription.enabled.help',
+  },
+  'ml.faceAlbum.enabled': {
+    type: 'toggle',
+    visibleIf: { fieldKey: 'ml.enabled', value: true },
+    help: 'settings.system.ml.faceAlbum.enabled.help',
+  },
+  'ml.faceCluster.threshold': {
+    type: 'number',
+    min: 0,
+    max: 1,
+    visibleIf: { fieldKey: 'ml.faceAlbum.enabled', value: true },
+    help: 'settings.system.ml.faceCluster.threshold.help',
+  },
+  'ml.ocr.enabled': {
+    type: 'toggle',
+    visibleIf: { fieldKey: 'ml.enabled', value: true },
+  },
   webglImageViewerDebug: {
     type: 'toggle',
     help: 'settings.system.webglImageViewerDebug.help',

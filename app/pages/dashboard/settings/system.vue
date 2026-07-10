@@ -28,25 +28,10 @@ type SystemSection = {
 
 type SystemSectionWithFields = SystemSection & {
   fields: FieldDescriptor[]
+  visibleFields: FieldDescriptor[]
 }
 
 const SYSTEM_SECTION_ORDER: SystemSection[] = [
-  {
-    id: 'thirdPartyLogin',
-    titleKey: 'settings.system.sections.thirdPartyLogin',
-    keys: [
-      'auth.github.enabled',
-      'auth.github.clientId',
-      'auth.github.clientSecret',
-      'auth.oidc.enabled',
-      'auth.oidc.label',
-      'auth.oidc.issuer',
-      'auth.oidc.clientId',
-      'auth.oidc.clientSecret',
-      'auth.oidc.scope',
-      'auth.oidc.clientAuthMethod',
-    ],
-  },
   {
     id: 'fileProcessing',
     titleKey: 'settings.system.sections.fileProcessing',
@@ -67,17 +52,42 @@ const isFieldDescriptor = (
   field: FieldDescriptor | undefined,
 ): field is FieldDescriptor => Boolean(field)
 
+const normalizeSettingValue = (value: unknown) =>
+  value &&
+  typeof value === 'object' &&
+  'value' in (value as Record<string, unknown>)
+    ? (value as Record<string, unknown>).value
+    : value
+
+const isSameVisibleIfValue = (left: unknown, right: unknown) =>
+  JSON.stringify(normalizeSettingValue(left) ?? null) ===
+  JSON.stringify(normalizeSettingValue(right) ?? null)
+
+const isSystemFieldVisible = (field: FieldDescriptor) => {
+  if (!field.ui.visibleIf) return true
+  return isSameVisibleIfValue(
+    systemState[field.ui.visibleIf.fieldKey],
+    field.ui.visibleIf.value,
+  )
+}
+
 const systemFieldSections = computed<SystemSectionWithFields[]>(() =>
-  SYSTEM_SECTION_ORDER.map((section) => ({
-    ...section,
-    fields: section.keys
+  SYSTEM_SECTION_ORDER.map((section) => {
+    const fields = section.keys
       .map((key) => systemFields.value.find((field) => field.key === key))
-      .filter(isFieldDescriptor),
-  })).filter((section) => section.fields.length > 0),
+      .filter(isFieldDescriptor)
+
+    return {
+      ...section,
+      fields,
+      visibleFields: fields.filter(isSystemFieldVisible),
+    }
+  }).filter((section) => section.visibleFields.length > 0),
 )
 
-const sameValue = (left: any, right: any) =>
-  JSON.stringify(left ?? null) === JSON.stringify(right ?? null)
+const sameValue = (left: unknown, right: unknown) =>
+  JSON.stringify(normalizeSettingValue(left) ?? null) ===
+  JSON.stringify(normalizeSettingValue(right) ?? null)
 
 const getDefaultFieldValue = (field: (typeof rawSystemFields.value)[number]) =>
   field.value ?? field.defaultValue ?? null
@@ -86,12 +96,12 @@ const getSectionFormId = (sectionId: string) =>
   `systemSettingsForm-${sectionId}`
 
 const isSectionDirty = (section: SystemSectionWithFields) =>
-  section.fields.some(
+  section.visibleFields.some(
     (field) => !sameValue(systemState[field.key], getDefaultFieldValue(field)),
   )
 
 const resetSectionSettings = (section: SystemSectionWithFields) => {
-  section.fields.forEach((field) => {
+  section.visibleFields.forEach((field) => {
     systemState[field.key] = getDefaultFieldValue(field)
   })
 }
@@ -99,12 +109,12 @@ const resetSectionSettings = (section: SystemSectionWithFields) => {
 const handleSectionSettingsSubmit = async (
   section: SystemSectionWithFields,
 ) => {
-  const systemData = Object.fromEntries(
-    section.fields.map((f) => [f.key, systemState[f.key]]),
-  )
-
   try {
-    await submitSystem(systemData)
+    await submitSystem(
+      Object.fromEntries(
+        section.visibleFields.map((field) => [field.key, systemState[field.key]]),
+      ),
+    )
   } catch {
     /* empty */
   }
@@ -112,66 +122,43 @@ const handleSectionSettingsSubmit = async (
 </script>
 
 <template>
-  <UDashboardPanel>
+  <UDashboardPanel id="settings-system">
     <template #header>
       <UDashboardNavbar :title="$t('title.systemSettings')" />
     </template>
 
     <template #body>
-      <div class="mx-auto w-full max-w-5xl space-y-6">
-        <section
-          class="space-y-2 border-b border-neutral-200 pb-4 dark:border-neutral-800"
-        >
-          <h2
-            class="text-xl font-semibold text-neutral-900 dark:text-neutral-100"
+      <div class="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-4 sm:px-6">
+        <header>
+          <h1
+            class="text-2xl font-semibold tracking-tight text-neutral-950 dark:text-white"
           >
             {{ $t('title.systemSettings') }}
-          </h2>
-          <p class="text-sm text-neutral-600 dark:text-neutral-400">
+          </h1>
+          <p class="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
             {{ $t('settings.system.sectionDescription') }}
           </p>
-        </section>
-
-        <template v-if="systemLoading && systemFieldSections.length === 0">
-          <section
-            v-for="index in 3"
-            :key="index"
-            class="rounded-md border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950"
-          >
-            <header
-              class="border-b border-neutral-200 px-5 py-4 dark:border-neutral-800"
-            >
-              <USkeleton class="h-5 w-32" />
-            </header>
-            <div class="space-y-4 px-5 py-5">
-              <USkeleton class="h-4 w-40" />
-              <USkeleton class="h-10 w-full" />
-            </div>
-          </section>
-        </template>
+        </header>
 
         <section
           v-for="section in systemFieldSections"
           :key="section.id"
-          class="rounded-md border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950"
+          class="rounded-lg border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-950"
         >
-          <header
-            class="border-b border-neutral-200 px-5 py-4 dark:border-neutral-800"
-          >
-            <h3
-              class="text-base font-semibold text-neutral-900 dark:text-neutral-100"
-            >
+          <header class="border-b border-neutral-200 px-5 py-4 dark:border-neutral-800">
+            <h2 class="text-sm font-semibold text-neutral-950 dark:text-white">
               {{ $t(section.titleKey) }}
-            </h3>
+            </h2>
           </header>
 
           <UForm
             :id="getSectionFormId(section.id)"
+            :state="systemState"
             class="space-y-5 px-5 py-5"
             @submit="handleSectionSettingsSubmit(section)"
           >
             <SettingField
-              v-for="field in section.fields"
+              v-for="field in section.visibleFields"
               :key="field.key"
               :field="field"
               :model-value="systemState[field.key]"
@@ -191,19 +178,20 @@ const handleSectionSettingsSubmit = async (
 
             <div class="flex items-center justify-end gap-2">
               <UButton
+                type="button"
+                variant="ghost"
                 color="neutral"
-                variant="outline"
-                :disabled="!isSectionDirty(section)"
+                :disabled="systemLoading"
                 @click="resetSectionSettings(section)"
               >
                 {{ $t('common.actions.reset') }}
               </UButton>
+
               <UButton
-                :loading="systemLoading"
                 type="submit"
                 :form="getSectionFormId(section.id)"
-                :disabled="!isSectionDirty(section)"
-                icon="tabler:device-floppy"
+                color="primary"
+                :loading="systemLoading"
               >
                 {{ $t('common.actions.saveSettings') }}
               </UButton>

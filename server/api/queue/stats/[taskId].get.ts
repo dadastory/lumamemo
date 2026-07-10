@@ -27,10 +27,7 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    if (
-      !isAdminUser(session.user) &&
-      taskStats.payload?.ownerUserId !== session.user.id
-    ) {
+    if (taskStats.payload?.ownerUserId !== session.user.id) {
       throw createError({
         statusCode: 403,
         statusMessage: 'Cannot read another user task',

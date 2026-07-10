@@ -6,6 +6,7 @@ node_modules
 .data
 data/
 third-party/middleware/data/
+third-party/ai/data/
 
 # 开发工具
 .vscode

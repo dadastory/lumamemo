@@ -4,6 +4,7 @@ import {
   settingNamespaces,
 } from '~~/server/services/settings/contants'
 import { settingsManager } from '~~/server/services/settings/settingsManager'
+import { assertMachineLearningCanBeEnabled } from '~~/server/utils/ml-capabilities'
 import { useDB, tables, eq } from '~~/server/utils/db'
 
 export default eventHandler(async (event) => {
@@ -57,6 +58,7 @@ export default eventHandler(async (event) => {
     const updatedBy = currentUser ? currentUser.id : undefined
 
     try {
+      await assertMachineLearningCanBeEnabled(namespace, key, value)
       await settingsManager.set(namespace, key, value, updatedBy)
       return { namespace, key, value }
     } catch (err) {

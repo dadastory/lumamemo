@@ -373,7 +373,7 @@ describe('RAW photo versions', () => {
     assert.match(panel, /startVariantTaskStatusCheck/)
     assert.match(panel, /\/api\/queue\/stats\/\$\{taskId\}/)
     assert.match(panel, /response\.status === 'completed'/)
-    assert.match(panel, /\/api\/photos\/\$\{props\.photo\.id\}\/detail/)
+    assert.match(panel, /\/api\/photos\/\$\{photoId\}\/detail/)
     assert.match(panel, /emit\('photo-updated', refreshedPhoto\)/)
     assert.match(panel, /response\.status === 'failed'/)
     assert.match(panel, /processingTaskId/)
@@ -437,6 +437,36 @@ describe('RAW photo versions', () => {
       assert.match(source, /lastModified: new Date\(\)\.toISOString\(\)/)
       assert.match(source, /ownerUserId: photo\.ownerUserId/)
     }
+  })
+
+  it('rebuilds ML indexes after RAW display image changes but not ordinary variant rebuilds', () => {
+    const rotateApi = readSource(
+      'server/api/photos/[photoId]/display/rotate.post.ts',
+    )
+    const primaryApi = readSource(
+      'server/api/photos/[photoId]/assets/[assetId]/primary.post.ts',
+    )
+    const manager = readSource('server/services/pipeline-queue/manager.ts')
+    const sqliteSchema = readSource('server/database/schema.ts')
+    const postgresSchema = readSource('server/database/schema/postgres.ts')
+    const addTaskApi = readSource('server/api/queue/add-task.post.ts')
+    const addTasksApi = readSource('server/api/queue/add-tasks.post.ts')
+    const dashboardPhotos = readSource('app/pages/dashboard/photos.vue')
+
+    for (const source of [sqliteSchema, postgresSchema]) {
+      assert.match(source, /type: 'photo-variants'[\s\S]*reindexMlAfterVariants\?: boolean/)
+    }
+    for (const source of [addTaskApi, addTasksApi]) {
+      assert.match(source, /type: z\.literal\('photo-variants'\)[\s\S]*reindexMlAfterVariants: z\.boolean\(\)\.optional\(\)/)
+    }
+    assert.match(primaryApi, /type: 'photo-variants'[\s\S]*reindexMlAfterVariants: true/)
+    assert.match(rotateApi, /type: 'photo-variants'[\s\S]*reindexMlAfterVariants: true/)
+
+    assert.match(manager, /payload\.reindexMlAfterVariants[\s\S]*enqueueMachineLearningIndexTask\(\s*photo\.id,\s*ownerUserId/)
+    assert.doesNotMatch(
+      dashboardPhotos,
+      /type:\s*'photo-variants'[\s\S]{0,160}reindexMlAfterVariants/,
+    )
   })
 
   it('provides an owner-scoped photo detail endpoint for completed RAW updates', () => {
