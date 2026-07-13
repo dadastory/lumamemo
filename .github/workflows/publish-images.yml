@@ -4,6 +4,17 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version without the v prefix, for example 0.1.0'
+        required: true
+        type: string
+      target_ref:
+        description: 'Branch, tag, or commit SHA to release'
+        required: false
+        default: main
+        type: string
 
 env:
   GHCR_REGISTRY: ghcr.io
@@ -22,37 +33,65 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       prerelease: ${{ steps.version.outputs.prerelease }}
       changelog: ${{ steps.changelog.outputs.changelog }}
+      release_ref: ${{ steps.version.outputs.release_ref }}
+      tag_name: ${{ steps.version.outputs.tag_name }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
           fetch-tags: true
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.target_ref || github.ref }}
 
-      - name: Extract version from tag
+      - name: Resolve release version
         id: version
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+            VERSION="${VERSION#v}"
+            if ! [[ "$VERSION" =~ ^[0-9]+(\.[0-9]+){1,2}([-.][0-9A-Za-z.-]+)?$ ]]; then
+              echo "Invalid version: $VERSION" >&2
+              exit 1
+            fi
+            TAG_NAME="v${VERSION}"
+            if git rev-parse -q --verify "refs/tags/${TAG_NAME}" >/dev/null; then
+              echo "Tag ${TAG_NAME} already exists." >&2
+              exit 1
+            fi
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -a "${TAG_NAME}" -m "Release ${TAG_NAME}"
+            git push origin "refs/tags/${TAG_NAME}"
+          else
+            TAG_NAME="${GITHUB_REF#refs/tags/}"
+            VERSION="${TAG_NAME#v}"
+          fi
+          echo "release_ref=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
           if [[ "$VERSION" == *"-"* ]]; then
             echo "prerelease=true" >> $GITHUB_OUTPUT
           else
             echo "prerelease=false" >> $GITHUB_OUTPUT
           fi
           echo "Version: $VERSION"
+          echo "Tag: $TAG_NAME"
 
       - name: 📝 Generate changelog
         id: changelog
         run: |
+          set -euo pipefail
           echo "Generating changelog..."
 
           echo "All tags:"
           git tag -l --sort=-version:refname
 
+          CURRENT_TAG="${{ steps.version.outputs.tag_name }}"
           if [[ "${{ steps.version.outputs.version }}" == *"-"* ]]; then
-            PREVIOUS_TAG=$(git tag -l --sort=-version:refname | sed -n '2p')
+            PREVIOUS_TAG=$(git tag -l --sort=-version:refname | grep -vx "$CURRENT_TAG" | sed -n '1p' || true)
           else
-            PREVIOUS_TAG=$(git tag -l --sort=-version:refname | grep -v '-' | sed -n '2p')
+            PREVIOUS_TAG=$(git tag -l --sort=-version:refname | grep -v '-' | grep -vx "$CURRENT_TAG" | sed -n '1p' || true)
           fi
 
           echo "Previous tag: $PREVIOUS_TAG"
@@ -91,6 +130,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.prepare.outputs.release_ref }}
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -299,7 +340,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
         with:
-          tag_name: v${{ env.VERSION }}
+          tag_name: ${{ needs.prepare.outputs.tag_name }}
           name: Release v${{ env.VERSION }}
           body: ${{ needs.prepare.outputs.changelog }}
           prerelease: ${{ env.IS_PRERELEASE == 'true' }}
