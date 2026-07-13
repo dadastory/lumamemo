@@ -8,6 +8,7 @@ import { eq } from 'drizzle-orm'
 import { extractExifData } from '~~/server/services/image/exif'
 import { tables, useDB } from '~~/server/utils/db'
 import { useStorageProvider } from '~~/server/utils/useStorageProvider'
+import { assertUserStorageQuota } from '~~/server/services/storage/quota'
 
 const paramsSchema = z.object({
   photoId: z.string().min(1),
@@ -175,6 +176,21 @@ export default eventHandler(async (event) => {
     }
 
     const updatedBuffer = await readFile(tempFile)
+    const owner = await db
+      .select()
+      .from(tables.users)
+      .where(eq(tables.users.id, photo.ownerUserId))
+      .get()
+
+    if (owner) {
+      await assertUserStorageQuota(owner, {
+        additionalBytes: updatedBuffer.length,
+        replacingBytes: originalBuffer.length,
+        storageProvider,
+        resolveMissingSizes: true,
+      })
+    }
+
     const prefix =
       storageProvider.config && 'prefix' in storageProvider.config
         ? storageProvider.config.prefix

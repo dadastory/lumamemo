@@ -2,13 +2,13 @@ import { and, eq, isNull, or } from 'drizzle-orm'
 import { z } from 'zod'
 import {
   getPhotoStorageKeys,
-  getUserOwnedPhotoStorageKeys,
 } from '~~/server/utils/photo-delete'
 import { getVectorStore } from '~~/server/services/ml/vector-store'
 import { getDatabaseProvider } from '~~/server/utils/db'
 import { useStorageProvider } from '~~/server/utils/useStorageProvider'
 import { logger } from '~~/server/utils/logger'
 import { people as postgresPeople } from '~~/server/database/schema/postgres'
+import { collectUserStorageEntries } from '~~/server/services/storage/quota'
 
 const paramsSchema = z.object({
   userId: z
@@ -91,16 +91,12 @@ export default eventHandler(async (event) => {
     photoFaces: photoFacesByPhotoId.get(photo.id) || [],
   }))
 
-  const storageKeys = [
-    ...new Set(
-      photosWithVectorFaces.flatMap((photo: any) =>
-        getUserOwnedPhotoStorageKeys(photo, userId),
-      ),
-    ),
-  ]
+  const storageEntries = await collectUserStorageEntries(userId)
+  const storageKeys = storageEntries.map((entry) => entry.key)
+  const storageEntryKeys = new Set(storageKeys)
   const skippedStorageFiles = [
     ...new Set(photosWithVectorFaces.flatMap(getPhotoStorageKeys)),
-  ].filter((key: string) => !storageKeys.includes(key)).length
+  ].filter((key: string) => !storageEntryKeys.has(key)).length
 
   const queueItems = await db.select().from(tables.pipelineQueue).all()
   const deletedQueueIds = queueItems

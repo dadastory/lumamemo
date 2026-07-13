@@ -6,6 +6,7 @@ import {
 import { settingsManager } from '~~/server/services/settings/settingsManager'
 import { assertMachineLearningCanBeEnabled } from '~~/server/utils/ml-capabilities'
 import { useDB, tables, eq } from '~~/server/utils/db'
+import { validateStorageQuotaGB } from '~~/server/services/storage/quota'
 
 export default eventHandler(async (event) => {
   const { namespace, key } = await getValidatedRouterParams(
@@ -58,6 +59,9 @@ export default eventHandler(async (event) => {
     const updatedBy = currentUser ? currentUser.id : undefined
 
     try {
+      if (namespace === 'system' && key === 'storage.defaultUserQuotaGB') {
+        validateStorageQuotaGB(value)
+      }
       await assertMachineLearningCanBeEnabled(namespace, key, value)
       await settingsManager.set(namespace, key, value, updatedBy)
       return { namespace, key, value }

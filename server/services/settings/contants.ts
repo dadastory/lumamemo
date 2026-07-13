@@ -93,6 +93,14 @@ export const DEFAULT_SETTINGS = [
   },
   {
     namespace: 'system',
+    key: 'storage.defaultUserQuotaGB',
+    type: 'number',
+    defaultValue: 50,
+    label: 'settings.system.storage.defaultUserQuotaGB.label',
+    description: 'settings.system.storage.defaultUserQuotaGB.description',
+  },
+  {
+    namespace: 'system',
     key: 'ml.language',
     type: 'string',
     defaultValue: 'en',

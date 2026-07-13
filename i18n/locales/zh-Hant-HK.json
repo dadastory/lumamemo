@@ -817,8 +817,8 @@
           "exif": "處理 EXIF",
           "reverseGeocoding": "地理解析",
           "livePhoto": "偵測 Live Photo",
-          "mlIndex": "機器學習索引",
-          "mlBackfill": "機器學習回填",
+          "mlIndex": "AI 索引",
+          "mlBackfill": "AI 回填",
           "faceDetection": "人臉偵測",
           "faceRecognition": "人臉識別",
           "faceCluster": "人臉聚類"
@@ -1062,6 +1062,26 @@
           "failed": "AI 資料清理失敗",
           "errorCount": "{count} 個儲存清理錯誤"
         }
+      },
+      "pendingUploads": {
+        "title": "未完成上載清理",
+        "description": "清理已寫入儲存但未成功生成相片記錄嘅過期上載檔案。",
+        "badge": "儲存維護",
+        "warningTitle": "只會清理過期嘅未完成上載",
+        "warningDescription": "已關聯到相片、RAW 版本或 Live Photo 嘅檔案會保留。",
+        "action": "清理未完成上載",
+        "protectionNote": "清理前會再次檢查用戶命名空間同相片引用。",
+        "result": {
+          "scanned": "掃描記錄",
+          "deletedFiles": "刪除檔案",
+          "completedReferences": "已關聯檔案",
+          "errors": "錯誤"
+        },
+        "messages": {
+          "success": "未完成上載清理完成",
+          "partialSuccess": "未完成上載清理完成，但有警告",
+          "failed": "未完成上載清理失敗"
+        }
       }
     },
     "queue": {
@@ -1111,11 +1131,11 @@
         "photo-reverse-geocoding": "照片逆地理編碼",
         "photo-variants": "照片多尺寸生成",
         "photo-erase-location": "照片位置資訊抹除",
-        "photo-ml-index": "相片機器學習索引",
+        "photo-ml-index": "相片 AI 索引",
         "photo-ml-auto-tags": "Photo AI Tag Extraction",
         "photo-ml-semantic-embedding": "Photo Semantic Index",
         "photo-face-detect": "Face Extraction",
-        "photo-ml-backfill": "相片機器學習回填",
+        "photo-ml-backfill": "相片 AI 回填",
         "photo-face-cluster": "人臉聚類",
         "photo-ai-analysis": "Photo AI Image Analysis",
         "photo-ai-description": "Photo AI Description"
@@ -1130,10 +1150,10 @@
         "reverse-geocoding": "地理解析",
         "live-photo": "LivePhoto處理",
         "location-erase": "位置資訊抹除",
-        "ml-index": "機器學習索引",
+        "ml-index": "AI 索引",
         "ml-auto-tags": "AI Tag Extraction",
         "ml-semantic-embedding": "Semantic Index",
-        "ml-backfill": "機器學習回填",
+        "ml-backfill": "AI 回填",
         "face-detection": "人臉偵測",
         "face-recognition": "人臉識別",
         "face-cluster": "人臉聚類",
@@ -1208,6 +1228,12 @@
         "users": "用戶",
         "invitations": "邀請"
       },
+      "storageSettings": {
+        "title": "預設上傳空間上限",
+        "description": "未單獨設定空間上限的用戶會使用呢個預設值。調整後唔會刪除已有檔案，只會影響之後上傳同新增檔案。",
+        "currentDefault": "目前預設上限：{quota}",
+        "invalidValue": "請輸入大於 0 的空間上限。"
+      },
       "roles": {
         "admin": "管理員",
         "user": "普通用戶"
@@ -1220,6 +1246,7 @@
         "user": "用戶",
         "email": "電郵",
         "role": "角色",
+        "storage": "存儲空間",
         "status": "狀態",
         "actions": "操作"
       },
@@ -1229,7 +1256,21 @@
         "password": "密碼",
         "resetPassword": "重設密碼",
         "role": "角色",
-        "disabled": "停用此用戶"
+        "disabled": "停用此用戶",
+        "inheritStorageQuota": "使用預設上傳空間上限（目前 {quota}）",
+        "storageQuota": "單獨設定此用戶空間上限",
+        "storageQuotaHelp": "單位 GB。可以低於目前用量；系統唔會刪除已有檔案，只會阻止之後新增上傳。",
+        "defaultStorageQuota": "預設空間上限",
+        "defaultStorageQuotaHelp": "單位 GB。新用戶同未單獨設定的用戶會使用呢個上限。"
+      },
+      "storage": {
+        "usage": "存儲用量",
+        "used": "已用 {value}",
+        "limit": "上限 {value}",
+        "defaultInherited": "使用預設上限",
+        "customOverride": "單獨設定上限",
+        "usagePercent": "已用 {percent}%",
+        "overQuotaStatus": "已超出空間上限"
       },
       "actions": {
         "edit": "編輯用戶",
@@ -1247,7 +1288,9 @@
         "inviteRevoked": "邀請已撤銷",
         "inviteDeleted": "邀請記錄已刪除",
         "userDeleted": "用戶已刪除",
-        "deleteUserFailed": "刪除用戶失敗"
+        "deleteUserFailed": "刪除用戶失敗",
+        "defaultQuotaSaved": "預設上傳空間上限已儲存",
+        "defaultQuotaSaveFailed": "儲存預設上傳空間上限失敗"
       },
       "invites": {
         "email": "電郵",
@@ -1352,13 +1395,20 @@
           "description": "允許上傳的單一檔案最大大小（MB）",
           "help": "設定後立即生效，影響所有用戶的檔案上傳操作"
         }
+      },
+      "storage": {
+        "defaultUserQuotaGB": {
+          "label": "預設用戶空間額度",
+          "description": "新用戶和未單獨設定額度的用戶預設可用空間（GB）",
+          "help": "管理員仍可在用戶管理中為單個用戶覆蓋此額度"
+        }
       }
     },
     "system": {
       "sections": {
         "thirdPartyLogin": "第三方登入",
         "fileProcessing": "檔案處理",
-        "machineLearning": "機器學習",
+        "machineLearning": "AI 能力",
         "debugSettings": "除錯設定"
       },
       "upload": {
@@ -1413,7 +1463,7 @@
           "help": "唔會改變介面語言，亦唔會影響地圖地理編碼語言。"
         },
         "enabled": {
-          "label": "啟用機器學習",
+          "label": "啟用 AI 能力",
           "description": "使用 ChronoFrame AI 服務產生自動標籤、語意搜尋同人臉相簿",
           "help": "需要 PostgreSQL、Qdrant 同 LocalAI；只有選擇外部視覺供應商時先需要填寫外部 VLM 設定。"
         },
@@ -1536,15 +1586,15 @@
           "testFace": "測試人臉模型",
           "backfill": "重新索引相片",
           "clusterFaces": "重新整理人物相簿",
-          "healthSuccess": "機器學習服務可用",
-          "healthFailed": "機器學習健康檢查失敗",
+          "healthSuccess": "AI 服務可用",
+          "healthFailed": "AI 服務健康檢查失敗",
           "testSuccess": "AI 模型測試成功",
           "testFailed": "AI 模型測試失敗",
           "embeddingRequired": "語意搜尋需要填寫 Jina 地址、API Key 同模型名稱",
           "embeddingImageModelRequired": "相片語意搜尋需要使用支援圖片輸入嘅 Jina 模型，例如 jina-embeddings-v5-omni-small",
           "testUsesUnsaved": "正在使用未儲存配置測試",
-          "enqueueSuccess": "已加入機器學習任務佇列",
-          "enqueueFailed": "加入機器學習任務失敗"
+          "enqueueSuccess": "已加入 AI 任務佇列",
+          "enqueueFailed": "加入 AI 任務失敗"
         },
         "modelBrowser": {
           "open": "瀏覽 LocalAI 模型",
@@ -1601,9 +1651,9 @@
         "sectionDescription": "配置自動標籤、語意搜尋、人臉相簿、AI 描述，以及本機或外部模型服務。"
       },
       "mlCleanup": {
-        "action": "清理機器學習資料",
-        "success": "機器學習資料清理完成",
-        "failed": "機器學習資料清理失敗",
+        "action": "清理 AI 資料",
+        "success": "AI 資料清理完成",
+        "failed": "AI 資料清理失敗",
         "summary": "相片 {photos} 張，人臉 {faces} 筆，人物 {people} 個"
       },
       "webglImageViewerDebug": {

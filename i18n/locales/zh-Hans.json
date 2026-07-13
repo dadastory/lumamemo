@@ -891,8 +891,8 @@
           "exif": "处理 EXIF",
           "reverseGeocoding": "地理解析",
           "livePhoto": "检测 LivePhoto",
-          "mlIndex": "机器学习索引",
-          "mlBackfill": "机器学习回填",
+          "mlIndex": "AI 索引",
+          "mlBackfill": "AI 回填",
           "faceDetection": "人脸检测",
           "faceRecognition": "人脸识别",
           "faceCluster": "人脸聚类"
@@ -1136,6 +1136,26 @@
           "failed": "AI 数据清理失败",
           "errorCount": "{count} 个存储清理错误"
         }
+      },
+      "pendingUploads": {
+        "title": "未完成上传清理",
+        "description": "清理已经写入存储但没有成功生成照片记录的过期上传文件。",
+        "badge": "存储维护",
+        "warningTitle": "只会清理过期的未完成上传",
+        "warningDescription": "已经关联到照片、RAW 版本或 Live Photo 的文件会被保留。",
+        "action": "清理未完成上传",
+        "protectionNote": "清理前会再次检查用户命名空间和照片引用。",
+        "result": {
+          "scanned": "扫描记录",
+          "deletedFiles": "删除文件",
+          "completedReferences": "已关联文件",
+          "errors": "错误"
+        },
+        "messages": {
+          "success": "未完成上传清理完成",
+          "partialSuccess": "未完成上传清理完成，但存在警告",
+          "failed": "未完成上传清理失败"
+        }
       }
     },
     "queue": {
@@ -1185,11 +1205,11 @@
         "photo-reverse-geocoding": "照片逆地理编码",
         "photo-variants": "照片多尺寸生成",
         "photo-erase-location": "照片位置信息抹除",
-        "photo-ml-index": "照片机器学习索引",
+        "photo-ml-index": "照片 AI 索引",
         "photo-ml-auto-tags": "照片 AI 标签提取",
         "photo-ml-semantic-embedding": "照片语义索引",
         "photo-face-detect": "人脸提取",
-        "photo-ml-backfill": "照片机器学习回填",
+        "photo-ml-backfill": "照片 AI 回填",
         "photo-face-cluster": "人脸聚类",
         "photo-ai-analysis": "照片 AI 影像分析",
         "photo-ai-description": "照片 AI 描述"
@@ -1204,10 +1224,10 @@
         "reverse-geocoding": "地理解析",
         "live-photo": "LivePhoto处理",
         "location-erase": "位置信息抹除",
-        "ml-index": "机器学习索引",
+        "ml-index": "AI 索引",
         "ml-auto-tags": "AI 标签提取",
         "ml-semantic-embedding": "语义索引",
-        "ml-backfill": "机器学习回填",
+        "ml-backfill": "AI 回填",
         "ml-ai-analysis": "AI 影像分析",
         "ml-ai-analysis-tags": "AI 标签",
         "ml-ai-analysis-description": "AI 描述",
@@ -1282,6 +1302,12 @@
         "users": "用户",
         "invitations": "邀请"
       },
+      "storageSettings": {
+        "title": "默认上传空间上限",
+        "description": "未单独设置空间上限的用户会使用这个默认值。调整后不会删除已有文件，只会影响后续上传和新增文件。",
+        "currentDefault": "当前默认上限：{quota}",
+        "invalidValue": "请输入大于 0 的空间上限。"
+      },
       "roles": {
         "admin": "管理员",
         "user": "普通用户"
@@ -1294,6 +1320,7 @@
         "user": "用户",
         "email": "邮箱",
         "role": "角色",
+        "storage": "存储空间",
         "status": "状态",
         "actions": "操作"
       },
@@ -1303,7 +1330,21 @@
         "password": "密码",
         "resetPassword": "重置密码",
         "role": "角色",
-        "disabled": "禁用此用户"
+        "disabled": "禁用此用户",
+        "inheritStorageQuota": "使用默认上传空间上限（当前 {quota}）",
+        "storageQuota": "单独设置此用户空间上限",
+        "storageQuotaHelp": "单位 GB。可以低于当前用量；系统不会删除已有文件，只会阻止后续新增上传。",
+        "defaultStorageQuota": "默认空间上限",
+        "defaultStorageQuotaHelp": "单位 GB。新用户和未单独设置的用户会使用这个上限。"
+      },
+      "storage": {
+        "usage": "存储用量",
+        "used": "已用 {value}",
+        "limit": "上限 {value}",
+        "defaultInherited": "使用默认上限",
+        "customOverride": "单独设置上限",
+        "usagePercent": "已用 {percent}%",
+        "overQuotaStatus": "已超出空间上限"
       },
       "actions": {
         "edit": "编辑用户",
@@ -1321,7 +1362,9 @@
         "inviteRevoked": "邀请已撤销",
         "inviteDeleted": "邀请记录已删除",
         "userDeleted": "用户已删除",
-        "deleteUserFailed": "删除用户失败"
+        "deleteUserFailed": "删除用户失败",
+        "defaultQuotaSaved": "默认上传空间上限已保存",
+        "defaultQuotaSaveFailed": "保存默认上传空间上限失败"
       },
       "invites": {
         "email": "邮箱",
@@ -1426,13 +1469,20 @@
           "description": "允许上传的单个文件最大大小（MB）",
           "help": "设置后将立即生效，影响所有用户的文件上传操作"
         }
+      },
+      "storage": {
+        "defaultUserQuotaGB": {
+          "label": "默认用户空间额度",
+          "description": "新用户和未单独设置额度的用户默认可用空间（GB）",
+          "help": "管理员仍可在用户管理中为单个用户覆盖此额度"
+        }
       }
     },
     "system": {
       "sections": {
         "thirdPartyLogin": "第三方登录",
         "fileProcessing": "文件处理",
-        "machineLearning": "机器学习",
+        "machineLearning": "AI 能力",
         "debugSettings": "调试设置"
       },
       "upload": {
@@ -1487,9 +1537,9 @@
           "help": "不会改变界面语言，也不会影响地图地理编码语言。"
         },
         "enabled": {
-          "label": "启用机器学习",
-          "description": "使用 ChronoFrame AI 服务生成自动标签、语义搜索和人脸相册",
-          "help": "需要 PostgreSQL、Qdrant 和 LocalAI；只有选择外部视觉供应商时才需要填写外部 VLM 设置。"
+          "label": "启用 AI 能力",
+          "description": "使用大模型、向量检索和人脸识别服务处理自动标签、语义搜索、AI 描述和人脸相册",
+          "help": "人脸相册需要 PostgreSQL、Qdrant 和人脸模型服务；只有选择外部视觉供应商时才需要填写外部 VLM 设置。"
         },
         "vlmProvider": {
           "label": "视觉供应商",
@@ -1610,15 +1660,15 @@
           "testFace": "测试人脸模型",
           "backfill": "重新索引照片",
           "clusterFaces": "重新整理人物相册",
-          "healthSuccess": "机器学习服务可用",
-          "healthFailed": "机器学习健康检查失败",
+          "healthSuccess": "AI 服务可用",
+          "healthFailed": "AI 服务健康检查失败",
           "testSuccess": "AI 模型测试成功",
           "testFailed": "AI 模型测试失败",
           "embeddingRequired": "语义搜索需要填写 Jina 地址、API Key 和模型名称",
           "embeddingImageModelRequired": "照片语义搜索需要使用支持图片输入的 Jina 模型，例如 jina-embeddings-v5-omni-small",
           "testUsesUnsaved": "正在使用未保存配置检测",
-          "enqueueSuccess": "已加入机器学习任务队列",
-          "enqueueFailed": "加入机器学习任务失败"
+          "enqueueSuccess": "已加入 AI 任务队列",
+          "enqueueFailed": "加入 AI 任务失败"
         },
         "modelBrowser": {
           "open": "浏览 LocalAI 模型",
@@ -1675,9 +1725,9 @@
         "sectionDescription": "配置自动标签、语义搜索、人脸相册、AI 描述以及本地或外部模型服务。"
       },
       "mlCleanup": {
-        "action": "清理机器学习数据",
-        "success": "机器学习数据清理完成",
-        "failed": "机器学习数据清理失败",
+        "action": "清理 AI 数据",
+        "success": "AI 数据清理完成",
+        "failed": "AI 数据清理失败",
         "summary": "照片 {photos} 张，人脸 {faces} 条，人物 {people} 个"
       },
       "webglImageViewerDebug": {

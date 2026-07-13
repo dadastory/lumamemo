@@ -186,7 +186,8 @@ export function useUpload(options: UseUploadOptions = {}) {
         try {
           const responseData = JSON.parse(responseText)
           if (responseData.data?.message) {
-            errorMessage = responseData.data.title || errorMessage
+            errorMessage =
+              responseData.data.message || responseData.data.title || errorMessage
           }
         } catch {
           errorMessage += ` - ${responseText}`

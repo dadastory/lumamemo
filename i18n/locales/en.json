@@ -1136,6 +1136,26 @@
           "failed": "AI data cleanup failed",
           "errorCount": "{count} storage cleanup error(s)"
         }
+      },
+      "pendingUploads": {
+        "title": "Incomplete upload cleanup",
+        "description": "Remove expired upload files that were written to storage but never became photo records.",
+        "badge": "Storage maintenance",
+        "warningTitle": "Only expired incomplete uploads are removed",
+        "warningDescription": "Files already referenced by photos, RAW versions, or Live Photos are preserved.",
+        "action": "Clean incomplete uploads",
+        "protectionNote": "The cleanup checks user namespaces and photo references before deleting files.",
+        "result": {
+          "scanned": "Scanned",
+          "deletedFiles": "Deleted files",
+          "completedReferences": "Referenced files",
+          "errors": "Errors"
+        },
+        "messages": {
+          "success": "Incomplete upload cleanup finished",
+          "partialSuccess": "Incomplete upload cleanup finished with warnings",
+          "failed": "Incomplete upload cleanup failed"
+        }
       }
     },
     "queue": {
@@ -1282,6 +1302,12 @@
         "users": "Users",
         "invitations": "Invitations"
       },
+      "storageSettings": {
+        "title": "Default upload storage limit",
+        "description": "Users without an individual storage limit use this default. Changing it never deletes existing files; it only affects future uploads and newly created files.",
+        "currentDefault": "Current default limit: {quota}",
+        "invalidValue": "Enter a storage limit greater than 0."
+      },
       "roles": {
         "admin": "Admin",
         "user": "User"
@@ -1294,6 +1320,7 @@
         "user": "User",
         "email": "Email",
         "role": "Role",
+        "storage": "Storage",
         "status": "Status",
         "actions": "Actions"
       },
@@ -1303,7 +1330,21 @@
         "password": "Password",
         "resetPassword": "Reset Password",
         "role": "Role",
-        "disabled": "Disable this user"
+        "disabled": "Disable this user",
+        "inheritStorageQuota": "Use the default upload storage limit (currently {quota})",
+        "storageQuota": "Set a storage limit for this user",
+        "storageQuotaHelp": "In GB. It may be lower than current usage; existing files are kept and only future uploads are blocked.",
+        "defaultStorageQuota": "Default storage limit",
+        "defaultStorageQuotaHelp": "In GB. New users and users without an individual limit use this value."
+      },
+      "storage": {
+        "usage": "Storage usage",
+        "used": "Used {value}",
+        "limit": "Limit {value}",
+        "defaultInherited": "Using default limit",
+        "customOverride": "Individual limit",
+        "usagePercent": "{percent}% used",
+        "overQuotaStatus": "Over storage limit"
       },
       "actions": {
         "edit": "Edit user",
@@ -1321,7 +1362,9 @@
         "inviteRevoked": "Invitation revoked",
         "inviteDeleted": "Invitation record deleted",
         "userDeleted": "User deleted",
-        "deleteUserFailed": "Failed to delete user"
+        "deleteUserFailed": "Failed to delete user",
+        "defaultQuotaSaved": "Default upload storage limit saved",
+        "defaultQuotaSaveFailed": "Failed to save default upload storage limit"
       },
       "invites": {
         "email": "Email",
@@ -1426,13 +1469,20 @@
           "description": "Maximum size of a single uploaded file (MB)",
           "help": "Takes effect immediately and applies to all users"
         }
+      },
+      "storage": {
+        "defaultUserQuotaGB": {
+          "label": "Default user storage quota",
+          "description": "Default available storage for new users and users without an override (GB)",
+          "help": "Admins can override this quota for individual users in user management"
+        }
       }
     },
     "system": {
       "sections": {
         "thirdPartyLogin": "Third-Party Login",
         "fileProcessing": "File Processing",
-        "machineLearning": "Machine Learning",
+        "machineLearning": "AI Features",
         "debugSettings": "Debug Settings"
       },
       "upload": {
@@ -1487,9 +1537,9 @@
           "help": "This does not change the interface language or map geocoding language."
         },
         "enabled": {
-          "label": "Enable machine learning",
-          "description": "Use ChronoFrame AI services for automatic tags, semantic search, and face albums",
-          "help": "Requires PostgreSQL, Qdrant, and LocalAI. External VLM settings are only needed when using an external vision provider."
+          "label": "Enable AI features",
+          "description": "Use vision models, vector search, and face recognition services for automatic tags, semantic search, AI descriptions, and face albums",
+          "help": "Face albums require PostgreSQL, Qdrant, and a face model service. External VLM settings are only needed when using an external vision provider."
         },
         "vlmProvider": {
           "label": "Vision provider",
@@ -1610,15 +1660,15 @@
           "testFace": "Test face model",
           "backfill": "Re-index photos",
           "clusterFaces": "Rebuild people album",
-          "healthSuccess": "Machine learning service is reachable",
-          "healthFailed": "Machine learning health check failed",
+          "healthSuccess": "AI service is reachable",
+          "healthFailed": "AI service health check failed",
           "testSuccess": "AI model test succeeded",
           "testFailed": "AI model test failed",
           "embeddingRequired": "Semantic search requires a Jina base URL, API key, and model",
           "embeddingImageModelRequired": "Photo semantic search requires a Jina image embedding model, for example jina-embeddings-v5-omni-small",
           "testUsesUnsaved": "testing unsaved settings",
-          "enqueueSuccess": "Machine learning task queued",
-          "enqueueFailed": "Failed to queue machine learning task"
+          "enqueueSuccess": "AI task queued",
+          "enqueueFailed": "Failed to queue AI task"
         },
         "modelBrowser": {
           "open": "Browse LocalAI models",

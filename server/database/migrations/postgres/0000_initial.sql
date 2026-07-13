@@ -13,7 +13,8 @@ CREATE TABLE "users" (
   "created_at" timestamptz NOT NULL,
   "is_admin" integer DEFAULT 0 NOT NULL,
   "role" text DEFAULT 'user' NOT NULL,
-  "disabled_at" timestamptz
+  "disabled_at" timestamptz,
+  "storage_quota_bytes" bigint
 );
 --> statement-breakpoint
 CREATE TABLE "user_invites" (
@@ -82,6 +83,23 @@ CREATE TABLE "photo_assets" (
   "is_primary" boolean DEFAULT false NOT NULL,
   "created_at" timestamptz DEFAULT now() NOT NULL
 );
+--> statement-breakpoint
+CREATE TABLE "pending_uploads" (
+  "id" serial PRIMARY KEY,
+  "owner_user_id" integer NOT NULL REFERENCES "users"("id") ON DELETE cascade,
+  "storage_key" text NOT NULL,
+  "content_type" text,
+  "size" bigint NOT NULL,
+  "status" text DEFAULT 'uploaded' NOT NULL,
+  "task_id" integer,
+  "photo_id" text,
+  "error_message" text,
+  "created_at" timestamptz DEFAULT now() NOT NULL,
+  "updated_at" timestamptz,
+  "expires_at" timestamptz NOT NULL
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX "pending_uploads_storage_key_unique" ON "pending_uploads" ("storage_key");
 --> statement-breakpoint
 CREATE TABLE "pipeline_queue" (
   "id" serial PRIMARY KEY,

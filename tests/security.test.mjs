@@ -411,7 +411,8 @@ describe('security serializers', () => {
         created_at integer NOT NULL,
         is_admin integer NOT NULL DEFAULT 0,
         role text NOT NULL DEFAULT 'user',
-        disabled_at integer
+        disabled_at integer,
+        storage_quota_bytes integer
       )
     `)
     sqlite.close()

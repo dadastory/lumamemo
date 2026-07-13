@@ -23,6 +23,14 @@ type CleanupResult = {
   errors: Array<{ target: string; message: string }>
 }
 
+type PendingUploadCleanupResult = {
+  scanned: number
+  deletedFiles: number
+  completedReferences: number
+  deletedRows: number
+  errors: Array<{ storageKey: string; message: string }>
+}
+
 const CONFIRMATION_TEXT = 'DELETE AI DATA'
 
 const toast = useToast()
@@ -32,6 +40,8 @@ const photoIdInput = ref('')
 const confirmationInput = ref('')
 const cleanupLoading = ref(false)
 const cleanupResult = ref<CleanupResult | null>(null)
+const pendingUploadCleanupLoading = ref(false)
+const pendingUploadCleanupResult = ref<PendingUploadCleanupResult | null>(null)
 
 const cleanupScopeOptions = computed(() => [
   {
@@ -103,6 +113,29 @@ const cleanupSummary = computed(() => {
   ]
 })
 
+const pendingUploadCleanupSummary = computed(() => {
+  const result = pendingUploadCleanupResult.value
+  if (!result) return []
+  return [
+    {
+      label: $t('dashboard.maintenance.pendingUploads.result.scanned'),
+      value: result.scanned,
+    },
+    {
+      label: $t('dashboard.maintenance.pendingUploads.result.deletedFiles'),
+      value: result.deletedFiles,
+    },
+    {
+      label: $t('dashboard.maintenance.pendingUploads.result.completedReferences'),
+      value: result.completedReferences,
+    },
+    {
+      label: $t('dashboard.maintenance.pendingUploads.result.errors'),
+      value: result.errors.length,
+    },
+  ]
+})
+
 watch(cleanupScope, () => {
   userIdInput.value = ''
   photoIdInput.value = ''
@@ -160,6 +193,37 @@ const runAiCleanup = async () => {
     })
   } finally {
     cleanupLoading.value = false
+  }
+}
+
+const runPendingUploadCleanup = async () => {
+  pendingUploadCleanupLoading.value = true
+  pendingUploadCleanupResult.value = null
+  try {
+    const result = await $fetch<PendingUploadCleanupResult>(
+      '/api/system/storage/cleanup-uploads',
+      {
+        method: 'POST',
+      },
+    )
+    pendingUploadCleanupResult.value = result
+    toast.add({
+      title:
+        result.errors.length === 0
+          ? $t('dashboard.maintenance.pendingUploads.messages.success')
+          : $t('dashboard.maintenance.pendingUploads.messages.partialSuccess'),
+      color: result.errors.length === 0 ? 'success' : 'warning',
+    })
+  } catch (error: any) {
+    toast.add({
+      title:
+        error?.data?.statusMessage ||
+        error?.statusMessage ||
+        $t('dashboard.maintenance.pendingUploads.messages.failed'),
+      color: 'error',
+    })
+  } finally {
+    pendingUploadCleanupLoading.value = false
   }
 }
 </script>
@@ -325,6 +389,84 @@ const runAiCleanup = async () => {
                 @click="runAiCleanup"
               >
                 {{ $t('dashboard.maintenance.aiCleanup.action') }}
+              </UButton>
+            </div>
+          </footer>
+        </section>
+
+        <section class="rounded-lg border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+          <header class="border-b border-neutral-200 px-5 py-4 dark:border-neutral-800">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 class="text-base font-semibold text-neutral-950 dark:text-white">
+                  {{ $t('dashboard.maintenance.pendingUploads.title') }}
+                </h2>
+                <p class="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+                  {{ $t('dashboard.maintenance.pendingUploads.description') }}
+                </p>
+              </div>
+              <UBadge color="warning" variant="soft">
+                {{ $t('dashboard.maintenance.pendingUploads.badge') }}
+              </UBadge>
+            </div>
+          </header>
+
+          <div class="space-y-5 px-5 py-5">
+            <UAlert
+              color="warning"
+              variant="soft"
+              icon="tabler:cloud-off"
+              :title="$t('dashboard.maintenance.pendingUploads.warningTitle')"
+              :description="$t('dashboard.maintenance.pendingUploads.warningDescription')"
+            />
+
+            <div
+              v-if="pendingUploadCleanupResult"
+              class="rounded-md border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950"
+            >
+              <div class="flex items-center gap-2">
+                <UIcon
+                  :name="pendingUploadCleanupResult.errors.length === 0 ? 'tabler:circle-check' : 'tabler:alert-triangle'"
+                  :class="pendingUploadCleanupResult.errors.length === 0 ? 'text-success-500' : 'text-warning-500'"
+                />
+                <p class="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                  {{
+                    pendingUploadCleanupResult.errors.length === 0
+                      ? $t('dashboard.maintenance.pendingUploads.messages.success')
+                      : $t('dashboard.maintenance.pendingUploads.messages.partialSuccess')
+                  }}
+                </p>
+              </div>
+              <dl class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div
+                  v-for="item in pendingUploadCleanupSummary"
+                  :key="item.label"
+                  class="rounded-md bg-neutral-50 px-3 py-2 dark:bg-neutral-900/60"
+                >
+                  <dt class="text-xs text-neutral-500 dark:text-neutral-400">
+                    {{ item.label }}
+                  </dt>
+                  <dd class="mt-1 text-lg font-semibold text-neutral-950 dark:text-white">
+                    {{ item.value }}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          </div>
+
+          <footer class="border-t border-neutral-200 px-5 py-4 dark:border-neutral-800">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p class="text-xs text-neutral-500 dark:text-neutral-400">
+                {{ $t('dashboard.maintenance.pendingUploads.protectionNote') }}
+              </p>
+              <UButton
+                color="warning"
+                variant="soft"
+                icon="tabler:trash"
+                :loading="pendingUploadCleanupLoading"
+                @click="runPendingUploadCleanup"
+              >
+                {{ $t('dashboard.maintenance.pendingUploads.action') }}
               </UButton>
             </div>
           </footer>

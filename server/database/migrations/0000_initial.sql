@@ -13,7 +13,8 @@ CREATE TABLE `users` (
   `created_at` integer NOT NULL,
   `is_admin` integer DEFAULT 0 NOT NULL,
   `role` text DEFAULT 'user' NOT NULL,
-  `disabled_at` integer
+  `disabled_at` integer,
+  `storage_quota_bytes` integer
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `users_name_unique` ON `users` (`name`);
@@ -90,6 +91,23 @@ CREATE TABLE `photo_assets` (
   `is_primary` integer DEFAULT 0 NOT NULL,
   `created_at` integer DEFAULT (unixepoch()) NOT NULL
 );
+--> statement-breakpoint
+CREATE TABLE `pending_uploads` (
+  `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+  `owner_user_id` integer NOT NULL REFERENCES `users`(`id`) ON DELETE cascade,
+  `storage_key` text NOT NULL,
+  `content_type` text,
+  `size` integer NOT NULL,
+  `status` text DEFAULT 'uploaded' NOT NULL,
+  `task_id` integer,
+  `photo_id` text,
+  `error_message` text,
+  `created_at` integer DEFAULT (unixepoch()) NOT NULL,
+  `updated_at` integer,
+  `expires_at` integer NOT NULL
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `pending_uploads_storage_key_unique` ON `pending_uploads` (`storage_key`);
 --> statement-breakpoint
 CREATE TABLE `pipeline_queue` (
   `id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,

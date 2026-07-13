@@ -3,6 +3,7 @@ import { useStorageProvider } from '~~/server/utils/useStorageProvider'
 import { and, eq } from 'drizzle-orm'
 import { generateSafePhotoId } from '~~/server/utils/file-utils'
 import { settingsManager } from '~~/server/services/settings/settingsManager'
+import { assertUserStorageQuota } from '~~/server/services/storage/quota'
 import {
   buildInternalUploadTarget,
   shouldUseBrowserDirectUpload,
@@ -58,6 +59,7 @@ export default eventHandler(async (event) => {
 
   const body = await readBody(event)
   const { fileName, contentType, skipDuplicateCheck } = body
+  const fileSize = Number(body?.fileSize)
   const uploadContentType =
     fileName && isRawFileName(fileName)
       ? getUploadContentType({ name: fileName, type: contentType })
@@ -98,6 +100,7 @@ export default eventHandler(async (event) => {
           id: tables.photos.id,
           title: tables.photos.title,
           storageKey: tables.photos.storageKey,
+          fileSize: tables.photos.fileSize,
           originalUrl: tables.photos.originalUrl,
           thumbnailUrl: tables.photos.thumbnailUrl,
           dateTaken: tables.photos.dateTaken,
@@ -154,6 +157,27 @@ export default eventHandler(async (event) => {
           }
         }
         // 'warn' 模式：继续上传但返回警告信息
+      }
+    }
+
+    if (Number.isFinite(fileSize) && fileSize > 0) {
+      const db = useDB()
+      const user = await db
+        .select()
+        .from(tables.users)
+        .where(eq(tables.users.id, session.user.id))
+        .get()
+
+      if (user) {
+        await assertUserStorageQuota(user, {
+          additionalBytes: fileSize,
+          replacingBytes:
+            existingPhoto?.storageKey === objectKey
+              ? Number(existingPhoto.fileSize || 0)
+              : 0,
+          storageProvider,
+          resolveMissingSizes: true,
+        })
       }
     }
 

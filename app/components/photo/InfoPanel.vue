@@ -33,6 +33,8 @@ const emit = defineEmits<{
   'photo-updated': [Photo]
 }>()
 const { loggedIn, user } = useUserSession()
+const mlEnabled = useSettingRef('system:ml.enabled')
+const isAiEnabled = computed(() => mlEnabled.value === true)
 const canLoadPhotoAlbums = computed(() => {
   const ownerUserId = (props.currentPhoto as any).ownerUserId
   const userId = user.value?.id
@@ -141,7 +143,8 @@ const gpsCoordinates = computed(() => {
 const displayLocation = computed(() => formatPhotoLocation(props.currentPhoto))
 const photoFaces = computed(() => {
   const faces = (props.currentPhoto as any).photoFaces
-  return Array.isArray(faces) ? faces : []
+  if (!Array.isArray(faces)) return []
+  return isAiEnabled.value ? faces : []
 })
 const failedFaceCropIds = ref<Record<string, boolean>>({})
 const getFaceRenderId = (face: any) => String(face.id ?? face.faceId ?? '')
@@ -162,7 +165,7 @@ watch(
   },
 )
 const aiAnalysis = computed(
-  () => (props.currentPhoto as any).aiAnalysis || null,
+  () => (isAiEnabled.value ? (props.currentPhoto as any).aiAnalysis || null : null),
 )
 
 type AiAnalysisStage =
@@ -199,6 +202,7 @@ const isAnyAiStageBusy = computed(() =>
   ),
 )
 const hasAiAnalysis = computed(() => {
+  if (!isAiEnabled.value) return false
   const analysis = aiAnalysis.value
   const stages = analysis?.stages || {}
   return Boolean(
@@ -215,6 +219,7 @@ const hasAiAnalysis = computed(() => {
   )
 })
 const hasRenderableAiContent = computed(() => {
+  if (!isAiEnabled.value) return false
   const analysis = aiAnalysis.value
   return Boolean(
     analysis?.description ||
@@ -245,6 +250,7 @@ const aiScoreItems = computed(() => {
 })
 
 const canRetryAiAnalysis = computed(() => {
+  if (!isAiEnabled.value) return false
   const ownerUserId = (props.currentPhoto as any).ownerUserId
   const userId = user.value?.id
   return Boolean(
@@ -359,7 +365,7 @@ const startAiAnalysisTaskStatusCheck = (
 }
 
 const retryAiAnalysisStages = async (stages: AiAnalysisStage[]) => {
-  if (!canRetryAiAnalysis.value) return
+  if (!isAiEnabled.value || !canRetryAiAnalysis.value) return
   const queuedStages = stages.filter((stage) => !isAiStageBusy(stage))
   if (queuedStages.length === 0) return
 

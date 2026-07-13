@@ -1062,6 +1062,26 @@
           "failed": "AI データのクリーンアップに失敗しました",
           "errorCount": "{count} 件のストレージクリーンアップエラー"
         }
+      },
+      "pendingUploads": {
+        "title": "未完了アップロードのクリーンアップ",
+        "description": "ストレージに書き込まれたものの、写真レコードにならなかった期限切れアップロードを削除します。",
+        "badge": "ストレージ保守",
+        "warningTitle": "期限切れの未完了アップロードのみ削除します",
+        "warningDescription": "写真、RAW バージョン、Live Photo に参照されているファイルは保持されます。",
+        "action": "未完了アップロードをクリーンアップ",
+        "protectionNote": "削除前にユーザー名前空間と写真参照を再確認します。",
+        "result": {
+          "scanned": "スキャン",
+          "deletedFiles": "削除ファイル",
+          "completedReferences": "参照済みファイル",
+          "errors": "エラー"
+        },
+        "messages": {
+          "success": "未完了アップロードのクリーンアップが完了しました",
+          "partialSuccess": "未完了アップロードのクリーンアップが警告付きで完了しました",
+          "failed": "未完了アップロードのクリーンアップに失敗しました"
+        }
       }
     },
     "queue": {
@@ -1208,6 +1228,12 @@
         "users": "ユーザー",
         "invitations": "招待"
       },
+      "storageSettings": {
+        "title": "既定のアップロード容量上限",
+        "description": "個別の容量上限がないユーザーはこの既定値を使用します。変更しても既存ファイルは削除されず、以後のアップロードと新規ファイルにのみ影響します。",
+        "currentDefault": "現在の既定上限：{quota}",
+        "invalidValue": "0 より大きい容量上限を入力してください。"
+      },
       "roles": {
         "admin": "管理者",
         "user": "一般ユーザー"
@@ -1220,6 +1246,7 @@
         "user": "ユーザー",
         "email": "メール",
         "role": "ロール",
+        "storage": "ストレージ",
         "status": "ステータス",
         "actions": "操作"
       },
@@ -1229,7 +1256,21 @@
         "password": "パスワード",
         "resetPassword": "パスワードをリセット",
         "role": "ロール",
-        "disabled": "このユーザーを無効化"
+        "disabled": "このユーザーを無効化",
+        "inheritStorageQuota": "既定のアップロード容量上限を使用（現在 {quota}）",
+        "storageQuota": "このユーザーの容量上限を個別に設定",
+        "storageQuotaHelp": "単位は GB。現在の使用量より小さく設定しても既存ファイルは保持され、以後のアップロードだけがブロックされます。",
+        "defaultStorageQuota": "既定の容量上限",
+        "defaultStorageQuotaHelp": "単位は GB。新規ユーザーと個別上限のないユーザーがこの値を使用します。"
+      },
+      "storage": {
+        "usage": "ストレージ使用量",
+        "used": "使用済み {value}",
+        "limit": "上限 {value}",
+        "defaultInherited": "既定上限を使用",
+        "customOverride": "個別上限",
+        "usagePercent": "{percent}% 使用済み",
+        "overQuotaStatus": "容量上限を超過"
       },
       "actions": {
         "edit": "ユーザーを編集",
@@ -1247,7 +1288,9 @@
         "inviteRevoked": "招待を取り消しました",
         "inviteDeleted": "招待記録を削除しました",
         "userDeleted": "ユーザーを削除しました",
-        "deleteUserFailed": "ユーザーの削除に失敗しました"
+        "deleteUserFailed": "ユーザーの削除に失敗しました",
+        "defaultQuotaSaved": "既定のアップロード容量上限を保存しました",
+        "defaultQuotaSaveFailed": "既定のアップロード容量上限の保存に失敗しました"
       },
       "invites": {
         "email": "メール",
@@ -1352,13 +1395,20 @@
           "description": "アップロード可能な単一ファイルの最大サイズ（MB）",
           "help": "設定後すぐに反映され、全ユーザーのファイルアップロードに適用されます"
         }
+      },
+      "storage": {
+        "defaultUserQuotaGB": {
+          "label": "既定のユーザーストレージ容量",
+          "description": "新規ユーザーおよび個別設定のないユーザーの既定容量（GB）",
+          "help": "管理者はユーザー管理で個別ユーザーごとに上書きできます"
+        }
       }
     },
     "system": {
       "sections": {
         "thirdPartyLogin": "外部ログイン",
         "fileProcessing": "ファイル処理",
-        "machineLearning": "機械学習",
+        "machineLearning": "AI 機能",
         "debugSettings": "デバッグ設定"
       },
       "upload": {
@@ -1413,9 +1463,9 @@
           "help": "画面の言語や地図のジオコーディング言語は変更しません。"
         },
         "enabled": {
-          "label": "機械学習を有効化",
+          "label": "AI 機能を有効化",
           "description": "ChronoFrame AI サービスで自動タグ、意味検索、顔アルバムを使用します",
-          "help": "PostgreSQL、Qdrant、LocalAI が必要です。外部 VLM 設定は外部 Vision provider を使う場合のみ必要です。"
+          "help": "顔アルバムには PostgreSQL、Qdrant、顔モデルサービスが必要です。外部 VLM 設定は外部 Vision provider を使う場合のみ必要です。"
         },
         "vlmProvider": {
           "label": "Vision provider",
@@ -1536,15 +1586,15 @@
           "testFace": "顔モデルをテスト",
           "backfill": "写真を再インデックス",
           "clusterFaces": "人物アルバムを再構築",
-          "healthSuccess": "機械学習サービスに接続できます",
-          "healthFailed": "機械学習ヘルスチェックに失敗しました",
+          "healthSuccess": "AI サービスに接続できます",
+          "healthFailed": "AI サービスのヘルスチェックに失敗しました",
           "testSuccess": "AI モデルテストに成功しました",
           "testFailed": "AI モデルテストに失敗しました",
           "embeddingRequired": "意味検索には Jina のベース URL、API キー、モデル名が必要です",
           "embeddingImageModelRequired": "写真の意味検索には、画像入力に対応した Jina モデルが必要です。例: jina-embeddings-v5-omni-small",
           "testUsesUnsaved": "未保存の設定でテストしています",
-          "enqueueSuccess": "機械学習タスクをキューに追加しました",
-          "enqueueFailed": "機械学習タスクの追加に失敗しました"
+          "enqueueSuccess": "AI タスクをキューに追加しました",
+          "enqueueFailed": "AI タスクの追加に失敗しました"
         },
         "modelBrowser": {
           "open": "LocalAI モデルを閲覧",
@@ -1602,8 +1652,8 @@
       },
       "mlCleanup": {
         "action": "ML データをクリーンアップ",
-        "success": "機械学習データのクリーンアップが完了しました",
-        "failed": "機械学習データのクリーンアップに失敗しました",
+        "success": "AI データのクリーンアップが完了しました",
+        "failed": "AI データのクリーンアップに失敗しました",
         "summary": "{photos} photos, {faces} faces, {people} people"
       },
       "webglImageViewerDebug": {

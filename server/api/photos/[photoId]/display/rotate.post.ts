@@ -4,6 +4,7 @@ import { z } from 'zod'
 
 import { getPhotoDisplayStorageKey } from '~~/server/utils/raw-photo'
 import { serializeAdminPhoto } from '~~/server/utils/security'
+import { assertUserStorageQuota } from '~~/server/services/storage/quota'
 
 const bodySchema = z.object({
   degrees: z.union([z.literal(-90), z.literal(90)]),
@@ -99,6 +100,21 @@ export default eventHandler(async (event) => {
     throw createError({
       statusCode: 400,
       statusMessage: 'Rotated display image metadata could not be read',
+    })
+  }
+
+  const owner = await db
+    .select()
+    .from(tables.users)
+    .where(eq(tables.users.id, photo.ownerUserId))
+    .get()
+
+  if (owner) {
+    await assertUserStorageQuota(owner, {
+      additionalBytes: rotatedBuffer.length,
+      replacingBytes: buffer.length,
+      storageProvider,
+      resolveMissingSizes: true,
     })
   }
 

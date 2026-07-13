@@ -51,6 +51,7 @@ describe('database adapter config', () => {
       'profile_slogan',
       'profile_bio',
       'homepage_visibility',
+      'storage_quota_bytes',
     ]) {
       assert.match(
         sqliteMigrations,

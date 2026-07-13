@@ -99,6 +99,7 @@ export const users = sqliteTable('users', {
     .default('user')
     .notNull(),
   disabledAt: integer('disabled_at', { mode: 'timestamp' }),
+  storageQuotaBytes: integer('storage_quota_bytes'),
 })
 
 export const userInvites = sqliteTable('user_invites', {
@@ -191,6 +192,36 @@ export const photoAssets = sqliteTable('photo_assets', {
     .notNull()
     .default(sql`(unixepoch())`),
 })
+
+export const pendingUploads = sqliteTable('pending_uploads',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    ownerUserId: integer('owner_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    storageKey: text('storage_key').notNull(),
+    contentType: text('content_type'),
+    size: integer('size').notNull(),
+    status: text('status', {
+      enum: ['uploaded', 'queued', 'completed', 'failed', 'cleaned'],
+    })
+      .notNull()
+      .default('uploaded'),
+    taskId: integer('task_id'),
+    photoId: text('photo_id'),
+    errorMessage: text('error_message'),
+    createdAt: integer('created_at', { mode: 'timestamp' })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }),
+    expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+  },
+  (table) => ({
+    storageKeyIdx: uniqueIndex('pending_uploads_storage_key_unique').on(
+      table.storageKey,
+    ),
+  }),
+)
 
 export const pipelineQueue = sqliteTable('pipeline_queue', {
   id: integer('id').primaryKey({ autoIncrement: true }),

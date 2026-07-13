@@ -323,6 +323,7 @@ const uploadImage = async (
       body: {
         fileName: file.name,
         contentType: getUploadContentType(file),
+        fileSize: file.size,
       },
     })
 

@@ -30,6 +30,15 @@ interface ManagedUser {
   isAdmin: boolean
   disabledAt?: string | Date | null
   createdAt?: string | Date | null
+  storageUsageBytes: number
+  storageFileCount: number
+  storageQuotaBytes: number
+  storageQuotaGB: number | null
+  storageQuotaSource: 'default' | 'user'
+  storageQuotaOverrideBytes?: number | null
+  storageQuotaOverrideGB?: number | null
+  storageUsageRatio: number
+  storageOverQuota: boolean
 }
 
 interface UserInvitation {
@@ -67,6 +76,15 @@ const { data: users, refresh: refreshUsers } = await useFetch<ManagedUser[]>(
   },
 )
 
+const {
+  data: defaultStorageQuotaSetting,
+  refresh: refreshDefaultStorageQuota,
+} = await useFetch<{
+  namespace: string
+  key: string
+  value: number | null
+}>('/api/system/settings/system/storage.defaultUserQuotaGB')
+
 const { data: invitations, refresh: refreshInvitations } = await useFetch<
   UserInvitation[]
 >('/api/users/invitations', {
@@ -76,6 +94,7 @@ const { data: invitations, refresh: refreshInvitations } = await useFetch<
 const isUserModalOpen = ref(false)
 const isInviteModalOpen = ref(false)
 const isSaving = ref(false)
+const isSavingDefaultStorageQuota = ref(false)
 const isInviting = ref(false)
 const isDeletingUser = ref(false)
 const editingUser = ref<ManagedUser | null>(null)
@@ -83,6 +102,15 @@ const deletingUser = ref<ManagedUser | null>(null)
 const deletePreview = ref<DeletePreview | null>(null)
 const deleteConfirmText = ref('')
 const latestInviteUrl = ref('')
+const defaultStorageQuotaGB = ref<number | null>(null)
+
+watch(
+  defaultStorageQuotaSetting,
+  (setting) => {
+    defaultStorageQuotaGB.value = Number(setting?.value || 50)
+  },
+  { immediate: true },
+)
 
 const userForm = reactive({
   email: '',
@@ -90,6 +118,8 @@ const userForm = reactive({
   password: '',
   role: 'user' as Role,
   disabled: false,
+  inheritStorageQuota: true,
+  storageQuotaGB: null as number | null,
 })
 
 const inviteForm = reactive({
@@ -110,10 +140,22 @@ const roleOptions = computed(() => [
   { label: $t('dashboard.users.roles.user'), value: 'user' },
 ])
 
+const BYTES_PER_GB = 1024 * 1024 * 1024
+
+const formattedDefaultStorageQuota = computed(() =>
+  formatBytes(
+    Math.max(0, Number(defaultStorageQuotaGB.value || 0)) * BYTES_PER_GB,
+  ),
+)
+
 const userColumns: TableColumn<ManagedUser>[] = [
   { accessorKey: 'username', header: () => $t('dashboard.users.table.user') },
   { accessorKey: 'email', header: () => $t('dashboard.users.table.email') },
   { accessorKey: 'role', header: () => $t('dashboard.users.table.role') },
+  {
+    accessorKey: 'storageUsageBytes',
+    header: () => $t('dashboard.users.table.storage'),
+  },
   {
     accessorKey: 'disabledAt',
     header: () => $t('dashboard.users.table.status'),
@@ -139,6 +181,8 @@ const openCreate = () => {
   userForm.password = ''
   userForm.role = 'user'
   userForm.disabled = false
+  userForm.inheritStorageQuota = true
+  userForm.storageQuotaGB = null
   isUserModalOpen.value = true
 }
 
@@ -149,6 +193,8 @@ const openEdit = (user: ManagedUser) => {
   userForm.password = ''
   userForm.role = user.role
   userForm.disabled = Boolean(user.disabledAt)
+  userForm.inheritStorageQuota = user.storageQuotaSource !== 'user'
+  userForm.storageQuotaGB = user.storageQuotaOverrideGB ?? null
   isUserModalOpen.value = true
 }
 
@@ -171,6 +217,9 @@ const saveUser = async () => {
           username: userForm.username,
           role: userForm.role,
           disabled: userForm.disabled,
+          storageQuotaGB: userForm.inheritStorageQuota
+            ? null
+            : userForm.storageQuotaGB,
           ...(userForm.password ? { password: userForm.password } : {}),
         },
       })
@@ -181,7 +230,16 @@ const saveUser = async () => {
     } else {
       await $fetch('/api/users', {
         method: 'POST',
-        body: { ...userForm },
+        body: {
+          email: userForm.email,
+          username: userForm.username,
+          password: userForm.password,
+          role: userForm.role,
+          disabled: userForm.disabled,
+          storageQuotaGB: userForm.inheritStorageQuota
+            ? null
+            : userForm.storageQuotaGB,
+        },
       })
       toast.add({
         title: $t('dashboard.users.messages.created'),
@@ -199,6 +257,41 @@ const saveUser = async () => {
     })
   } finally {
     isSaving.value = false
+  }
+}
+
+const saveDefaultStorageQuota = async () => {
+  const quotaGB = Number(defaultStorageQuotaGB.value)
+  if (!Number.isFinite(quotaGB) || quotaGB <= 0) {
+    toast.add({
+      title: $t('dashboard.users.messages.defaultQuotaSaveFailed'),
+      description: $t('dashboard.users.storageSettings.invalidValue'),
+      color: 'error',
+    })
+    return
+  }
+
+  isSavingDefaultStorageQuota.value = true
+  try {
+    await $fetch('/api/system/settings/system/storage.defaultUserQuotaGB', {
+      method: 'PUT',
+      body: { value: quotaGB },
+    })
+    await refreshSettings()
+    await refreshDefaultStorageQuota()
+    await refreshUsers()
+    toast.add({
+      title: $t('dashboard.users.messages.defaultQuotaSaved'),
+      color: 'success',
+    })
+  } catch (error: any) {
+    toast.add({
+      title: $t('dashboard.users.messages.defaultQuotaSaveFailed'),
+      description: error?.data?.message || error?.message,
+      color: 'error',
+    })
+  } finally {
+    isSavingDefaultStorageQuota.value = false
   }
 }
 
@@ -308,6 +401,15 @@ const statusColor = (status: string) => {
   if (status === 'revoked') return 'neutral'
   return 'error'
 }
+
+const storagePercent = (user: ManagedUser) =>
+  Math.min(100, Math.max(0, Math.round((user.storageUsageRatio || 0) * 100)))
+
+const storageProgressClass = (user: ManagedUser) => {
+  if (user.storageOverQuota) return 'bg-error-500'
+  if ((user.storageUsageRatio || 0) >= 0.9) return 'bg-warning-500'
+  return 'bg-primary-500'
+}
 </script>
 
 <template>
@@ -335,6 +437,60 @@ const statusColor = (status: string) => {
 
     <template #body>
       <div class="space-y-6">
+        <section
+          class="rounded-md border border-gray-200 bg-white dark:border-neutral-800 dark:bg-neutral-900"
+        >
+          <header
+            class="border-b border-gray-200 px-5 py-4 dark:border-neutral-800"
+          >
+            <h2 class="text-base font-semibold">
+              {{ $t('dashboard.users.storageSettings.title') }}
+            </h2>
+            <p class="mt-1 text-sm text-muted">
+              {{ $t('dashboard.users.storageSettings.description') }}
+            </p>
+          </header>
+          <form
+            class="grid gap-4 px-5 py-5 md:grid-cols-[minmax(0,1fr)_auto]"
+            @submit.prevent="saveDefaultStorageQuota"
+          >
+            <UFormField
+              :label="$t('dashboard.users.form.defaultStorageQuota')"
+              :help="$t('dashboard.users.form.defaultStorageQuotaHelp')"
+              required
+            >
+              <UInput
+                v-model.number="defaultStorageQuotaGB"
+                class="w-full"
+                type="number"
+                min="0.1"
+                step="0.1"
+                required
+              >
+                <template #trailing>
+                  <span class="text-xs text-muted">GB</span>
+                </template>
+              </UInput>
+            </UFormField>
+            <div class="flex items-end justify-between gap-3 md:justify-end">
+              <p class="text-sm text-muted">
+                {{
+                  $t('dashboard.users.storageSettings.currentDefault', {
+                    quota: formattedDefaultStorageQuota,
+                  })
+                }}
+              </p>
+              <UButton
+                type="submit"
+                icon="tabler:device-floppy"
+                :loading="isSavingDefaultStorageQuota"
+              >
+                {{ $t('common.actions.saveSettings') }}
+              </UButton>
+            </div>
+          </form>
+        </section>
+
         <section
           class="rounded-md border border-gray-200 bg-white dark:border-neutral-800 dark:bg-neutral-900"
         >
@@ -372,6 +528,69 @@ const statusColor = (status: string) => {
               >
                 {{ $t(`dashboard.users.roles.${row.original.role}`) }}
               </UBadge>
+            </template>
+
+            <template #storageUsageBytes-cell="{ row }">
+              <div class="min-w-44 space-y-1.5">
+                <div class="flex items-center justify-between gap-2 text-xs">
+                  <span class="font-medium text-highlighted">
+                    {{
+                      $t('dashboard.users.storage.used', {
+                        value: formatBytes(row.original.storageUsageBytes || 0),
+                      })
+                    }}
+                  </span>
+                  <span class="text-muted">
+                    {{
+                      $t('dashboard.users.storage.limit', {
+                        value: formatBytes(row.original.storageQuotaBytes || 0),
+                      })
+                    }}
+                  </span>
+                </div>
+                <div
+                  class="h-1.5 overflow-hidden rounded-full bg-gray-100 dark:bg-neutral-800"
+                  :aria-label="$t('dashboard.users.storage.usage')"
+                >
+                  <div
+                    class="h-full rounded-full transition-all"
+                    :class="storageProgressClass(row.original)"
+                    :style="{ width: `${storagePercent(row.original)}%` }"
+                  />
+                </div>
+                <div class="flex items-center justify-between gap-2 text-xs">
+                  <span
+                    :class="
+                      row.original.storageOverQuota
+                        ? 'text-error-500'
+                        : 'text-muted'
+                    "
+                  >
+                    {{
+                      row.original.storageOverQuota
+                        ? $t('dashboard.users.storage.overQuotaStatus')
+                        : $t('dashboard.users.storage.usagePercent', {
+                            percent: storagePercent(row.original),
+                          })
+                    }}
+                  </span>
+                  <UBadge
+                    size="xs"
+                    variant="soft"
+                    :color="
+                      row.original.storageQuotaSource === 'user'
+                        ? 'primary'
+                        : 'neutral'
+                    "
+                  >
+                    {{
+                      row.original.storageQuotaSource === 'user'
+                        ? $t('dashboard.users.storage.customOverride')
+                        : $t('dashboard.users.storage.defaultInherited')
+                    }}
+                  </UBadge>
+                </div>
+              </div>
             </template>
 
             <template #disabledAt-cell="{ row }">
@@ -524,6 +743,36 @@ const statusColor = (status: string) => {
               v-model="userForm.disabled"
               :label="$t('dashboard.users.form.disabled')"
             />
+
+            <div class="space-y-3 rounded-md border border-gray-200 p-3 dark:border-neutral-800">
+              <UCheckbox
+                v-model="userForm.inheritStorageQuota"
+                :label="
+                  $t('dashboard.users.form.inheritStorageQuota', {
+                    quota: formattedDefaultStorageQuota,
+                  })
+                "
+              />
+              <UFormField
+                :label="$t('dashboard.users.form.storageQuota')"
+                :help="$t('dashboard.users.form.storageQuotaHelp')"
+                :required="!userForm.inheritStorageQuota"
+              >
+                <UInput
+                  v-model.number="userForm.storageQuotaGB"
+                  class="w-full"
+                  type="number"
+                  min="0.1"
+                  step="0.1"
+                  :disabled="userForm.inheritStorageQuota"
+                  :required="!userForm.inheritStorageQuota"
+                >
+                  <template #trailing>
+                    <span class="text-xs text-muted">GB</span>
+                  </template>
+                </UInput>
+              </UFormField>
+            </div>
 
             <div class="flex justify-end gap-2 pt-2">
               <UButton

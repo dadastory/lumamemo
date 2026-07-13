@@ -147,6 +147,12 @@ export const SYSTEM_SETTINGS_UI: Record<string, FieldUIConfig> = {
     ],
     help: 'settings.system.upload.duplicateCheck.mode.help',
   },
+  'storage.defaultUserQuotaGB': {
+    type: 'number',
+    min: 1,
+    max: 102400,
+    help: 'settings.system.storage.defaultUserQuotaGB.help',
+  },
   'ml.language': {
     type: 'select',
     options: [

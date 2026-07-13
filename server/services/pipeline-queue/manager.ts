@@ -30,6 +30,11 @@ import {
 } from '../ml/photo-indexer'
 import { getVectorStore } from '../ml/vector-store'
 import { settingsManager } from '../settings/settingsManager'
+import { assertUserStorageQuota } from '../storage/quota'
+import {
+  markPendingUploadCompleted,
+  markPendingUploadFailed,
+} from '../storage/pending-uploads'
 import { findLivePhotoVideoForImage } from '../video/livephoto'
 import { processMotionPhotoFromXmp } from '../video/motion-photo'
 import { getStorageManager } from '~~/server/plugins/3.storage'
@@ -426,6 +431,12 @@ export class QueueManager {
    */
   async markTaskCompleted(taskId: number): Promise<void> {
     const db = useDB()
+    const task = await db
+      .select()
+      .from(tables.pipelineQueue)
+      .where(eq(tables.pipelineQueue.id, taskId))
+      .get()
+
     await db
       .update(tables.pipelineQueue)
       .set({
@@ -434,6 +445,15 @@ export class QueueManager {
       })
       .where(eq(tables.pipelineQueue.id, taskId))
       .run()
+
+    if (task?.payload?.type === 'photo') {
+      await markPendingUploadCompleted(
+        task.payload.storageKey,
+        generateSafePhotoId(task.payload.storageKey),
+      )
+    } else if (task?.payload?.type === 'live-photo-video') {
+      await markPendingUploadCompleted(task.payload.storageKey)
+    }
   }
 
   /**
@@ -474,6 +494,17 @@ export class QueueManager {
       })
       .where(eq(tables.pipelineQueue.id, taskId))
       .run()
+
+    if (
+      !shouldRetry &&
+      (task.payload?.type === 'photo' ||
+        task.payload?.type === 'live-photo-video')
+    ) {
+      await markPendingUploadFailed(
+        task.payload.storageKey,
+        errorMessage || 'Unknown error',
+      )
+    }
 
     if (shouldRetry) {
       this.logger.warn(
@@ -1267,6 +1298,20 @@ export class QueueManager {
           ])
 
           const updatedBuffer = await readFile(tempFile)
+          const owner = await db
+            .select()
+            .from(tables.users)
+            .where(eq(tables.users.id, photo.ownerUserId))
+            .get()
+
+          if (owner) {
+            await assertUserStorageQuota(owner, {
+              additionalBytes: updatedBuffer.length,
+              replacingBytes: originalBuffer.length,
+              storageProvider,
+              resolveMissingSizes: true,
+            })
+          }
 
           const prefix =
             storageProvider.config && 'prefix' in storageProvider.config

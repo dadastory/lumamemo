@@ -1,5 +1,17 @@
 import { z } from 'zod'
 import { and, eq, isNull } from 'drizzle-orm'
+import {
+  MAX_USER_STORAGE_QUOTA_GB,
+  MIN_USER_STORAGE_QUOTA_GB,
+  quotaGbToBytes,
+} from '~~/server/services/storage/quota'
+
+const storageQuotaGBSchema = z
+  .number()
+  .min(MIN_USER_STORAGE_QUOTA_GB)
+  .max(MAX_USER_STORAGE_QUOTA_GB)
+  .nullable()
+  .optional()
 
 const paramsSchema = z.object({
   userId: z
@@ -14,6 +26,7 @@ const bodySchema = z.object({
   password: z.string().min(6).optional(),
   role: z.enum(['admin', 'user']).optional(),
   disabled: z.boolean().optional(),
+  storageQuotaGB: storageQuotaGBSchema,
 })
 
 export default eventHandler(async (event) => {
@@ -67,6 +80,10 @@ export default eventHandler(async (event) => {
   }
   if (body.disabled !== undefined) {
     updateData.disabledAt = body.disabled ? new Date() : null
+  }
+  if (body.storageQuotaGB !== undefined) {
+    updateData.storageQuotaBytes =
+      body.storageQuotaGB === null ? null : quotaGbToBytes(body.storageQuotaGB)
   }
 
   const updatedUser = await db

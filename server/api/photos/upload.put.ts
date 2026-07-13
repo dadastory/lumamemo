@@ -1,7 +1,10 @@
 import { useStorageProvider } from '~~/server/utils/useStorageProvider'
 import { logger } from '~~/server/utils/logger'
 import { settingsManager } from '~~/server/services/settings/settingsManager'
+import { assertUserStorageQuota } from '~~/server/services/storage/quota'
+import { createPendingUpload } from '~~/server/services/storage/pending-uploads'
 import { normalizeStorageKey } from '~~/server/utils/storage-key'
+import { eq } from 'drizzle-orm'
 import {
   isSupportedRawUpload,
   normalizeUploadContentType,
@@ -109,9 +112,46 @@ export default eventHandler(async (event) => {
     })
   }
 
+  const user = await useDB()
+    .select()
+    .from(tables.users)
+    .where(eq(tables.users.id, session.user.id))
+    .get()
+
+  if (user) {
+    const existingMeta = await storageProvider
+      .getFileMeta(storageKey)
+      .catch(() => null)
+    await assertUserStorageQuota(user, {
+      additionalBytes: raw.byteLength,
+      replacingBytes: existingMeta?.size ?? 0,
+      storageProvider,
+      resolveMissingSizes: true,
+    })
+  }
+
+  let uploaded = false
   try {
     await storageProvider.create(storageKey, raw, contentType)
+    uploaded = true
+    await createPendingUpload({
+      ownerUserId: session.user.id,
+      storageKey,
+      size: raw.byteLength,
+      contentType,
+    })
   } catch (error) {
+    if (uploaded) {
+      await storageProvider.delete(storageKey).catch((deleteError) => {
+        logger.chrono.warn(
+          `Failed to delete uploaded object after pending upload registration failed: ${
+            deleteError instanceof Error
+              ? deleteError.message
+              : String(deleteError)
+          }`,
+        )
+      })
+    }
     logger.chrono.error('Storage provider create error:', error)
     throw createError({
       statusCode: 500,

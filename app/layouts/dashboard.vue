@@ -6,6 +6,16 @@ const router = useRouter()
 const { loggedIn, user } = useUserSession()
 const isAdmin = computed(() => Boolean(user.value?.isAdmin))
 
+const isTruthySetting = (value: unknown) =>
+  value === true || value === 'true' || value === 1 || value === '1'
+
+const mlEnabled = useSettingRef('system:ml.enabled')
+const faceAlbumEnabled = useSettingRef('system:ml.faceAlbum.enabled')
+const showPeopleNav = computed(
+  () =>
+    isTruthySetting(mlEnabled.value) && isTruthySetting(faceAlbumEnabled.value),
+)
+
 const appTitle = computed(() => {
   return user.value?.profileTitle || $t('title.dashboard')
 })
@@ -36,11 +46,15 @@ const navItems = computed<NavigationMenuItem[][]>(() => {
       icon: 'tabler:album',
       to: '/dashboard/albums',
     },
-    {
-      label: $t('title.people'),
-      icon: 'tabler:face-id',
-      to: '/dashboard/people',
-    },
+    ...(showPeopleNav.value
+      ? [
+          {
+            label: $t('title.people'),
+            icon: 'tabler:face-id',
+            to: '/dashboard/people',
+          },
+        ]
+      : []),
     ...(isAdmin.value
       ? [
           {

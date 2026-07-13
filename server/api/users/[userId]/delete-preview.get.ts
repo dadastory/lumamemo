@@ -2,8 +2,8 @@ import { and, eq, isNull, or } from 'drizzle-orm'
 import { z } from 'zod'
 import {
   getPhotoStorageKeys,
-  getUserOwnedPhotoStorageKeys,
 } from '~~/server/utils/photo-delete'
+import { collectUserStorageEntries } from '~~/server/services/storage/quota'
 
 const paramsSchema = z.object({
   userId: z
@@ -56,11 +56,13 @@ export default eventHandler(async (event) => {
     user,
     await getActiveAdminCount(db),
   )
-  const storageFiles = new Set(
-    photos.flatMap((photo: any) => getUserOwnedPhotoStorageKeys(photo, userId)),
-  ).size
+  const storageEntries = await collectUserStorageEntries(userId)
+  const storageFiles = storageEntries.length
   const allStorageFiles = [...new Set(photos.flatMap(getPhotoStorageKeys))]
-  const skippedStorageFiles = allStorageFiles.length - storageFiles
+  const storageEntryKeys = new Set(storageEntries.map((entry) => entry.key))
+  const skippedStorageFiles = allStorageFiles.filter(
+    (key) => !storageEntryKeys.has(key),
+  ).length
 
   return {
     user: sanitizeSessionUser(user),

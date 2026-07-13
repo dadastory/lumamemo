@@ -9,6 +9,7 @@ import {
   assertMachineLearningSemanticSettingsValid,
 } from '~~/server/utils/ml-capabilities'
 import { useDB, tables, eq } from '~~/server/utils/db'
+import { validateStorageQuotaGB } from '~~/server/services/storage/quota'
 
 /**
  * PUT /api/system/settings/batch
@@ -70,6 +71,12 @@ export default eventHandler(async (event) => {
     // 逐个更新设置
     for (const update of body.updates) {
       try {
+        if (
+          update.namespace === 'system' &&
+          update.key === 'storage.defaultUserQuotaGB'
+        ) {
+          validateStorageQuotaGB(update.value)
+        }
         await assertMachineLearningCanBeEnabled(
           update.namespace,
           update.key,

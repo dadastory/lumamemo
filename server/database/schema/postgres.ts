@@ -1,5 +1,6 @@
 import {
   boolean,
+  bigint,
   doublePrecision,
   index,
   integer,
@@ -104,6 +105,7 @@ export const users = pgTable('users', {
     .default('user')
     .notNull(),
   disabledAt: timestamp('disabled_at', { withTimezone: true }),
+  storageQuotaBytes: bigint('storage_quota_bytes', { mode: 'number' }),
 })
 
 export const userInvites = pgTable('user_invites', {
@@ -190,6 +192,36 @@ export const photoAssets = pgTable('photo_assets', {
     .notNull()
     .defaultNow(),
 })
+
+export const pendingUploads = pgTable('pending_uploads',
+  {
+    id: serial('id').primaryKey(),
+    ownerUserId: integer('owner_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    storageKey: text('storage_key').notNull(),
+    contentType: text('content_type'),
+    size: bigint('size', { mode: 'number' }).notNull(),
+    status: text('status', {
+      enum: ['uploaded', 'queued', 'completed', 'failed', 'cleaned'],
+    })
+      .notNull()
+      .default('uploaded'),
+    taskId: integer('task_id'),
+    photoId: text('photo_id'),
+    errorMessage: text('error_message'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  },
+  (table) => ({
+    storageKeyIdx: uniqueIndex('pending_uploads_storage_key_unique').on(
+      table.storageKey,
+    ),
+  }),
+)
 
 export const pipelineQueue = pgTable('pipeline_queue', {
   id: serial('id').primaryKey(),

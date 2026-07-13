@@ -271,6 +271,7 @@ const uploadAsset = async (event: Event) => {
       body: {
         fileName: `raw-renders/${props.photo.id}/${Date.now()}-${safeName}`,
         contentType: file.type || 'application/octet-stream',
+        fileSize: file.size,
         skipDuplicateCheck: true,
       },
     })

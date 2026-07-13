@@ -6,6 +6,7 @@ import {
   preprocessImageBuffer,
   processImageMetadataAndSharp,
 } from '~~/server/services/image/processor'
+import { assertUserStorageQuota } from '~~/server/services/storage/quota'
 import {
   isDisplayImageStorageKey,
   serializePhotoAsset,
@@ -104,6 +105,20 @@ export default eventHandler(async (event) => {
     throw createError({
       statusCode: 404,
       statusMessage: 'Asset file not found',
+    })
+  }
+
+  const owner = await db
+    .select()
+    .from(tables.users)
+    .where(eq(tables.users.id, ownerUserId))
+    .get()
+
+  if (owner) {
+    await assertUserStorageQuota(owner, {
+      additionalBytes: buffer.length,
+      storageProvider,
+      resolveMissingSizes: true,
     })
   }
 

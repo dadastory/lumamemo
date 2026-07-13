@@ -3,6 +3,7 @@ import {
   assertMachineLearningQueuePayloadEnabled,
   isMachineLearningQueuePayload,
 } from '~~/server/utils/ml-queue'
+import { markPendingUploadQueued } from '~~/server/services/storage/pending-uploads'
 
 const photoAiAnalysisStages = z.enum([
   'tags',
@@ -186,6 +187,13 @@ export default defineEventHandler(async (event) => {
           priority: task.priority ?? defaultPriority,
           maxAttempts: task.maxAttempts ?? defaultMaxAttempts,
         })
+
+        if (
+          task.payload.type === 'photo' ||
+          task.payload.type === 'live-photo-video'
+        ) {
+          await markPendingUploadQueued(task.payload.storageKey, taskId)
+        }
 
         results.push({ index: i, taskId, payload: task.payload, success: true })
       } catch (error) {
