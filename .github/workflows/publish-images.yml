@@ -56,13 +56,19 @@ jobs:
             fi
             TAG_NAME="v${VERSION}"
             if git rev-parse -q --verify "refs/tags/${TAG_NAME}" >/dev/null; then
-              echo "Tag ${TAG_NAME} already exists." >&2
-              exit 1
+              TAG_SHA=$(git rev-list -n 1 "${TAG_NAME}")
+              HEAD_SHA=$(git rev-parse HEAD)
+              if [ "$TAG_SHA" != "$HEAD_SHA" ]; then
+                echo "Tag ${TAG_NAME} already exists at ${TAG_SHA}, but target ref is ${HEAD_SHA}." >&2
+                exit 1
+              fi
+              echo "Tag ${TAG_NAME} already exists and points to the selected target ref."
+            else
+              git config user.name "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git tag -a "${TAG_NAME}" -m "Release ${TAG_NAME}"
+              git push origin "refs/tags/${TAG_NAME}"
             fi
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git tag -a "${TAG_NAME}" -m "Release ${TAG_NAME}"
-            git push origin "refs/tags/${TAG_NAME}"
           else
             TAG_NAME="${GITHUB_REF#refs/tags/}"
             VERSION="${TAG_NAME#v}"
@@ -338,7 +344,7 @@ jobs:
     steps:
       - name: 📝 Create Release
         uses: softprops/action-gh-release@v2
-        if: github.ref_type == 'tag'
+        if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
         with:
           tag_name: ${{ needs.prepare.outputs.tag_name }}
           name: Release v${{ env.VERSION }}
