@@ -802,7 +802,6 @@ onBeforeUnmount(() => {
       class="relative z-[1] w-full h-full"
     >
       <ClientOnly>
-        <!-- mapbox://styles/hoshinosuzumi/cmev0eujf01dw01pje3g9cmlg -->
         <MapProvider
           class="w-full h-full"
           :map-id="generateRandomKey()"

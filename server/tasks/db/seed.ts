@@ -23,10 +23,10 @@ export default defineTask({
         .insert(tables.users)
         .values(
           await prepareNewUserRecord(db, {
-            username: process.env.CFRAME_ADMIN_NAME || 'chronoframe',
-            email: process.env.CFRAME_ADMIN_EMAIL || 'admin@chronoframe.com',
+            username: process.env.LUMAMEMO_ADMIN_NAME || 'lumamemo',
+            email: process.env.LUMAMEMO_ADMIN_EMAIL || 'admin@lumamemo.local',
             password: await hashPassword(
-              process.env.CFRAME_ADMIN_PASSWORD || 'CF1234@!',
+              process.env.LUMAMEMO_ADMIN_PASSWORD || 'LM1234@!',
             ),
             createdAt: new Date(),
             isAdmin: 1,

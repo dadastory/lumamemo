@@ -1,5 +1,5 @@
 {
-  "name": "@chronoframe/webgl-image",
+  "name": "@lumamemo/webgl-image",
   "version": "1.0.0",
   "keywords": [
     "webgl",
@@ -11,8 +11,7 @@
     "high-performance"
   ],
   "author": {
-    "name": "Timothy Yin",
-    "email": "master@uniiem.com"
+    "name": "LumaMemo contributors"
   },
   "license": "MIT",
   "description": "A high-performance WebGL image viewer component for Vue.",

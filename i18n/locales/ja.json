@@ -1013,8 +1013,8 @@
         }
       },
       "shareSite": {
-        "label": "サイトを共有",
-        "button": "サイトを共有"
+        "label": "サイトリンク",
+        "button": "サイトリンクをコピー"
       },
       "memoryUnavailable": "メモリ情報を取得できません"
     },
@@ -1464,7 +1464,7 @@
         },
         "enabled": {
           "label": "AI 機能を有効化",
-          "description": "ChronoFrame AI サービスで自動タグ、意味検索、顔アルバムを使用します",
+          "description": "LumaMemo AI サービスで自動タグ、意味検索、顔アルバムを使用します",
           "help": "顔アルバムには PostgreSQL、Qdrant、顔モデルサービスが必要です。外部 VLM 設定は外部 Vision provider を使う場合のみ必要です。"
         },
         "vlmProvider": {
@@ -1514,7 +1514,7 @@
         "vectorBaseUrl": {
           "label": "ベクトルストア URL",
           "description": "Qdrant サービスの内部 URL",
-          "help": "組み込み Docker サービスでは http://chronoframe-qdrant:6333 を使用します"
+          "help": "組み込み Docker サービスでは http://lumamemo-qdrant:6333 を使用します"
         },
         "vectorApiKey": {
           "label": "ベクトルストア API キー",
@@ -1523,7 +1523,7 @@
         },
         "vectorCollectionPrefix": {
           "label": "Collection プレフィックス",
-          "description": "ChronoFrame が Qdrant collection を作成するときに使うプレフィックス",
+          "description": "LumaMemo が Qdrant collection を作成するときに使うプレフィックス",
           "help": "変更すると別のベクトル名前空間が作成されます"
         },
         "faceModel": {
@@ -1624,7 +1624,7 @@
         "localAiBaseUrl": {
           "label": "LocalAI URL",
           "description": "LocalAI service URL for local face, VLM, and embedding models",
-          "help": "The built-in Docker service uses http://chronoframe-localai:8080"
+          "help": "The built-in Docker service uses http://lumamemo-localai:8080"
         },
         "aiDescription": {
           "enabled": {
@@ -1636,7 +1636,7 @@
         "embeddingBaseUrl": {
           "label": "Jina embedding ベース URL",
           "description": "Jina AI embedding API のベース URL",
-          "help": "ChronoFrame はこのベース URL 配下の /embeddings を呼び出します"
+          "help": "LumaMemo はこのベース URL 配下の /embeddings を呼び出します"
         },
         "embeddingApiKey": {
           "label": "Jina API キー",
@@ -1703,7 +1703,7 @@
           },
           "clientAuthMethod": {
             "label": "OIDC Client 認証方式",
-            "description": "ChronoFrame が token endpoint へ認証するときの方式",
+            "description": "LumaMemo が token endpoint へ認証するときの方式",
             "options": {
               "post": "Client secret post",
               "basic": "Client secret basic"
@@ -1988,16 +1988,16 @@
       },
       "current": "進行中",
       "stepCounter": "ステップ {0} / {1}",
-      "logoAlt": "ChronoFrame ロゴ"
+      "logoAlt": "LumaMemo ロゴ"
     },
     "actions": {
       "next": "次へ",
       "completeSetup": "設定を完了"
     },
     "welcome": {
-      "title": "ChronoFrame へようこそ",
+      "title": "LumaMemo へようこそ",
       "description": "ウィザードに従って、数分でギャラリーを設定できます。",
-      "intro": "ChronoFrame は多機能な個人ギャラリーアプリです。写真をアップロードする前に、いくつかの項目を設定しましょう。",
+      "intro": "LumaMemo は多機能な個人ギャラリーアプリです。写真をアップロードする前に、いくつかの項目を設定しましょう。",
       "cards": {
         "admin": {
           "title": "管理者アカウント",
@@ -2016,7 +2016,7 @@
           "description": "位置の可視化と撮影地点の表示"
         }
       },
-      "privacyNotice": "ChronoFrame はあなたのデータを収集しません。",
+      "privacyNotice": "LumaMemo はあなたのデータを収集しません。",
       "start": "はじめる"
     },
     "admin": {
@@ -2037,7 +2037,7 @@
     },
     "complete": {
       "title": "まもなく完了です！",
-      "description": "ChronoFrame ギャラリーの準備ができました。",
+      "description": "LumaMemo ギャラリーの準備ができました。",
       "body": "基本設定はすべて完了しました。管理者アカウントでログインして写真のアップロードを開始できます。",
       "goToDashboard": "ダッシュボードへ",
       "setupFailedTitle": "セットアップ失敗",

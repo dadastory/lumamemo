@@ -123,29 +123,7 @@ const navItems = computed<NavigationMenuItem[][]>(() => {
       : []),
   ]
 
-  return [
-    primaryItems,
-    [
-      {
-        label: 'GitHub',
-        icon: 'tabler:brand-github',
-        to: 'https://github.com/HoshinoSuzumi/chronoframe',
-        target: '_blank',
-      },
-      {
-        label: $t('dashboard.nav.documentation'),
-        icon: 'tabler:book',
-        to: 'https://chronoframe.bh8.ga/',
-        target: '_blank',
-      },
-      {
-        label: 'Discord',
-        icon: 'tabler:brand-discord',
-        to: 'https://discord.gg/MM4ZK4Ed7s',
-        target: '_blank',
-      },
-    ],
-  ]
+  return [primaryItems]
 })
 
 useHead({
@@ -178,7 +156,7 @@ const handleLogin = () => {
   </div>
   <UDashboardGroup v-else>
     <UDashboardSidebar
-      id="cframe-dashboard-sidebar"
+      id="lumamemo-dashboard-sidebar"
       resizable
       collapsible
       mode="drawer"

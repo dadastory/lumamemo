@@ -12,7 +12,7 @@ import type { FieldUIConfig } from '~~/shared/types/settings'
 export const APP_SETTINGS_UI: Record<string, FieldUIConfig> = {
   title: {
     type: 'input',
-    placeholder: 'ChronoFrame',
+    placeholder: 'LumaMemo',
     required: true,
   },
   slogan: {
@@ -169,7 +169,7 @@ export const SYSTEM_SETTINGS_UI: Record<string, FieldUIConfig> = {
   },
   'ml.localAiBaseUrl': {
     type: 'url',
-    placeholder: 'http://chronoframe-localai:8080',
+    placeholder: 'http://lumamemo-localai:8080',
     required: true,
     visibleIf: { fieldKey: 'ml.enabled', value: true },
     help: 'settings.system.ml.localAiBaseUrl.help',
@@ -246,7 +246,7 @@ export const SYSTEM_SETTINGS_UI: Record<string, FieldUIConfig> = {
   },
   'ml.vectorBaseUrl': {
     type: 'url',
-    placeholder: 'http://chronoframe-qdrant:6333',
+    placeholder: 'http://lumamemo-qdrant:6333',
     visibleIf: { fieldKey: 'ml.enabled', value: true },
     help: 'settings.system.ml.vectorBaseUrl.help',
   },
@@ -258,7 +258,7 @@ export const SYSTEM_SETTINGS_UI: Record<string, FieldUIConfig> = {
   },
   'ml.vectorCollectionPrefix': {
     type: 'input',
-    placeholder: 'chronoframe',
+    placeholder: 'lumamemo',
     visibleIf: { fieldKey: 'ml.enabled', value: true },
     help: 'settings.system.ml.vectorCollectionPrefix.help',
   },
@@ -336,7 +336,7 @@ export const SYSTEM_SETTINGS_UI: Record<string, FieldUIConfig> = {
   },
   'auth.oidc.clientId': {
     type: 'input',
-    placeholder: 'chronoframe',
+    placeholder: 'lumamemo',
     visibleIf: { fieldKey: 'auth.oidc.enabled', value: true },
   },
   'auth.oidc.clientSecret': {

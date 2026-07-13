@@ -34,7 +34,7 @@ describe('machine learning integration', () => {
 
     assert.doesNotMatch(middlewareCompose, /immich-machine-learning/)
     assert.doesNotMatch(env, /IMMICH_ML/)
-    assert.match(env, /ML_LOCALAI_BASE_URL=http:\/\/chronoframe-localai:8080/)
+    assert.match(env, /ML_LOCALAI_BASE_URL=http:\/\/lumamemo-localai:8080/)
     assert.doesNotMatch(env, /ML_LOCALAI_MODELS_PATH/)
     assert.match(env, /ML_VLM_PROVIDER=openai-compatible/)
     assert.match(env, /ML_VLM_BASE_URL=/)
@@ -50,15 +50,15 @@ describe('machine learning integration', () => {
     assert.doesNotMatch(env, /INFINITY_MODEL_ID/)
     assert.doesNotMatch(env, /ML_AESTHETIC_MODEL/)
     assert.match(env, /ML_VECTOR_PROVIDER=qdrant/)
-    assert.match(env, /ML_VECTOR_BASE_URL=http:\/\/chronoframe-qdrant:6333/)
+    assert.match(env, /ML_VECTOR_BASE_URL=http:\/\/lumamemo-qdrant:6333/)
     assert.match(env, /ML_VECTOR_API_KEY=/)
-    assert.match(env, /ML_VECTOR_COLLECTION_PREFIX=chronoframe/)
+    assert.match(env, /ML_VECTOR_COLLECTION_PREFIX=lumamemo/)
     assert.match(env, /ML_FACE_MODEL=/)
     assert.match(
       env,
       /LOCALAI_IMAGE=localai\/localai:v4\.6\.0-gpu-nvidia-cuda-12/,
     )
-    assert.match(env, /LOCALAI_CPU_IMAGE=localai\/localai:v4\.6\.0-cpu/)
+    assert.doesNotMatch(env, /LOCALAI_CPU_IMAGE/)
     assert.match(env, /LOCALAI_PORT=18080/)
     assert.match(env, /LOCALAI_DEBUG=false/)
     assert.match(env, /LOCALAI_DISABLE_HARDWARE_DEFAULTS=true/)
@@ -69,13 +69,13 @@ describe('machine learning integration', () => {
     assert.doesNotMatch(env, /QWEN_AI_IMAGE/)
     assert.doesNotMatch(env, /QWEN_ENABLE_MODEL_LOAD/)
     assert.doesNotMatch(env, /ML_DEVICE_MODE/)
-    assert.doesNotMatch(env, /chronoframe-qwen-ai/)
+    assert.doesNotMatch(env, /lumamemo-qwen-ai/)
     assert.doesNotMatch(env, /Qwen\/Qwen3-VL/)
 
-    assert.doesNotMatch(aiCompose, /chronoframe-qwen-ai:/)
+    assert.doesNotMatch(aiCompose, /lumamemo-qwen-ai:/)
     assert.doesNotMatch(aiCompose, /qwen-service/)
     assert.doesNotMatch(aiCompose, /QWEN_ENABLE_MODEL_LOAD/)
-    assert.match(aiCompose, /chronoframe-localai:/)
+    assert.match(aiCompose, /lumamemo-localai:/)
     assert.match(aiCompose, /localai\/localai/)
     assert.match(aiCompose, /v4\.6\.0-gpu-nvidia-cuda-12/)
     assert.match(aiCompose, /['"]\$\{LOCALAI_PORT:-18080\}:8080['"]/)
@@ -89,11 +89,11 @@ describe('machine learning integration', () => {
       aiCompose,
       /github:mudler\/LocalAI\/gallery\/index\.yaml@master/,
     )
-    assert.doesNotMatch(aiCompose, /chronoframe-gallery/)
+    assert.doesNotMatch(aiCompose, /lumamemo-gallery/)
     assert.match(aiCompose, /driver:\s*nvidia/)
     assert.match(aiCompose, /capabilities:[\s\S]*gpu/)
-    assert.match(aiCompose, /chronoframe-qdrant:/)
-    assert.doesNotMatch(aiCompose, /chronoframe-infinity:/)
+    assert.match(aiCompose, /lumamemo-qdrant:/)
+    assert.doesNotMatch(aiCompose, /lumamemo-infinity:/)
     assert.doesNotMatch(aiCompose, /michaelf34\/infinity/)
     assert.doesNotMatch(aiCompose, /INFINITY_MODEL_ID/)
     assert.doesNotMatch(aiCompose, /wkcn\/TinyCLIP-ViT-8M-16-Text-3M-YFCC15M/)
@@ -108,14 +108,14 @@ describe('machine learning integration', () => {
     assert.match(aiCompose, /data\/ai\/localai\/cache/)
     assert.doesNotMatch(
       aiCompose,
-      /third-party\/ai\/localai-gallery:\/models\/chronoframe-gallery:ro/,
+      /third-party\/ai\/localai-gallery:\/models\/lumamemo-gallery:ro/,
     )
     assert.doesNotMatch(aiCompose, /third-party\/ai\/data/)
     assert.doesNotMatch(aiCompose, /profiles:[\s\S]*gpu/)
     assert.doesNotMatch(aiCompose, /vllm/i)
     assert.doesNotMatch(aiCompose, /ML_INFINITY_/)
     assert.doesNotMatch(aiCompose, /build:[\s\S]*face-service/)
-    assert.doesNotMatch(aiCompose, /chronoframe-face-ai/)
+    assert.doesNotMatch(aiCompose, /lumamemo-face-ai/)
     assert.match(client, /chat\/completions/)
     assert.doesNotMatch(client, /ollama/i)
     assert.doesNotMatch(client, /new URL\('api\/chat'/)
@@ -547,7 +547,7 @@ describe('machine learning integration', () => {
     const settingField = readSource('app/components/setting/SettingField.vue')
     const settingsTypes = readSource('shared/types/settings.ts')
 
-    assert.doesNotMatch(settingsManager, /chronoframe-face-ai:3005/)
+    assert.doesNotMatch(settingsManager, /lumamemo-face-ai:3005/)
     assert.doesNotMatch(settingsManager, /buffalo_l/)
     assert.match(client, /readMachineLearningSetting/)
     assert.match(client, /readRequiredMachineLearningSetting/)
@@ -560,7 +560,7 @@ describe('machine learning integration', () => {
     )
     assert.match(
       aiSettings,
-      /LOCALAI_DEFAULT_BASE_URL = 'http:\/\/chronoframe-localai:8080'/,
+      /LOCALAI_DEFAULT_BASE_URL = 'http:\/\/lumamemo-localai:8080'/,
     )
     assert.doesNotMatch(aiSettings, /LOCALAI_DEFAULT_CLIP_MODEL/)
     assert.match(aiSettings, /normalizeProviderValue/)
@@ -668,8 +668,8 @@ describe('machine learning integration', () => {
     assert.equal(existsSync(infinityModelsApiPath), false)
 
     assert.doesNotMatch(aiSettings, /LOCALAI_RECOMMENDED_MODELS_BY_CAPABILITY/)
-    assert.doesNotMatch(aiSettings, /chronoframe-qwen3-vl-2b-gpu/)
-    assert.doesNotMatch(aiSettings, /chronoframe-qwen3-vl-embedding-2b-gpu/)
+    assert.doesNotMatch(aiSettings, /lumamemo-qwen3-vl-2b-gpu/)
+    assert.doesNotMatch(aiSettings, /lumamemo-qwen3-vl-embedding-2b-gpu/)
     assert.doesNotMatch(aiSettings, /getLocalAiModelCapability/)
     assert.doesNotMatch(aiSettings, /LOCALAI_MODEL_FIELD_CAPABILITIES/)
     assert.doesNotMatch(aiSettings, /openLocalAiModelBrowser/)
@@ -710,7 +710,7 @@ describe('machine learning integration', () => {
     assert.doesNotMatch(systemSettings, /localAiModelOptionsByCapability/)
   })
 
-  it('keeps LocalAI gallery APIs out of ChronoFrame', () => {
+  it('keeps LocalAI gallery APIs out of LumaMemo', () => {
     const servicePath = new URL(
       '../server/services/ml/localai-official-models.ts',
       import.meta.url,
@@ -739,7 +739,7 @@ describe('machine learning integration', () => {
     assert.equal(existsSync(jobApi), false)
   })
 
-  it('does not ship or mount ChronoFrame LocalAI gallery templates', () => {
+  it('does not ship or mount LumaMemo LocalAI gallery templates', () => {
     const aiCompose = readSource('third-party/ai/docker-compose.yml')
     const env = readSource('.env.example')
     const galleryDir = new URL(
@@ -753,17 +753,17 @@ describe('machine learning integration', () => {
 
     assert.equal(existsSync(galleryDir), false)
     assert.equal(existsSync(galleryIndex), false)
-    assert.doesNotMatch(aiCompose, /\/models\/chronoframe-gallery:ro/)
+    assert.doesNotMatch(aiCompose, /\/models\/lumamemo-gallery:ro/)
     assert.doesNotMatch(
       aiCompose,
-      /file:\/\/\/models\/chronoframe-gallery\/index\.yaml/,
+      /file:\/\/\/models\/lumamemo-gallery\/index\.yaml/,
     )
-    assert.doesNotMatch(aiCompose, /"name":"chronoframe"/)
+    assert.doesNotMatch(aiCompose, /"name":"lumamemo"/)
     assert.match(
       aiCompose,
       /github:mudler\/LocalAI\/gallery\/index\.yaml@master/,
     )
-    assert.match(env, /LOCALAI_CPU_IMAGE=localai\/localai:v4\.6\.0-cpu/)
+    assert.doesNotMatch(env, /LOCALAI_CPU_IMAGE/)
   })
 
   it('keeps AI settings free of legacy hardcoded LocalAI model management', () => {
@@ -788,10 +788,10 @@ describe('machine learning integration', () => {
 
     assert.doesNotMatch(aiSettings, /LOCALAI_RECOMMENDED_MODELS_BY_CAPABILITY/)
     assert.doesNotMatch(aiSettings, /getStaticLocalAiModelOptions/)
-    assert.doesNotMatch(aiSettings, /chronoframe-qwen3-vl-2b-gpu/)
-    assert.doesNotMatch(aiSettings, /chronoframe-qwen3-vl-2b-cpu/)
-    assert.doesNotMatch(aiSettings, /chronoframe-qwen3-vl-embedding-2b-gpu/)
-    assert.doesNotMatch(aiSettings, /chronoframe-qwen3-vl-embedding-2b-cpu/)
+    assert.doesNotMatch(aiSettings, /lumamemo-qwen3-vl-2b-gpu/)
+    assert.doesNotMatch(aiSettings, /lumamemo-qwen3-vl-2b-cpu/)
+    assert.doesNotMatch(aiSettings, /lumamemo-qwen3-vl-embedding-2b-gpu/)
+    assert.doesNotMatch(aiSettings, /lumamemo-qwen3-vl-embedding-2b-cpu/)
     assert.doesNotMatch(aiSettings, /LOCALAI_MODEL_LOAD_TIMEOUT_MS/)
     assert.doesNotMatch(aiSettings, /clearScheduledLocalAiModelsLoad/)
     assert.doesNotMatch(aiSettings, /reloadLocalAiModels/)
@@ -922,7 +922,7 @@ describe('machine learning integration', () => {
     )
   })
 
-  it('does not expose LocalAI runtime YAML management in ChronoFrame settings', () => {
+  it('does not expose LocalAI runtime YAML management in LumaMemo settings', () => {
     const compose = readSource('docker-compose.yml')
     const aiCompose = readSource('third-party/ai/docker-compose.yml')
     const env = readSource('.env.example')
@@ -1066,7 +1066,7 @@ describe('machine learning integration', () => {
     assert.match(readme, /http:\/\/localhost:18080\/browse/)
     assert.doesNotMatch(readme, /models\/available/)
     assert.doesNotMatch(readme, /models\/apply/)
-    assert.match(readme, /ChronoFrame does not install LocalAI models/i)
+    assert.match(readme, /LumaMemo does not install LocalAI models/i)
   })
 
   it('implements a Jina embedding ML client and independent health probes', () => {

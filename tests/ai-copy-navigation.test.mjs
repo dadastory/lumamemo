@@ -25,12 +25,12 @@ describe('AI copy and face album navigation', () => {
     const en = readProjectFile('i18n/locales/en.json')
 
     assert.doesNotMatch(zhHans, /启用机器学习/)
-    assert.doesNotMatch(zhHans, /使用 ChronoFrame AI 服务生成自动标签/)
+    assert.doesNotMatch(zhHans, /使用 LumaMemo AI 服务生成自动标签/)
     assert.match(zhHans, /启用 AI 能力/)
     assert.match(zhHans, /使用大模型、向量检索和人脸识别服务/)
 
     assert.doesNotMatch(en, /Enable machine learning/)
-    assert.doesNotMatch(en, /Use ChronoFrame AI services/)
+    assert.doesNotMatch(en, /Use LumaMemo AI services/)
     assert.match(en, /Enable AI features/)
     assert.match(en, /Use vision models, vector search, and face recognition services/)
   })

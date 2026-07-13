@@ -551,7 +551,7 @@ async function getPhotoByFaceCropStorageKey(key: string) {
 
     return photo
   } catch (error) {
-    logger.chrono.warn(
+    logger.app.warn(
       `Failed to resolve face crop storage key ${normalizedKey}: ${
         error instanceof Error ? error.message : String(error)
       }`,

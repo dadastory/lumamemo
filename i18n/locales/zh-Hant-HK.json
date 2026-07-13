@@ -1013,8 +1013,8 @@
         }
       },
       "shareSite": {
-        "label": "分享你的網站",
-        "button": "分享你的網站"
+        "label": "網站連結",
+        "button": "複製網站連結"
       },
       "memoryUnavailable": "無法取得記憶體資訊"
     },
@@ -1464,7 +1464,7 @@
         },
         "enabled": {
           "label": "啟用 AI 能力",
-          "description": "使用 ChronoFrame AI 服務產生自動標籤、語意搜尋同人臉相簿",
+          "description": "使用 LumaMemo AI 服務產生自動標籤、語意搜尋同人臉相簿",
           "help": "需要 PostgreSQL、Qdrant 同 LocalAI；只有選擇外部視覺供應商時先需要填寫外部 VLM 設定。"
         },
         "vlmProvider": {
@@ -1514,7 +1514,7 @@
         "vectorBaseUrl": {
           "label": "向量庫地址",
           "description": "Qdrant 服務嘅內部 URL",
-          "help": "內建 Docker 服務使用 http://chronoframe-qdrant:6333"
+          "help": "內建 Docker 服務使用 http://lumamemo-qdrant:6333"
         },
         "vectorApiKey": {
           "label": "向量庫 API Key",
@@ -1523,7 +1523,7 @@
         },
         "vectorCollectionPrefix": {
           "label": "Collection 前綴",
-          "description": "ChronoFrame 建立 Qdrant collection 時使用嘅前綴",
+          "description": "LumaMemo 建立 Qdrant collection 時使用嘅前綴",
           "help": "修改後會建立獨立嘅向量命名空間"
         },
         "faceModel": {
@@ -1624,7 +1624,7 @@
         "localAiBaseUrl": {
           "label": "LocalAI URL",
           "description": "LocalAI service URL for local face, VLM, and embedding models",
-          "help": "The built-in Docker service uses http://chronoframe-localai:8080"
+          "help": "The built-in Docker service uses http://lumamemo-localai:8080"
         },
         "aiDescription": {
           "enabled": {
@@ -1636,7 +1636,7 @@
         "embeddingBaseUrl": {
           "label": "Jina Embedding 服務地址",
           "description": "Jina AI embedding API 基礎地址",
-          "help": "ChronoFrame 會喺呢個基礎地址下呼叫 /embeddings"
+          "help": "LumaMemo 會喺呢個基礎地址下呼叫 /embeddings"
         },
         "embeddingApiKey": {
           "label": "Jina API Key",
@@ -1703,7 +1703,7 @@
           },
           "clientAuthMethod": {
             "label": "OIDC Client 認證方式",
-            "description": "ChronoFrame 請求 token endpoint 時使用嘅 client 認證方式",
+            "description": "LumaMemo 請求 token endpoint 時使用嘅 client 認證方式",
             "options": {
               "post": "Client secret post",
               "basic": "Client secret basic"
@@ -1988,16 +1988,16 @@
       },
       "current": "進行中",
       "stepCounter": "第 {0} 步 / 共 {1} 步",
-      "logoAlt": "ChronoFrame 標誌"
+      "logoAlt": "LumaMemo 標誌"
     },
     "actions": {
       "next": "下一步",
       "completeSetup": "完成設定"
     },
     "welcome": {
-      "title": "歡迎使用 ChronoFrame",
+      "title": "歡迎使用 LumaMemo",
       "description": "跟著精靈，在幾分鐘內完成畫廊設定。",
-      "intro": "ChronoFrame 是多功能個人畫廊應用程式。開始上傳照片前，請先完成以下設定：",
+      "intro": "LumaMemo 是多功能個人畫廊應用程式。開始上傳照片前，請先完成以下設定：",
       "cards": {
         "admin": {
           "title": "管理員帳號",
@@ -2016,7 +2016,7 @@
           "description": "位置可視化與拍攝地標記"
         }
       },
-      "privacyNotice": "ChronoFrame 不會收集你的任何資料。",
+      "privacyNotice": "LumaMemo 不會收集你的任何資料。",
       "start": "開始吧"
     },
     "admin": {
@@ -2037,7 +2037,7 @@
     },
     "complete": {
       "title": "即將完成！",
-      "description": "你的 ChronoFrame 畫廊已可使用。",
+      "description": "你的 LumaMemo 畫廊已可使用。",
       "body": "你已完成所有基本設定。現在可使用管理員帳號登入並開始上傳照片。",
       "goToDashboard": "前往儀表板",
       "setupFailedTitle": "設定失敗",

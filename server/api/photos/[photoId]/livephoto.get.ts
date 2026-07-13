@@ -41,7 +41,7 @@ export default eventHandler(async (event) => {
       thumbnailUrl: photo.thumbnailUrl,
     }
   } catch (error) {
-    logger.chrono.error('Failed to get photo details:', error)
+    logger.app.error('Failed to get photo details:', error)
     throw createError({
       statusCode: 500,
       statusMessage: 'Failed to get photo details',

@@ -51,8 +51,8 @@ describe('local PMTiles map configuration', () => {
     const compose = readText('../third-party/middleware/docker-compose.yml')
     assert.match(compose, /^\s{2}pmtiles:/m)
     assert.match(compose, /^\s{2}maplibre:/m)
-    assert.match(compose, /container_name: chronoframe_pmtiles/)
-    assert.match(compose, /container_name: chronoframe_maplibre/)
+    assert.match(compose, /container_name: lumamemo_pmtiles/)
+    assert.match(compose, /container_name: lumamemo_maplibre/)
     assert.match(compose, /data\/middleware\/pmtiles/)
     assert.match(compose, /data\/middleware\/maplibre\/public/)
     assert.doesNotMatch(compose, /^\s+ports:/m)
@@ -61,19 +61,21 @@ describe('local PMTiles map configuration', () => {
   it('exposes local maps and tiles only through the gateway', () => {
     const gateway = readText('../third-party/middleware/gateway/nginx.conf')
     assert.match(gateway, /location = \/maps\/style\.json/)
-    assert.match(gateway, /proxy_pass \$chronoframe_upstream\/api\/maps\/style\.json/)
+    assert.match(gateway, /proxy_pass \$lumamemo_upstream\/api\/maps\/style\.json/)
     assert.match(gateway, /location \/maps\//)
-    assert.match(gateway, /proxy_pass http:\/\/maplibre:80\//)
+    assert.match(gateway, /set \$maplibre_upstream http:\/\/maplibre:80;/)
+    assert.match(gateway, /proxy_pass \$maplibre_upstream\//)
     assert.match(gateway, /location \/tiles\//)
     assert.match(gateway, /rewrite \^\/tiles\/\(\.\*\)\$ \/global\/\$1 break;/)
-    assert.match(gateway, /proxy_pass http:\/\/pmtiles:8080/)
+    assert.match(gateway, /set \$pmtiles_upstream http:\/\/pmtiles:8080;/)
+    assert.match(gateway, /proxy_pass \$pmtiles_upstream/)
   })
 
   it('keeps the static local MapLibre style free of remote map dependencies', () => {
     const style = readText('../third-party/middleware/maplibre/public/style.json')
     const parsed = JSON.parse(style)
     assert.equal(parsed.version, 8)
-    assert.equal(parsed.metadata['chronoframe:tileset'], 'global')
+    assert.equal(parsed.metadata['lumamemo:tileset'], 'global')
     assert.equal(parsed.sources.protomaps.type, 'vector')
     assert.deepEqual(parsed.sources.protomaps.tiles, ['/tiles/{z}/{x}/{y}.mvt'])
     assert.equal(parsed.glyphs, '/maps/fonts/{fontstack}/{range}.pbf')
@@ -86,7 +88,7 @@ describe('local PMTiles map configuration', () => {
     const { buildLocalMapStyle } = await import('../server/utils/local-map-style.ts')
     const style = buildLocalMapStyle('http://localhost:3000')
 
-    assert.equal(style.metadata['chronoframe:tileset'], 'global')
+    assert.equal(style.metadata['lumamemo:tileset'], 'global')
     assert.deepEqual(style.sources.protomaps.tiles, [
       'http://localhost:3000/tiles/{z}/{x}/{y}.mvt',
     ])

@@ -164,7 +164,7 @@ export default eventHandler(async (event) => {
 
   const tempRoot = tmpdir()
   await mkdir(tempRoot, { recursive: true })
-  const tempDir = await mkdtemp(path.join(tempRoot, 'cframe-edit-'))
+  const tempDir = await mkdtemp(path.join(tempRoot, 'lumamemo-edit-'))
   const ext = path.extname(photo.storageKey) || '.jpg'
   const tempFile = path.join(tempDir, `edited${ext}`)
 

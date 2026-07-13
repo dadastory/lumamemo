@@ -17,7 +17,7 @@ export const processLivePhotoVideo = async (
     const videoBaseName = path.basename(videoKey, path.extname(videoKey))
     const videoDir = path.dirname(videoKey)
 
-    logger.chrono.info(
+    logger.app.info(
       `Processing LivePhoto video: ${videoKey}, looking for photo with base name: ${videoBaseName}`,
     )
 
@@ -44,13 +44,13 @@ export const processLivePhotoVideo = async (
 
       if (photos.length > 0) {
         matchedPhoto = photos[0]
-        logger.chrono.info(`Found matching photo: ${photoKey}`)
+        logger.app.info(`Found matching photo: ${photoKey}`)
         break
       }
     }
 
     if (!matchedPhoto) {
-      logger.chrono.warn(
+      logger.app.warn(
         `No matching photo found for LivePhoto video: ${videoKey}`,
       )
       return false
@@ -70,12 +70,12 @@ export const processLivePhotoVideo = async (
       .where(eq(tables.photos.id, matchedPhoto.id))
       .run()
 
-    logger.chrono.success(
+    logger.app.success(
       `Successfully processed LivePhoto: ${matchedPhoto.id}, video: ${videoKey}`,
     )
     return true
   } catch (error) {
-    logger.chrono.error(`Failed to process LivePhoto video ${videoKey}:`, error)
+    logger.app.error(`Failed to process LivePhoto video ${videoKey}:`, error)
     return false
   }
 }
@@ -93,7 +93,7 @@ export const findLivePhotoVideoForImage = async (
     const imageBaseName = path.basename(imageKey, path.extname(imageKey))
     const imageDir = path.dirname(imageKey)
 
-    logger.chrono.info(
+    logger.app.info(
       `Checking for LivePhoto video for image: ${imageKey}, base name: ${imageBaseName}`,
     )
 
@@ -113,10 +113,10 @@ export const findLivePhotoVideoForImage = async (
           // 检查是否符合 LivePhoto 视频的特征
           const fileName = path.basename(videoKey)
           if (isLivePhotoVideo(fileName, videoSize)) {
-            logger.chrono.info(`Found matching LivePhoto video: ${videoKey}`)
+            logger.app.info(`Found matching LivePhoto video: ${videoKey}`)
             return { videoKey, videoSize }
           } else {
-            logger.chrono.warn(
+            logger.app.warn(
               `Video file found but doesn't match LivePhoto criteria: ${videoKey} (size: ${videoSize})`,
             )
           }
@@ -127,12 +127,12 @@ export const findLivePhotoVideoForImage = async (
       }
     }
 
-    logger.chrono.info(
+    logger.app.info(
       `No matching LivePhoto video found for image: ${imageKey}`,
     )
     return null
   } catch (error) {
-    logger.chrono.error(
+    logger.app.error(
       `Failed to check for LivePhoto video for ${imageKey}:`,
       error,
     )

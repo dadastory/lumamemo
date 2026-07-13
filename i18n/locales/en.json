@@ -1087,8 +1087,8 @@
         }
       },
       "shareSite": {
-        "label": "Share Your Site",
-        "button": "Share Your Site"
+        "label": "Site Link",
+        "button": "Copy Site Link"
       },
       "memoryUnavailable": "memory info not available"
     },
@@ -1588,7 +1588,7 @@
         "vectorBaseUrl": {
           "label": "Vector store URL",
           "description": "Internal URL of the Qdrant service",
-          "help": "Use http://chronoframe-qdrant:6333 for the bundled Docker service"
+          "help": "Use http://lumamemo-qdrant:6333 for the bundled Docker service"
         },
         "vectorApiKey": {
           "label": "Vector store API key",
@@ -1597,7 +1597,7 @@
         },
         "vectorCollectionPrefix": {
           "label": "Collection prefix",
-          "description": "Prefix for Qdrant collections created by ChronoFrame",
+          "description": "Prefix for Qdrant collections created by LumaMemo",
           "help": "Changing this creates a separate vector namespace"
         },
         "faceModel": {
@@ -1698,7 +1698,7 @@
         "localAiBaseUrl": {
           "label": "LocalAI URL",
           "description": "LocalAI service URL for local face, VLM, and embedding models",
-          "help": "The built-in Docker service uses http://chronoframe-localai:8080"
+          "help": "The built-in Docker service uses http://lumamemo-localai:8080"
         },
         "aiDescription": {
           "enabled": {
@@ -1710,7 +1710,7 @@
         "embeddingBaseUrl": {
           "label": "Jina embedding base URL",
           "description": "Jina AI embedding API base URL",
-          "help": "ChronoFrame calls /embeddings under this base URL"
+          "help": "LumaMemo calls /embeddings under this base URL"
         },
         "embeddingApiKey": {
           "label": "Jina API key",
@@ -1777,7 +1777,7 @@
           },
           "clientAuthMethod": {
             "label": "OIDC Client Auth Method",
-            "description": "How ChronoFrame authenticates to the token endpoint",
+            "description": "How LumaMemo authenticates to the token endpoint",
             "options": {
               "post": "Client secret post",
               "basic": "Client secret basic"
@@ -2062,16 +2062,16 @@
       },
       "current": "In Progress",
       "stepCounter": "Step {0} / {1}",
-      "logoAlt": "ChronoFrame Logo"
+      "logoAlt": "LumaMemo Logo"
     },
     "actions": {
       "next": "Next",
       "completeSetup": "Complete Setup"
     },
     "welcome": {
-      "title": "Welcome to ChronoFrame",
+      "title": "Welcome to LumaMemo",
       "description": "Follow the wizard to set up your gallery in a few minutes.",
-      "intro": "ChronoFrame is a versatile personal gallery app. Before uploading photos, we need to configure a few essentials:",
+      "intro": "LumaMemo is a versatile personal gallery app. Before uploading photos, we need to configure a few essentials:",
       "cards": {
         "admin": {
           "title": "Admin Account",
@@ -2090,7 +2090,7 @@
           "description": "Visualize locations and mark shooting spots"
         }
       },
-      "privacyNotice": "ChronoFrame does not collect any of your data.",
+      "privacyNotice": "LumaMemo does not collect any of your data.",
       "start": "Get Started"
     },
     "admin": {
@@ -2111,7 +2111,7 @@
     },
     "complete": {
       "title": "Almost Done!",
-      "description": "Your ChronoFrame gallery is ready to use.",
+      "description": "Your LumaMemo gallery is ready to use.",
       "body": "You have completed all essential setup steps. You can now sign in with your admin account and start uploading photos.",
       "goToDashboard": "Go to Dashboard",
       "setupFailedTitle": "Setup Failed",

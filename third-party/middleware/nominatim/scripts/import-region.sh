@@ -38,6 +38,7 @@ fi
 docker compose \
   -f "$ROOT_DIR/docker-compose.yml" \
   -f "$ROOT_DIR/docker-compose.local-build.yml" \
+  -f "$ROOT_DIR/third-party/middleware/docker-compose.yml" \
   up -d nominatim
 
 echo "Nominatim import started with PBF_URL=$NOMINATIM_PBF_URL"

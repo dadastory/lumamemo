@@ -1,6 +1,6 @@
 services:
-  chronoframe:
+  lumamemo:
     build:
       context: .
       dockerfile: Dockerfile
-    image: chronoframe:local
+    image: lumamemo:local

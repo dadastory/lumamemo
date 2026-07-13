@@ -64,7 +64,7 @@ const mapStyle = computed(() => {
       <MapboxMap
         v-else
         class="w-full h-full"
-        :map-id="mapId || 'cframe-mapbox-map'"
+        :map-id="mapId || 'lumamemo-mapbox-map'"
         :options="{
           accessToken: mapConfig['mapbox.token'],
           style: mapStyle,

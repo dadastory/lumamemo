@@ -28,7 +28,7 @@ export default eventHandler(async (event) => {
         })
       }
 
-      logger.chrono.info(`Reindexing EXIF for photo ${photoId}`)
+      logger.app.info(`Reindexing EXIF for photo ${photoId}`)
 
       // 重新提取文件的元数据
       const { storageProvider } = useStorageProvider(event)
@@ -45,7 +45,7 @@ export default eventHandler(async (event) => {
       const exifData = await extractExifData(
         fileBuffer,
         undefined,
-        logger.chrono,
+        logger.app,
       )
       const photoInfo = extractPhotoInfo(photo.storageKey!, exifData)
 
@@ -63,7 +63,7 @@ export default eventHandler(async (event) => {
         .where(eq(tables.photos.id, photoId))
         .run()
 
-      logger.chrono.success(`Successfully reindexed EXIF for photo ${photoId}`)
+      logger.app.success(`Successfully reindexed EXIF for photo ${photoId}`)
 
       return {
         success: true,
@@ -114,7 +114,7 @@ export default eventHandler(async (event) => {
         }
       }
 
-      logger.chrono.info(
+      logger.app.info(
         `Starting batch EXIF reindexing for ${photos.length} photos`,
       )
 
@@ -127,7 +127,7 @@ export default eventHandler(async (event) => {
         try {
           processed++
 
-          logger.chrono.info(
+          logger.app.info(
             `Processing photo ${photo.id} (${processed}/${photos.length})`,
           )
 
@@ -146,7 +146,7 @@ export default eventHandler(async (event) => {
           const exifData = await extractExifData(
             fileBuffer,
             undefined,
-            logger.chrono,
+            logger.app,
           )
           const photoInfo = extractPhotoInfo(photo.storageKey!, exifData)
 
@@ -166,7 +166,7 @@ export default eventHandler(async (event) => {
 
           updated++
 
-          logger.chrono.success(
+          logger.app.success(
             `Updated EXIF for photo ${photo.id} (${updated}/${processed})`,
           )
 
@@ -177,7 +177,7 @@ export default eventHandler(async (event) => {
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : 'Unknown error'
-          logger.chrono.error(`Failed to process photo ${photo.id}:`, error)
+          logger.app.error(`Failed to process photo ${photo.id}:`, error)
           errors.push({
             photoId: photo.id,
             error: errorMessage,
@@ -202,7 +202,7 @@ export default eventHandler(async (event) => {
         },
       }
 
-      logger.chrono.success(
+      logger.app.success(
         `EXIF batch reindexing completed: ${updated} photos updated out of ${processed} processed`,
       )
 
@@ -214,7 +214,7 @@ export default eventHandler(async (event) => {
       })
     }
   } catch (error) {
-    logger.chrono.error('Failed to reindex EXIF data:', error)
+    logger.app.error('Failed to reindex EXIF data:', error)
     throw createError({
       statusCode: 500,
       statusMessage: 'Failed to reindex EXIF data',

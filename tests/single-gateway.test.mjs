@@ -45,10 +45,10 @@ describe('single gateway upload routing', () => {
     const source = readSource('third-party/middleware/gateway/nginx.conf')
 
     assert.match(source, /resolver 127\.0\.0\.11/)
-    assert.match(source, /set \$chronoframe_upstream http:\/\/chronoframe:3000;/)
-    assert.match(source, /proxy_pass \$chronoframe_upstream;/)
-    assert.match(source, /proxy_pass \$chronoframe_upstream\/api\/maps\/style\.json\$is_args\$args;/)
-    assert.doesNotMatch(source, /proxy_pass http:\/\/chronoframe:3000/)
+    assert.match(source, /set \$lumamemo_upstream http:\/\/lumamemo:3000;/)
+    assert.match(source, /proxy_pass \$lumamemo_upstream;/)
+    assert.match(source, /proxy_pass \$lumamemo_upstream\/api\/maps\/style\.json\$is_args\$args;/)
+    assert.doesNotMatch(source, /proxy_pass http:\/\/lumamemo:3000/)
   })
 
   it('resolves the local Nominatim upstream dynamically after service rebuilds', () => {
@@ -68,14 +68,28 @@ describe('single gateway upload routing', () => {
     assert.match(source, /^third-party\/middleware\/data\/$/m)
   })
 
-  it('includes middleware services from the repository root data directory', () => {
+  it('keeps third-party services optional from the default compose file', () => {
     const source = readSource('docker-compose.yml')
 
-    assert.match(source, /include:\s*\n\s+- path: third-party\/middleware\/docker-compose\.yml/)
-    assert.match(source, /project_directory: \./)
-    assert.doesNotMatch(
-      source,
-      /include:\s*\n\s+- third-party\/middleware\/docker-compose\.yml/,
-    )
+    assert.doesNotMatch(source, /include:/)
+    assert.match(source, /^\s{2}postgres:/m)
+    assert.match(source, /^\s{2}minio:/m)
+    assert.match(source, /^\s{2}minio-init:/m)
+    assert.doesNotMatch(source, /^\s{2}nominatim:/m)
+    assert.doesNotMatch(source, /^\s{2}pmtiles:/m)
+    assert.doesNotMatch(source, /^\s{2}maplibre:/m)
+    assert.doesNotMatch(source, /^\s{2}lumamemo-qdrant:/m)
+    assert.doesNotMatch(source, /^\s{2}lumamemo-localai:/m)
+  })
+
+  it('keeps optional middleware data under the repository root when explicitly enabled', () => {
+    const source = readSource('third-party/middleware/docker-compose.yml')
+
+    assert.match(source, /container_name: lumamemo_nominatim/)
+    assert.match(source, /container_name: lumamemo_pmtiles/)
+    assert.match(source, /container_name: lumamemo_maplibre/)
+    assert.match(source, /\.\/data\/middleware\/nominatim/)
+    assert.match(source, /\.\/data\/middleware\/pmtiles/)
+    assert.match(source, /\.\/data\/middleware\/maplibre/)
   })
 })

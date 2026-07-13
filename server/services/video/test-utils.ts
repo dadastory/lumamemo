@@ -5,13 +5,13 @@ import { findLivePhotoVideoForImage } from '../video/livephoto'
  * 测试 LivePhoto 检测功能的工具函数
  */
 export const testLivePhotoDetection = async (imageKey: string) => {
-  logger.chrono.info(`Testing LivePhoto detection for: ${imageKey}`)
+  logger.app.info(`Testing LivePhoto detection for: ${imageKey}`)
 
   try {
     const result = await findLivePhotoVideoForImage(imageKey)
 
     if (result) {
-      logger.chrono.success(`LivePhoto video found:`, {
+      logger.app.success(`LivePhoto video found:`, {
         imageKey,
         videoKey: result.videoKey,
         videoSize: result.videoSize,
@@ -22,13 +22,13 @@ export const testLivePhotoDetection = async (imageKey: string) => {
         videoSize: result.videoSize,
       }
     } else {
-      logger.chrono.info(`No LivePhoto video found for: ${imageKey}`)
+      logger.app.info(`No LivePhoto video found for: ${imageKey}`)
       return {
         found: false,
       }
     }
   } catch (error) {
-    logger.chrono.error(
+    logger.app.error(
       `LivePhoto detection test failed for ${imageKey}:`,
       error,
     )
@@ -69,7 +69,7 @@ export const batchTestLivePhotoDetection = async (photoIds?: string[]) => {
         .all()
     }
 
-    logger.chrono.info(
+    logger.app.info(
       `Testing ${photos.length} photos for LivePhoto detection`,
     )
 
@@ -88,7 +88,7 @@ export const batchTestLivePhotoDetection = async (photoIds?: string[]) => {
     }
 
     const foundCount = results.filter((r) => r.found).length
-    logger.chrono.success(
+    logger.app.success(
       `LivePhoto detection test completed. Found ${foundCount} potential LivePhotos out of ${photos.length} photos`,
     )
 
@@ -99,7 +99,7 @@ export const batchTestLivePhotoDetection = async (photoIds?: string[]) => {
       results: results.filter((r) => r.found), // 只返回找到的
     }
   } catch (error) {
-    logger.chrono.error('Batch LivePhoto detection test failed:', error)
+    logger.app.error('Batch LivePhoto detection test failed:', error)
     throw error
   }
 }

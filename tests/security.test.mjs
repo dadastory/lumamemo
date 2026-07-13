@@ -231,7 +231,7 @@ describe('security serializers', () => {
   })
 
   it('blocks local storage writes outside the storage base path', async () => {
-    const tempDir = mkdtempSync(join(tmpdir(), 'chronoframe-storage-'))
+    const tempDir = mkdtempSync(join(tmpdir(), 'lumamemo-storage-'))
     const basePath = join(tempDir, 'storage')
     const escapedPath = join(tempDir, 'escape.jpg')
     const provider = new LocalStorageProvider({
@@ -390,7 +390,7 @@ describe('security serializers', () => {
       DATABASE_PROVIDER: process.env.DATABASE_PROVIDER,
       DATABASE_URL: process.env.DATABASE_URL,
     }
-    const tempDir = mkdtempSync(join(tmpdir(), 'chronoframe-security-'))
+    const tempDir = mkdtempSync(join(tmpdir(), 'lumamemo-security-'))
     process.env.DATABASE_PROVIDER = 'sqlite'
     process.env.DATABASE_URL = join(tempDir, 'app.sqlite3')
 

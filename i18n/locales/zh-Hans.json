@@ -1087,8 +1087,8 @@
         }
       },
       "shareSite": {
-        "label": "分享你的站点",
-        "button": "分享你的站点"
+        "label": "站点链接",
+        "button": "复制站点链接"
       },
       "memoryUnavailable": "无法获取内存信息"
     },
@@ -1588,7 +1588,7 @@
         "vectorBaseUrl": {
           "label": "向量库地址",
           "description": "Qdrant 服务的内部 URL",
-          "help": "内置 Docker 服务使用 http://chronoframe-qdrant:6333"
+          "help": "内置 Docker 服务使用 http://lumamemo-qdrant:6333"
         },
         "vectorApiKey": {
           "label": "向量库 API Key",
@@ -1597,7 +1597,7 @@
         },
         "vectorCollectionPrefix": {
           "label": "Collection 前缀",
-          "description": "ChronoFrame 创建 Qdrant collection 时使用的前缀",
+          "description": "LumaMemo 创建 Qdrant collection 时使用的前缀",
           "help": "修改后会创建独立的向量命名空间"
         },
         "faceModel": {
@@ -1698,7 +1698,7 @@
         "localAiBaseUrl": {
           "label": "LocalAI 地址",
           "description": "内置 LocalAI 服务地址，用于本地人脸、VLM 和 embedding 模型",
-          "help": "内置 Docker 服务使用 http://chronoframe-localai:8080"
+          "help": "内置 Docker 服务使用 http://lumamemo-localai:8080"
         },
         "aiDescription": {
           "enabled": {
@@ -1710,7 +1710,7 @@
         "embeddingBaseUrl": {
           "label": "Jina Embedding 服务地址",
           "description": "Jina AI embedding API 基础地址",
-          "help": "ChronoFrame 会在该基础地址下调用 /embeddings"
+          "help": "LumaMemo 会在该基础地址下调用 /embeddings"
         },
         "embeddingApiKey": {
           "label": "Jina API Key",
@@ -1777,7 +1777,7 @@
           },
           "clientAuthMethod": {
             "label": "OIDC Client 认证方式",
-            "description": "ChronoFrame 请求 token endpoint 时使用的客户端认证方式",
+            "description": "LumaMemo 请求 token endpoint 时使用的客户端认证方式",
             "options": {
               "post": "Client secret post",
               "basic": "Client secret basic"
@@ -2062,16 +2062,16 @@
       },
       "current": "当前进行",
       "stepCounter": "第 {0} 步 / 共 {1} 步",
-      "logoAlt": "ChronoFrame 标志"
+      "logoAlt": "LumaMemo 标志"
     },
     "actions": {
       "next": "下一步",
       "completeSetup": "完成设置"
     },
     "welcome": {
-      "title": "欢迎使用 ChronoFrame",
+      "title": "欢迎使用 LumaMemo",
       "description": "跟随向导，在几分钟内设置好您的画廊。",
-      "intro": "ChronoFrame 是一款多功能个人画廊应用程序。在您开始上传照片之前，我们需要先配置一些内容：",
+      "intro": "LumaMemo 是一款多功能个人画廊应用程序。在您开始上传照片之前，我们需要先配置一些内容：",
       "cards": {
         "admin": {
           "title": "管理员账户",
@@ -2090,7 +2090,7 @@
           "description": "位置可视化、照片拍摄地标记"
         }
       },
-      "privacyNotice": "ChronoFrame 不会收集您的任何数据。",
+      "privacyNotice": "LumaMemo 不会收集您的任何数据。",
       "start": "开始吧"
     },
     "admin": {
@@ -2111,7 +2111,7 @@
     },
     "complete": {
       "title": "即将完成！",
-      "description": "您的 ChronoFrame 画廊已准备好使用。",
+      "description": "您的 LumaMemo 画廊已准备好使用。",
       "body": "您已完成了所有基本配置。现在可以使用管理员账户登录并开始上传照片。",
       "goToDashboard": "前往仪表盘",
       "setupFailedTitle": "设置失败",

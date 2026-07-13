@@ -24,7 +24,7 @@ import { validateStorageQuotaGB } from '~~/server/services/storage/quota'
  * PUT /api/system/settings/batch
  * {
  *   updates: [
- *     { namespace: 'app', key: 'title', value: 'ChronoFrame' },
+ *     { namespace: 'app', key: 'title', value: 'LumaMemo' },
  *     { namespace: 'app', key: 'slogan', value: 'A photo gallery' },
  *   ]
  * }

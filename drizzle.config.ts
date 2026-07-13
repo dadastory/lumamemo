@@ -11,7 +11,7 @@ export default defineConfig(
         dbCredentials: {
           url:
             process.env.DATABASE_URL ||
-            'postgres://chronoframe:chronoframe-postgres-password@localhost:5432/chronoframe',
+            'postgres://lumamemo:lumamemo-postgres-password@localhost:5432/lumamemo',
         },
       }
     : {

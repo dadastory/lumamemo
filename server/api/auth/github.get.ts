@@ -20,7 +20,7 @@ async function onGithubOAuthSuccess(event: any, { user }: { user: any }) {
     .where(eq(tables.users.email, user.email || ''))
     .get()
 
-  logger.chrono.info(
+  logger.app.info(
     'GitHub OAuth login:',
     user.email,
     userFromEmail ? 'Existing user' : 'New user',
@@ -66,7 +66,7 @@ async function onGithubOAuthSuccess(event: any, { user }: { user: any }) {
 }
 
 function onGithubOAuthError(_event: any, error: any) {
-  logger.chrono.warn('GitHub OAuth login failed', error)
+  logger.app.warn('GitHub OAuth login failed', error)
   throw createError({
     statusCode: 401,
     statusMessage: `Authentication failed: ${error.message || 'Unknown error'}`,

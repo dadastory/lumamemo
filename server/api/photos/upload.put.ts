@@ -143,7 +143,7 @@ export default eventHandler(async (event) => {
   } catch (error) {
     if (uploaded) {
       await storageProvider.delete(storageKey).catch((deleteError) => {
-        logger.chrono.warn(
+        logger.app.warn(
           `Failed to delete uploaded object after pending upload registration failed: ${
             deleteError instanceof Error
               ? deleteError.message
@@ -152,7 +152,7 @@ export default eventHandler(async (event) => {
         )
       })
     }
-    logger.chrono.error('Storage provider create error:', error)
+    logger.app.error('Storage provider create error:', error)
     throw createError({
       statusCode: 500,
       statusMessage: t('upload.error.uploadFailed.title'),

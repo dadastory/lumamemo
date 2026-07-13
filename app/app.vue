@@ -34,7 +34,7 @@ colorMode.preference = useSettingRef('app:appearance.theme').value as string
 
 useHead({
   titleTemplate: (title) =>
-    `${title ? title + ' | ' : ''}${appTitle.value || 'ChronoFrame'}`,
+    `${title ? title + ' | ' : ''}${appTitle.value || 'LumaMemo'}`,
 })
 
 // 根据用户登录状态和当前路由决定使用哪个 API

@@ -260,7 +260,7 @@ export default defineNuxtConfig({
 
   colorMode: {
     // preference: process.env.NUXT_PUBLIC_COLOR_MODE_PREFERENCE || 'dark',
-    storageKey: 'cframe-color-mode',
+    storageKey: 'lumamemo-color-mode',
   },
 
   icon: {
@@ -293,7 +293,7 @@ export default defineNuxtConfig({
     detectBrowserLanguage: {
       fallbackLocale: 'en',
       useCookie: false,
-      cookieKey: 'chronoframe-locale',
+      cookieKey: 'lumamemo-locale',
     },
     strategy: 'no_prefix',
     defaultLocale: 'en',

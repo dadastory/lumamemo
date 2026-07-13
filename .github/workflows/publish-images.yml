@@ -8,7 +8,8 @@ on:
 env:
   GHCR_REGISTRY: ghcr.io
   GHCR_IMAGE_NAME: ${{ github.repository }}
-  DOCKERHUB_IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}
+  DOCKERHUB_USERNAME: dadastory
+  DOCKERHUB_IMAGE_NAME: dadastory/${{ github.event.repository.name }}
   TARGET_ARCHITECTURES: amd64 arm64
 
 jobs:
@@ -85,6 +86,7 @@ jobs:
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
       IS_PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -97,10 +99,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Log in to Docker Hub
+        if: env.DOCKERHUB_TOKEN != ''
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
 
       - name: Build Docker image (${{ matrix.arch }})
         run: |
@@ -109,19 +112,24 @@ jobs:
           DOCKERHUB_BASE_RAW="${{ env.DOCKERHUB_IMAGE_NAME }}"
           GHCR_BASE=$(echo "$GHCR_BASE_RAW" | tr '[:upper:]' '[:lower:]')
           DOCKERHUB_BASE=$(echo "$DOCKERHUB_BASE_RAW" | tr '[:upper:]' '[:lower:]')
+          PUBLISH_DOCKERHUB=false
+          if [ -n "${DOCKERHUB_TOKEN:-}" ]; then
+            PUBLISH_DOCKERHUB=true
+          fi
           ARCH="${{ matrix.arch }}"
 
           docker build \
             --tag "${GHCR_BASE}:${VERSION}-${ARCH}" \
-            --tag "${DOCKERHUB_BASE}:${VERSION}-${ARCH}" \
             .
 
+          if [ "$PUBLISH_DOCKERHUB" = "true" ]; then
+            docker tag "${GHCR_BASE}:${VERSION}-${ARCH}" "${DOCKERHUB_BASE}:${VERSION}-${ARCH}"
+          fi
+
           docker tag "${GHCR_BASE}:${VERSION}-${ARCH}" "${GHCR_BASE}:nightly-${ARCH}"
-          docker tag "${DOCKERHUB_BASE}:${VERSION}-${ARCH}" "${DOCKERHUB_BASE}:nightly-${ARCH}"
 
           if [ "${IS_PRERELEASE}" != "true" ]; then
             docker tag "${GHCR_BASE}:${VERSION}-${ARCH}" "${GHCR_BASE}:latest-${ARCH}"
-            docker tag "${DOCKERHUB_BASE}:${VERSION}-${ARCH}" "${DOCKERHUB_BASE}:latest-${ARCH}"
           fi
 
           for tag in "${GHCR_BASE}:${VERSION}-${ARCH}" "${GHCR_BASE}:nightly-${ARCH}"; do
@@ -132,12 +140,19 @@ jobs:
             docker push "${GHCR_BASE}:latest-${ARCH}"
           fi
 
-          for tag in "${DOCKERHUB_BASE}:${VERSION}-${ARCH}" "${DOCKERHUB_BASE}:nightly-${ARCH}"; do
-            docker push "$tag"
-          done
+          if [ "$PUBLISH_DOCKERHUB" = "true" ]; then
+            docker tag "${GHCR_BASE}:${VERSION}-${ARCH}" "${DOCKERHUB_BASE}:nightly-${ARCH}"
+            if [ "${IS_PRERELEASE}" != "true" ]; then
+              docker tag "${GHCR_BASE}:${VERSION}-${ARCH}" "${DOCKERHUB_BASE}:latest-${ARCH}"
+            fi
 
-          if [ "${IS_PRERELEASE}" != "true" ]; then
-            docker push "${DOCKERHUB_BASE}:latest-${ARCH}"
+            for tag in "${DOCKERHUB_BASE}:${VERSION}-${ARCH}" "${DOCKERHUB_BASE}:nightly-${ARCH}"; do
+              docker push "$tag"
+            done
+
+            if [ "${IS_PRERELEASE}" != "true" ]; then
+              docker push "${DOCKERHUB_BASE}:latest-${ARCH}"
+            fi
           fi
 
   manifest:
@@ -150,6 +165,7 @@ jobs:
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
       IS_PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
     steps:
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -159,10 +175,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Log in to Docker Hub
+        if: env.DOCKERHUB_TOKEN != ''
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
 
       - name: Publish multi-architecture manifests
         run: |
@@ -171,6 +188,10 @@ jobs:
           DOCKERHUB_BASE_RAW="${{ env.DOCKERHUB_IMAGE_NAME }}"
           GHCR_BASE=$(echo "$GHCR_BASE_RAW" | tr '[:upper:]' '[:lower:]')
           DOCKERHUB_BASE=$(echo "$DOCKERHUB_BASE_RAW" | tr '[:upper:]' '[:lower:]')
+          PUBLISH_DOCKERHUB=false
+          if [ -n "${DOCKERHUB_TOKEN:-}" ]; then
+            PUBLISH_DOCKERHUB=true
+          fi
           ARCHITECTURES=( $TARGET_ARCHITECTURES )
 
           create_and_push_manifest() {
@@ -189,14 +210,19 @@ jobs:
           }
 
           create_and_push_manifest "${GHCR_BASE}" "${VERSION}"
-          create_and_push_manifest "${DOCKERHUB_BASE}" "${VERSION}"
-
           create_and_push_manifest "${GHCR_BASE}" "nightly"
-          create_and_push_manifest "${DOCKERHUB_BASE}" "nightly"
 
           if [ "${IS_PRERELEASE}" != "true" ]; then
             create_and_push_manifest "${GHCR_BASE}" "latest"
-            create_and_push_manifest "${DOCKERHUB_BASE}" "latest"
+          fi
+
+          if [ "$PUBLISH_DOCKERHUB" = "true" ]; then
+            create_and_push_manifest "${DOCKERHUB_BASE}" "${VERSION}"
+            create_and_push_manifest "${DOCKERHUB_BASE}" "nightly"
+
+            if [ "${IS_PRERELEASE}" != "true" ]; then
+              create_and_push_manifest "${DOCKERHUB_BASE}" "latest"
+            fi
           fi
 
       - name: Generate summary
@@ -205,12 +231,14 @@ jobs:
           DOCKERHUB_BASE_RAW="${{ env.DOCKERHUB_IMAGE_NAME }}"
           GHCR_BASE=$(echo "$GHCR_BASE_RAW" | tr '[:upper:]' '[:lower:]')
           DOCKERHUB_BASE=$(echo "$DOCKERHUB_BASE_RAW" | tr '[:upper:]' '[:lower:]')
+          PUBLISH_DOCKERHUB=false
+          if [ -n "${DOCKERHUB_TOKEN:-}" ]; then
+            PUBLISH_DOCKERHUB=true
+          fi
 
           GHCR_REGISTRY=$(echo "$GHCR_BASE" | cut -d/ -f1)
           GHCR_OWNER=$(echo "$GHCR_BASE" | cut -d/ -f2)
           GHCR_REPO=$(echo "$GHCR_BASE" | cut -d/ -f3)
-          DOCKERHUB_OWNER=$(echo "$DOCKERHUB_BASE" | cut -d/ -f1)
-          DOCKERHUB_REPO=$(echo "$DOCKERHUB_BASE" | cut -d/ -f2)
 
           insert_wbr() {
             local input="$1"
@@ -224,10 +252,7 @@ jobs:
           }
 
           GHCR_OWNER_DISPLAY=$(insert_wbr "$GHCR_OWNER")
-          DOCKERHUB_OWNER_DISPLAY=$(insert_wbr "$DOCKERHUB_OWNER")
-
           GHCR_DISPLAY="${GHCR_REGISTRY}/${GHCR_OWNER_DISPLAY}/${GHCR_REPO}"
-          DOCKERHUB_DISPLAY="${DOCKERHUB_OWNER_DISPLAY}/${DOCKERHUB_REPO}"
 
           echo "## 🚀 Docker Image Built and Pushed Successfully!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -242,13 +267,20 @@ jobs:
             echo "- <code>${GHCR_DISPLAY}:latest</code>" >> $GITHUB_STEP_SUMMARY
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Docker Hub" >> $GITHUB_STEP_SUMMARY
-          echo "- <code>${DOCKERHUB_DISPLAY}:${VERSION}</code>" >> $GITHUB_STEP_SUMMARY
-          echo "- <code>${DOCKERHUB_DISPLAY}:nightly</code>" >> $GITHUB_STEP_SUMMARY
-          if [[ "${IS_PRERELEASE}" != "true" ]]; then
-            echo "- <code>${DOCKERHUB_DISPLAY}:latest</code>" >> $GITHUB_STEP_SUMMARY
+          if [ "$PUBLISH_DOCKERHUB" = "true" ]; then
+            DOCKERHUB_OWNER=$(echo "$DOCKERHUB_BASE" | cut -d/ -f1)
+            DOCKERHUB_REPO=$(echo "$DOCKERHUB_BASE" | cut -d/ -f2)
+            DOCKERHUB_OWNER_DISPLAY=$(insert_wbr "$DOCKERHUB_OWNER")
+            DOCKERHUB_DISPLAY="${DOCKERHUB_OWNER_DISPLAY}/${DOCKERHUB_REPO}"
+
+            echo "### Docker Hub" >> $GITHUB_STEP_SUMMARY
+            echo "- <code>${DOCKERHUB_DISPLAY}:${VERSION}</code>" >> $GITHUB_STEP_SUMMARY
+            echo "- <code>${DOCKERHUB_DISPLAY}:nightly</code>" >> $GITHUB_STEP_SUMMARY
+            if [[ "${IS_PRERELEASE}" != "true" ]]; then
+              echo "- <code>${DOCKERHUB_DISPLAY}:latest</code>" >> $GITHUB_STEP_SUMMARY
+            fi
+            echo "" >> $GITHUB_STEP_SUMMARY
           fi
-          echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Platforms:** \`linux/amd64\`, \`linux/arm64\`" >> $GITHUB_STEP_SUMMARY
 
   release:
@@ -270,4 +302,4 @@ jobs:
           name: Release v${{ env.VERSION }}
           body: ${{ needs.prepare.outputs.changelog }}
           prerelease: ${{ env.IS_PRERELEASE == 'true' }}
-          draft: true
+          draft: false

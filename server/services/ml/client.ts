@@ -99,7 +99,7 @@ type SerializedMachineLearningError = {
 }
 
 const LOCALAI_DEFAULT_BASE_URL =
-  process.env.ML_LOCALAI_BASE_URL || 'http://chronoframe-localai:8080'
+  process.env.ML_LOCALAI_BASE_URL || 'http://lumamemo-localai:8080'
 const OPENAI_DEFAULT_BASE_URL = 'https://api.openai.com/v1'
 const JINA_DEFAULT_BASE_URL = 'https://api.jina.ai/v1'
 const JINA_IMAGE_EMBEDDING_MODELS = new Set([
@@ -533,7 +533,7 @@ export const getMachineLearningSettings =
       ),
       vectorBaseUrl: await readMachineLearningSetting(
         'ml.vectorBaseUrl',
-        process.env.ML_VECTOR_BASE_URL || 'http://chronoframe-qdrant:6333',
+        process.env.ML_VECTOR_BASE_URL || 'http://lumamemo-qdrant:6333',
       ),
       vectorApiKey: await readMachineLearningSetting(
         'ml.vectorApiKey',
@@ -541,7 +541,7 @@ export const getMachineLearningSettings =
       ),
       vectorCollectionPrefix: await readMachineLearningSetting(
         'ml.vectorCollectionPrefix',
-        process.env.ML_VECTOR_COLLECTION_PREFIX || 'chronoframe',
+        process.env.ML_VECTOR_COLLECTION_PREFIX || 'lumamemo',
       ),
       vlmModel: await readMachineLearningSetting(
         'ml.vlmModel',
@@ -995,7 +995,7 @@ export class MachineLearningClient {
 
   async testTextEmbedding(
     modelName = this.embeddingModel,
-    text = 'ChronoFrame semantic search probe',
+    text = 'LumaMemo semantic search probe',
   ) {
     const embedding = await this.embedText(text, modelName)
     if (embedding.length === 0) {
@@ -1052,7 +1052,7 @@ export class MachineLearningClient {
         },
         body: JSON.stringify({
           model: modelName,
-          input: ['ChronoFrame semantic search probe'],
+          input: ['LumaMemo semantic search probe'],
           normalized: true,
           embedding_type: 'float',
         }),

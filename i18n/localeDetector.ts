@@ -39,7 +39,7 @@ export default defineI18nLocaleDetector((event, config) => {
   // try to get locale from cookie
   const cookie = tryCookieLocale(event, {
     lang: '',
-    name: 'chronoframe-locale',
+    name: 'lumamemo-locale',
   }) // disable locale default value with `lang` option
   if (cookie) {
     return normalizeLocale(cookie.toString())

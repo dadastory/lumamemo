@@ -1,6 +1,6 @@
 # 开始贡献
 
-本文档将指导您搭建 ChronoFrame 的开发环境，包括环境要求、依赖安装、配置设置和开发工具。
+本文档将指导您搭建 LumaMemo 的开发环境，包括环境要求、依赖安装、配置设置和开发工具。
 
 ## 环境要求
 
@@ -16,17 +16,11 @@
 ### 1. 克隆代码库
 
 ```bash
-# 使用 HTTPS
-git clone https://github.com/HoshinoSuzumi/chronoframe.git
-
-# 或使用 SSH
-git clone git@github.com:HoshinoSuzumi/chronoframe.git
+# 克隆当前维护的仓库
+git clone <repository-url>
 
 # 进入项目目录
-cd chronoframe
-
-# 设置上游远程仓库
-git remote add upstream https://github.com/HoshinoSuzumi/chronoframe.git
+cd lumamemo
 ```
 
 ### 2. 安装依赖
@@ -53,9 +47,9 @@ nano .env  # 或使用您喜欢的编辑器
 
 ```bash
 # === 管理员账户 ===
-CFRAME_ADMIN_EMAIL=dev@example.com
-CFRAME_ADMIN_NAME=Developer
-CFRAME_ADMIN_PASSWORD=dev123456
+LUMAMEMO_ADMIN_EMAIL=dev@example.com
+LUMAMEMO_ADMIN_NAME=Developer
+LUMAMEMO_ADMIN_PASSWORD=dev123456
 
 # === 认证设置 ===
 NUXT_OAUTH_GITHUB_CLIENT_ID=your-dev-github-client-id
@@ -65,7 +59,7 @@ NUXT_SESSION_PASSWORD=your-32-character-development-key
 # === 存储设置（开发环境可使用 MinIO） ===
 NUXT_STORAGE_PROVIDER=s3
 NUXT_PROVIDER_S3_ENDPOINT=http://localhost:9000
-NUXT_PROVIDER_S3_BUCKET=chronoframe-dev
+NUXT_PROVIDER_S3_BUCKET=lumamemo-dev
 NUXT_PROVIDER_S3_REGION=us-east-1
 NUXT_PROVIDER_S3_ACCESS_KEY_ID=minioadmin
 NUXT_PROVIDER_S3_SECRET_ACCESS_KEY=minioadmin
@@ -83,7 +77,7 @@ VITE_SHOW_DEBUG_INFO=true
 ### 目录结构
 
 ```
-chronoframe/
+lumamemo/
 ├── app/                    # Nuxt 4 应用目录
 │   ├── components/         # Vue 组件
 │   │   ├── ui/            # 通用 UI 组件
@@ -137,7 +131,7 @@ chronoframe/
 #### 后端技术
 
 - **Nitro**: 服务端框架
-- **SQLite**: 轻量级数据库
+- **PostgreSQL**: 默认部署数据库
 - **Drizzle ORM**: 类型安全的 ORM
 - **Sharp**: 高性能图片处理
 - **ExifTool**: EXIF 数据提取
@@ -176,6 +170,33 @@ pnpm build
 
 # 预览生产构建
 pnpm preview
+```
+
+### 本地 Docker 开发
+
+如果希望 Docker Compose 基于当前源码构建应用镜像，请叠加本地构建配置：
+
+```bash
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.local-build.yml \
+  up -d --build
+```
+
+开发环境中的 AI 和中间件侧车仍然需要显式叠加：
+
+```bash
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.local-build.yml \
+  -f third-party/ai/docker-compose.yml \
+  up -d --build
+
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.local-build.yml \
+  -f third-party/middleware/docker-compose.yml \
+  up -d --build
 ```
 
 ## 测试环境
@@ -348,5 +369,4 @@ chore: 更新依赖包版本
 
 ### 社区资源
 
-- [GitHub Issues](https://github.com/HoshinoSuzumi/chronoframe/issues)
-- [GitHub Discussions](https://github.com/HoshinoSuzumi/chronoframe/discussions)
+请使用当前维护仓库对应的 issue tracker 和讨论区。

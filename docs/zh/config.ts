@@ -2,14 +2,13 @@ import { defineConfig } from 'vitepress'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-  title: 'ChronoFrame',
-  description: '自部署、在线管理的个人画廊',
+  title: 'LumaMemo',
+  description: '自托管、多用户、AI 影像管理平台',
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       { text: '指南', link: '/zh/guide/getting-started' },
       { text: '开发文档', link: '/zh/development/contributing' },
-      { text: '演示', link: 'https://lens.bh8.ga' },
     ],
 
     sidebar: [
@@ -38,8 +37,8 @@ export default defineConfig({
       },
     ],
 
-    editLink: {
-      text: '在 GitHub 上编辑此页面',
+    search: {
+      provider: 'local',
     },
   },
 })

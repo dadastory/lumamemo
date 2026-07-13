@@ -1,15 +1,13 @@
-# ChronoFrame local middleware
+# LumaMemo local middleware
 
 This directory contains Docker Compose services and support files for local
-middleware used by ChronoFrame. Runtime data is stored under the project-level
+middleware used by LumaMemo. Runtime data is stored under the project-level
 `data/middleware` directory so each service can be reset independently.
+
+These services are optional. The default root Compose stack does not start them.
 
 ## Services
 
-- `postgres`: application database, defaulting to `postgres:18-alpine`. Its
-  data directory mounts to `/var/lib/postgresql` for PostgreSQL 18+ layout
-  compatibility.
-- `minio` and `minio-init`: S3-compatible object storage and bucket bootstrap.
 - `nominatim`: reverse geocoding service, defaulting to
   `mediagis/nominatim:5.3.2`. The local `.env` defaults to the China PBF
   extract for local reverse-geocoding tests.
@@ -24,8 +22,8 @@ middleware used by ChronoFrame. Runtime data is stored under the project-level
 ## Common commands
 
 ```sh
-docker compose -f third-party/middleware/docker-compose.yml config --quiet
-docker compose -f third-party/middleware/docker-compose.yml up -d
+docker compose -f docker-compose.yml -f third-party/middleware/docker-compose.yml config --quiet
+docker compose -f docker-compose.yml -f third-party/middleware/docker-compose.yml up -d
 third-party/middleware/nominatim/scripts/import-region.sh china
 ```
 

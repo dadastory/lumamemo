@@ -122,7 +122,7 @@ export class QdrantVectorStore {
 
   private get prefix() {
     return sanitizeCollectionPart(
-      this.settings.vectorCollectionPrefix || 'chronoframe',
+      this.settings.vectorCollectionPrefix || 'lumamemo',
     )
   }
 

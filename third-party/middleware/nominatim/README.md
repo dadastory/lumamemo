@@ -1,6 +1,6 @@
 # Local Nominatim
 
-Nominatim starts with the default middleware stack. The compose default uses
+Nominatim starts with the optional middleware stack. The compose default uses
 `mediagis/nominatim:5.3.2`, whose embedded PostgreSQL data directory is mounted
 from `data/middleware/nominatim` to `/var/lib/postgresql/16/main`.
 

@@ -1,13 +1,57 @@
-include:
-  - path: third-party/middleware/docker-compose.yml
-    project_directory: .
-  - path: third-party/ai/docker-compose.yml
-    project_directory: .
-
 services:
-  chronoframe:
-    image: ${CFRAME_IMAGE:-chronoframe:latest}
-    container_name: chronoframe
+  postgres:
+    image: ${POSTGRES_IMAGE:-postgres:17}
+    container_name: lumamemo_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-lumamemo}
+      POSTGRES_USER: ${POSTGRES_USER:-lumamemo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lumamemo-postgres-password}
+    expose:
+      - '5432'
+    volumes:
+      - ./data/middleware/postgres:/var/lib/postgresql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  minio:
+    image: ${MINIO_IMAGE:-minio/minio:latest}
+    container_name: lumamemo_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-lumamemo}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-lumamemo-minio-password}
+    expose:
+      - '9000'
+      - '9001'
+    volumes:
+      - ./data/middleware/minio:/data
+
+  minio-init:
+    image: ${MINIO_MC_IMAGE:-minio/mc:latest}
+    container_name: lumamemo_minio_init
+    depends_on:
+      - minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-lumamemo}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-lumamemo-minio-password}
+      MINIO_BUCKET: ${MINIO_BUCKET:-lumamemo}
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD; do sleep 1; done;
+      mc mb --ignore-existing local/$$MINIO_BUCKET;
+      mc anonymous set download local/$$MINIO_BUCKET;
+      "
+
+  lumamemo:
+    image: ${LUMAMEMO_IMAGE:-dadastory/lumamemo:latest}
+    container_name: lumamemo
     restart: unless-stopped
     expose:
       - '3000'
@@ -20,27 +64,17 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      minio:
-        condition: service_started
       minio-init:
         condition: service_completed_successfully
-      nominatim:
-        condition: service_started
-      chronoframe-localai:
-        condition: service_started
-      chronoframe-qdrant:
-        condition: service_started
 
   gateway:
     image: ${GATEWAY_IMAGE:-nginx:alpine}
-    container_name: chronoframe_gateway
+    container_name: lumamemo_gateway
     restart: unless-stopped
     ports:
       - '${GATEWAY_PORT:-3000}:80'
     volumes:
       - ./third-party/middleware/gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      chronoframe:
-        condition: service_started
-      nominatim:
+      lumamemo:
         condition: service_started

@@ -1,117 +1,51 @@
 # Update Guide
 
-This document will guide you through safely updating and upgrading ChronoFrame to the latest version.
+This guide covers updating a Docker Compose based LumaMemo deployment.
 
-## Version Check
+## Before Updating
 
-### View Current Version
-
-#### Through Web Interface
-
-1. Login to ChronoFrame admin dashboard
-2. Go to "Dashboard" page
-3. Check version number in "Runtime Information" panel
-
-## Update Process
-
-### Preparation
-
-#### 1. Data Backup
+Back up configuration and runtime data:
 
 ```bash
-# Stop service
-docker-compose down
-
-# Create complete backup
-ts=$(date +%Y%m%d-%H%M%S) && mkdir -p backups/$ts && cp -r data/ .env docker-compose.yml backups/$ts/
+ts=$(date +%Y%m%d-%H%M%S)
+mkdir -p backups/$ts
+cp -r data/ .env docker-compose.yml backups/$ts/
 ```
 
-#### 2. Check Compatibility
+If you use external PostgreSQL, S3, OpenList, or Qdrant services, back them up with the tools provided by those services.
 
-Review [Release Notes](https://github.com/HoshinoSuzumi/chronoframe/releases) to understand:
+## Docker Compose Deployment
 
-- Breaking changes
-- New environment variables
-- Feature deprecation notices
-
-### Docker Compose Update (Recommended)
-
-#### Standard Update Process
+Pull the latest compose configuration and image, then restart:
 
 ```bash
-# 1. Enter project directory
-cd /path/to/chronoframe
-
-# 2. Backup current configuration
-cp docker-compose.yml docker-compose.yml.backup
-
-# 3. Stop current service
-docker-compose down
-
-# 4. Pull latest image
-docker-compose pull
-
-# 5. Start new version
-docker-compose up -d
-
-# 6. View startup logs
-docker-compose logs -f chronoframe
+git pull
+docker compose pull
+docker compose down
+docker compose up -d
+docker compose logs -f
 ```
 
-#### Specific Version Update
-
-If you need to update to a specific version:
-
-```yaml
-# docker-compose.yml
-services:
-  chronoframe:
-    image: ghcr.io/hoshinosuzumi/chronoframe:v1.2.3 # Specify version
-    # ... other configurations
-```
-
-```bash
-docker-compose up -d
-```
-
-### Single Container Update
-
-```bash
-# Stop existing container
-docker stop chronoframe
-docker rm chronoframe
-
-# Pull latest image
-docker pull ghcr.io/hoshinosuzumi/chronoframe:latest
-
-# Start new container with same configuration
-docker run -d \
-  --name chronoframe \
-  -p 3000:3000 \
-  -v $(pwd)/data:/app/data \
-  --env-file .env \
-  ghcr.io/hoshinosuzumi/chronoframe:latest
-```
+If you use optional middleware or AI sidecar Compose files, start them with the same Compose command set you normally use for this deployment.
 
 ## Database Migration
 
-### Automatic Migration
-
-ChronoFrame automatically executes database migrations on startup:
+The application runs database migrations during startup when configured for the deployment. Check logs after restart:
 
 ```bash
-# View migration logs
-docker logs chronoframe | grep -i migration
+docker compose logs | grep -i migration
 ```
 
-### Manual Migration (Advanced)
-
-In special cases, you may need to manually execute migrations:
+For manual local development flows:
 
 ```bash
-# Enter container
-docker exec -it chronoframe sh
-
-# Execute migration
-npx drizzle-kit migrate
+pnpm db:migrate
 ```
+
+## Verification Checklist
+
+- Login works for the admin account and a normal user account.
+- Existing photos, albums, faces, and AI analysis load.
+- Upload works and storage quotas are enforced.
+- Queue workers process thumbnail, EXIF, AI, and Live Photo tasks as expected.
+- Public profile links still resolve after the update.

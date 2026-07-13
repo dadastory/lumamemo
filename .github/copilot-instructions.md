@@ -1,227 +1,96 @@
-# ChronoFrame AI Coding Guidelines
+# LumaMemo AI Coding Guidelines
 
-ChronoFrame is a high-performance photo management and gallery application built with Nuxt 4, featuring WebGL-accelerated image viewing, comprehensive EXIF processing, and multi-storage backend support.
+LumaMemo is a self-hosted, multi-user AI photo management platform built with Nuxt 4. It extends the original ChronoFrame foundation with stronger security boundaries, PostgreSQL-backed multi-user management, optional AI services, RAW/Live Photo workflows, and multiple storage backends.
 
 ## Architecture Overview
 
-### Core Components
+- **Frontend**: Nuxt 4, Vue 3, TypeScript, Nuxt UI, Tailwind CSS.
+- **Backend**: Nitro server APIs with Drizzle ORM and PostgreSQL as the default deployment database.
+- **Storage**: `local`, S3-compatible storage, or OpenList through `server/services/storage`.
+- **AI**: Optional VLM, Jina-compatible image embeddings, LocalAI face extraction, and Qdrant vector storage.
+- **Processing**: Queue-based thumbnail, EXIF, geocoding, Live Photo, RAW asset, and AI tasks.
+- **Image viewer**: Local `@lumamemo/webgl-image` package registered by `app/plugins/lumamemo-webgl-image.ts`.
 
-- **Frontend**: Nuxt 4 app with Vue 3, TypeScript, and TailwindCSS
-- **Backend**: Nitro server with SQLite (Drizzle ORM) and multi-provider storage
-- **WebGL Package**: Custom `@chronoframe/webgl-image` for hardware-accelerated viewing
-- **Processing Pipeline**: Async photo processing with EXIF, thumbnails, and geolocation
+## Key Directories
 
-### Key Directories
+- `app/`: Nuxt app, pages, layouts, components, and composables.
+- `server/`: API routes, database schema, settings, queues, storage, AI, image, and security services.
+- `shared/`: Shared types and utility code.
+- `packages/webgl-image/`: WebGL image viewer package.
+- `third-party/ai/`: Optional Qdrant and LocalAI Compose stack.
+- `third-party/middleware/`: Optional local map and geocoding Compose stack.
 
-- `app/`: Nuxt 4 application (components, pages, composables)
-- `server/`: API routes and backend services
-- `packages/webgl-image/`: Standalone WebGL image viewer package
-- `shared/`: Type definitions shared between client/server
-
-## Development Workflow
-
-### Essential Commands
+## Development Commands
 
 ```bash
-# Development with dependency building
-pnpm dev:deps
-
-# Build WebGL package only
-pnpm build:deps
-
-# Database operations
-pnpm db:generate  # Generate migrations
-pnpm db:migrate   # Apply migrations
-
-# Production build
+pnpm dev
 pnpm build
+pnpm lint
+pnpm docs:build
+pnpm db:generate
+pnpm db:migrate
 ```
 
-### Monorepo Structure
+Use Docker Compose for local deployment:
 
-This is a pnpm workspace with the WebGL package as a local dependency. Always use `pnpm dev:deps` for development to ensure the WebGL package builds alongside the main app.
+```bash
+docker compose up -d --build
+```
 
-## Storage Architecture
+Optional sidecars are started explicitly:
 
-### Multi-Provider System
+```bash
+docker compose -f docker-compose.yml -f third-party/ai/docker-compose.yml up -d
+docker compose -f docker-compose.yml -f third-party/middleware/docker-compose.yml up -d
+```
 
-Storage providers are abstracted through `server/services/storage/interfaces.ts`:
+## Database Pattern
 
-- **S3**: AWS S3-compatible storage (primary)
-- **HubR2**: Cloudflare R2 via NuxtHub
-- **GitHub**: Git-based storage (experimental)
+Always use `useDB()` and schema helpers from `server/utils/db.ts`.
 
-### Key Pattern
-
-All storage operations go through `useStorageProvider(event)` in API routes. The provider is configured via `NUXT_STORAGE_PROVIDER` environment variable.
-
-## Photo Processing Pipeline
-
-### Async Processing Pattern
-
-Photos are processed via `execPhotoPipelineAsync()` in `server/services/photo/pipeline-async.ts`:
-
-1. **Preprocessing**: HEIC conversion to JPEG, buffer management
-2. **Metadata**: Sharp processing for dimensions/format
-3. **Thumbnails**: WebP generation with ThumbHash
-4. **EXIF**: Comprehensive metadata extraction via exiftool-vendored
-5. **Geolocation**: Reverse geocoding for GPS coordinates
-6. **LivePhoto**: Video companion file detection and processing
-
-### Critical Implementation Details
-
-- Use `setImmediate()` for non-blocking async operations
-- Always handle HEIC → JPEG conversion for Apple photos
-- EXIF processing requires temporary file writes (see `server/services/image/exif.ts`)
-- Thumbnails are stored as separate WebP files with hash compression
-
-## Component Patterns
-
-### Vue Components
-
-- All components are auto imported via Nuxt (eg. `/app/components/photo/PhotoItem.client.vue` can be used directly as `<PhotoPhotoItem />`)
-
-### Vue Composables
-
-- `usePhotos()`: Central photo data management with injection/provide pattern
-- `usePhotoFilters()`: Client-side filtering with reactive state
-- `useLivePhotoProcessor()`: WebGL-based MOV to MP4 conversion
-- `useWebGLWorkState()`: Performance monitoring for WebGL operations
-
-### Masonry Grid System
-
-The `app/components/masonry/Root.vue` implements a CSS-based masonry layout:
-
-- Auto-responsive column counts based on viewport
-- Intersection Observer for performance and date range tracking
-- Background LivePhoto processing for visible items only
-
-### WebGL Integration
-
-Register WebGL components via plugin (`app/plugins/chrono-webgl-image.ts`). The package provides hardware-accelerated zooming and panning for large images.
-
-## Database Operations
-
-### Core Database Pattern
-
-**ALWAYS use `useDB()` from `server/utils/db.ts` for all database operations:**
-
-```typescript
+```ts
 import { useDB, tables, eq } from '~~/server/utils/db'
 
-// Get all photos
-const photos = await useDB().select().from(tables.photos)
-
-// Get specific photo
 const photo = await useDB()
   .select()
   .from(tables.photos)
   .where(eq(tables.photos.id, photoId))
   .get()
-
-// Insert new photo
-await useDB().insert(tables.photos).values(photoData)
-
-// Update photo
-await useDB()
-  .update(tables.photos)
-  .set({ title: 'New Title' })
-  .where(eq(tables.photos.id, photoId))
 ```
 
-### Database Configuration
+Do not import Drizzle clients directly in route handlers or services.
 
-- Uses **better-sqlite3** with Drizzle ORM
-- Database file: `data/app.sqlite3`
-- Schema exports types: `User`, `Photo` from `useDB`
-- Import patterns: `eq`, `and`, `or`, `sql` from the same file
+## Storage Pattern
 
-### Photo Model Schema
+All file operations go through the configured storage provider. Supported providers are:
 
-Key fields in `server/database/schema.ts`:
+- local filesystem
+- S3-compatible object storage
+- OpenList
 
-- `storageKey`: Original file path in storage
-- `originalUrl`: Public URL (may point to JPEG version for HEIC)
-- `thumbnailUrl`/`thumbnailHash`: WebP thumbnail with ThumbHash
-- `exif`: Full EXIF JSON (typed as `NeededExif`)
-- `latitude`/`longitude`/`city`/`country`: Extracted geolocation
-- `isLivePhoto`: Boolean with optional video companion file
+Do not assume local disk paths for user photo objects unless the code is explicitly handling the local provider.
 
-### Migration Pattern
+## AI Pattern
 
-Use Drizzle migrations for schema changes. Initial user setup is handled in migration files.
+AI functionality is optional and split by capability:
 
-## API Conventions
+- VLM analysis for tags, descriptions, and critique.
+- Jina-compatible image embeddings for text-to-image search.
+- LocalAI face extraction for face albums.
+- Qdrant for vector storage.
 
-### Authentication
+AI stages must remain independently retryable. A failed VLM, embedding, or face stage should not block unrelated stages unless the caller explicitly requested a combined workflow.
 
-All photo management APIs require `await requireUserSession(event)` using nuxt-auth-utils with GitHub OAuth.
+## Security Pattern
 
-### Upload Flow
+- Keep admin capabilities separate from user-owned photo data.
+- Scope photo, album, face, AI, upload, and public APIs by owner or explicit public visibility.
+- When deleting users or generated AI data, clean associated storage artifacts and vector data.
+- Preserve existing user changes; do not revert unrelated dirty worktree files.
 
-1. POST `/api/photos` → Get presigned URL
-2. Direct upload to storage provider
-3. POST `/api/photos/process` → Trigger async processing
-4. Background pipeline processes and saves to database
+## UI Pattern
 
-### Background Processing
-
-Use this pattern for long-running operations:
-
-```typescript
-// Return immediately, process in background
-processPhotoInBackground(fileKey, storageObject)
-return { message: 'Processing started' }
-```
-
-## Environment Configuration
-
-### Required Variables
-
-- `NUXT_STORAGE_PROVIDER`: `s3` | `hub-r2` | `github`
-- `NUXT_SESSION_PASSWORD`: 32-character random string
-- `NUXT_OAUTH_GITHUB_CLIENT_ID/SECRET`: GitHub OAuth app
-- `MAPBOX_TOKEN`: For map functionality
-
-### Storage Provider Config
-
-Each provider has specific env vars (see README). S3 is most commonly used with CDN support via `NUXT_PROVIDER_S3_CDN_URL`.
-
-## Performance Considerations
-
-### Image Processing
-
-- Large images are processed asynchronously to avoid blocking
-- HEIC files automatically get JPEG versions uploaded
-- Thumbnails use WebP format for optimal size/quality
-- Use Sharp for all image manipulation
-
-### WebGL Viewer
-
-- Monitors work state via `useWebGLWorkState()`
-- Automatically falls back for unsupported devices
-- Lazy loads textures for large images
-
-## Code Style
-
-### Database Operations
-
-- **CRITICAL**: Always use `useDB()` from `server/utils/db.ts` - never import Drizzle directly
-- Import query helpers: `import { useDB, tables, eq, and, or } from '~~/server/utils/db'`
-- Use `tables.photos`, `tables.users` for schema references
-- Database file is `data/app.sqlite3` (better-sqlite3 + Drizzle ORM)
-
-### TypeScript
-
-- Strict typing with shared types in `shared/types/`
-- Use Drizzle schema types for database operations
-- Avoid `any` except for complex EXIF data structures
-
-### Vue/Nuxt
-
-- Composition API throughout
-- Use `definePageMeta()` for layouts
-- Server-side components for data fetching
-- Client-side `.vue` files for interactive components (see `PhotoItem.client.vue`)
-
-When working on this codebase, prioritize understanding the async processing pipeline and storage abstraction layer, as these are the most complex architectural decisions that impact all photo operations.
+- Match existing Nuxt UI and Tailwind conventions.
+- Keep dashboard/admin tools dense, predictable, and work-focused.
+- Hide AI-only UI when AI is disabled.
+- Avoid hardcoded external project links unless the link is intentionally part of acknowledgements or documentation.

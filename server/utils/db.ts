@@ -150,7 +150,7 @@ async function migratePostgres() {
   const client = await postgresPool.connect()
   try {
     await client.query(`
-      CREATE TABLE IF NOT EXISTS __chronoframe_migrations (
+      CREATE TABLE IF NOT EXISTS __lumamemo_migrations (
         id serial PRIMARY KEY,
         name text NOT NULL UNIQUE,
         applied_at timestamptz NOT NULL DEFAULT now()
@@ -160,7 +160,7 @@ async function migratePostgres() {
     const applied = new Set(
       (
         await client.query<{ name: string }>(
-          'SELECT name FROM __chronoframe_migrations ORDER BY name',
+          'SELECT name FROM __lumamemo_migrations ORDER BY name',
         )
       ).rows.map((row) => row.name),
     )
@@ -184,7 +184,7 @@ async function migratePostgres() {
           await client.query(statement)
         }
         await client.query(
-          'INSERT INTO __chronoframe_migrations (name) VALUES ($1)',
+          'INSERT INTO __lumamemo_migrations (name) VALUES ($1)',
           [file],
         )
         await client.query('COMMIT')

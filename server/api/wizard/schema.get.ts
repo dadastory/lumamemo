@@ -20,9 +20,9 @@ export default eventHandler(async (event) => {
   // 1. Admin Account Schema
   if (query.namespace === 'admin') {
     // Use env variables for default values if configured
-    const defaultUsername = process.env.CFRAME_ADMIN_NAME || 'admin'
-    const defaultEmail = process.env.CFRAME_ADMIN_EMAIL || ''
-    const defaultPassword = process.env.CFRAME_ADMIN_PASSWORD || ''
+    const defaultUsername = process.env.LUMAMEMO_ADMIN_NAME || 'admin'
+    const defaultEmail = process.env.LUMAMEMO_ADMIN_EMAIL || ''
+    const defaultPassword = process.env.LUMAMEMO_ADMIN_PASSWORD || ''
 
     const fields: FieldDescriptor[] = [
       {

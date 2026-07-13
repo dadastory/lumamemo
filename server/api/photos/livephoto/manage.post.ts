@@ -126,7 +126,7 @@ export default eventHandler(async (event) => {
         })
     }
   } catch (error) {
-    logger.chrono.error('LivePhoto management error:', error)
+    logger.app.error('LivePhoto management error:', error)
     throw createError({
       statusCode: 500,
       statusMessage: 'Failed to process LivePhoto management request',

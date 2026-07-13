@@ -16,7 +16,7 @@ export const scanAndProcessExistingLivePhotos = async (): Promise<{
   }
 
   try {
-    logger.chrono.info('Starting scan for existing LivePhoto videos...')
+    logger.app.info('Starting scan for existing LivePhoto videos...')
 
     // 这里需要根据你的存储提供商实现列出所有文件的功能
     // 如果你的存储提供商支持列出文件，可以使用类似的逻辑：
@@ -25,13 +25,13 @@ export const scanAndProcessExistingLivePhotos = async (): Promise<{
     // 由于大多数存储提供商不直接提供列出所有文件的功能，
     // 这个函数可以作为管理工具，手动调用处理特定的 MOV 文件
 
-    logger.chrono.info(
+    logger.app.info(
       'Scan completed. Use processSpecificLivePhotoVideo for individual files.',
     )
 
     return results
   } catch (error) {
-    logger.chrono.error('Failed to scan existing LivePhotos:', error)
+    logger.app.error('Failed to scan existing LivePhotos:', error)
     results.errors.push(error instanceof Error ? error.message : String(error))
     return results
   }
@@ -49,7 +49,7 @@ export const processSpecificLivePhotoVideo = async (
     // 获取文件信息
     const fileBuffer = await storageProvider.get(videoKey)
     if (!fileBuffer) {
-      logger.chrono.error(`Video file not found: ${videoKey}`)
+      logger.app.error(`Video file not found: ${videoKey}`)
       return false
     }
 
@@ -57,7 +57,7 @@ export const processSpecificLivePhotoVideo = async (
 
     // 检查是否为可能的 LivePhoto 视频
     if (!isLivePhotoVideo(fileName, fileBuffer.length)) {
-      logger.chrono.warn(
+      logger.app.warn(
         `File does not appear to be a LivePhoto video: ${videoKey}`,
       )
       return false
@@ -66,7 +66,7 @@ export const processSpecificLivePhotoVideo = async (
     // 处理 LivePhoto 视频
     return await processLivePhotoVideo(videoKey, fileBuffer.length)
   } catch (error) {
-    logger.chrono.error(
+    logger.app.error(
       `Failed to process specific LivePhoto video ${videoKey}:`,
       error,
     )

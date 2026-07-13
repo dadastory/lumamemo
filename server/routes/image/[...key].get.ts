@@ -12,6 +12,6 @@ export default eventHandler(async (event) => {
   if (!photo) {
     throw createError({ statusCode: 404, statusMessage: 'Photo not found' })
   }
-  logger.chrono.info('Serve image from key', key)
+  logger.app.info('Serve image from key', key)
   return photo
 })

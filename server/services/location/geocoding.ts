@@ -135,7 +135,7 @@ export class MapboxGeocodingProvider implements GeocodingProvider {
  */
 export class NominatimGeocodingProvider implements GeocodingProvider {
   private readonly baseUrl: string
-  private readonly userAgent = 'chronoframe/1.0'
+  private readonly userAgent = 'lumamemo/1.0'
   private lastRequestTime = 0
   private readonly rateLimitMs = 1000 // Nominatim 要求至少1秒间隔
 

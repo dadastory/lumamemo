@@ -232,7 +232,7 @@ export default eventHandler(async (event) => {
     if ((error as any).statusCode) {
       throw error
     }
-    logger.chrono.error('Failed to prepare upload:', error)
+    logger.app.error('Failed to prepare upload:', error)
     throw createError({
       statusCode: 500,
       statusMessage: 'Failed to prepare upload',

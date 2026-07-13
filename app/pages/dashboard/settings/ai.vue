@@ -25,7 +25,7 @@ const mlTestResults = ref<Record<'vlm' | 'embedding' | 'face', any | null>>({
   embedding: null,
   face: null,
 })
-const LOCALAI_DEFAULT_BASE_URL = 'http://chronoframe-localai:8080'
+const LOCALAI_DEFAULT_BASE_URL = 'http://lumamemo-localai:8080'
 const OPENAI_DEFAULT_BASE_URL = 'https://api.openai.com/v1'
 const JINA_DEFAULT_BASE_URL = 'https://api.jina.ai/v1'
 const JINA_IMAGE_EMBEDDING_MODEL_VALUES = new Set([

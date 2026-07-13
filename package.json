@@ -1,9 +1,8 @@
 {
-  "name": "chronoframe",
-  "version": "1.0.0-rc.3",
+  "name": "lumamemo",
+  "version": "0.1.0",
   "author": {
-    "name": "Timothy Yin",
-    "email": "master@uniiem.com"
+    "name": "LumaMemo contributors"
   },
   "license": "MIT",
   "type": "module",
@@ -18,9 +17,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "build": "NODE_OPTIONS=\"--max-old-space-size=8192\" nuxt build",
-    "build:deps": "pnpm --filter @chronoframe/webgl-image build",
+    "build:deps": "pnpm --filter @lumamemo/webgl-image build",
     "dev": "run-p dev:dep dev:wait-only",
-    "dev:dep": "pnpm --filter @chronoframe/webgl-image dev",
+    "dev:dep": "pnpm --filter @lumamemo/webgl-image dev",
     "dev:only": "nuxt dev --host",
     "dev:wait-only": "wait-on packages/webgl-image/dist && nuxt dev --host",
     "lint": "oxlint",
@@ -37,7 +36,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1065.0",
     "@aws-sdk/s3-request-presigner": "^3.1065.0",
-    "@chronoframe/webgl-image": "workspace:*",
+    "@lumamemo/webgl-image": "workspace:*",
     "@indoorequal/vue-maplibre-gl": "^8.4.2",
     "@nuxt/fonts": "0.14.0",
     "@nuxt/icon": "2.2.3",

@@ -1,6 +1,6 @@
 # Contributing Guide
 
-This document will guide you through setting up the ChronoFrame development environment, including environment requirements, dependency installation, configuration settings, and development tools.
+This document will guide you through setting up the LumaMemo development environment, including environment requirements, dependency installation, configuration settings, and development tools.
 
 ## Environment Requirements
 
@@ -16,17 +16,11 @@ This document will guide you through setting up the ChronoFrame development envi
 ### 1. Clone Repository
 
 ```bash
-# Using HTTPS
-git clone https://github.com/HoshinoSuzumi/chronoframe.git
-
-# Or using SSH
-git clone git@github.com:HoshinoSuzumi/chronoframe.git
+# Clone the maintained repository you are working with
+git clone <repository-url>
 
 # Enter project directory
-cd chronoframe
-
-# Set upstream remote repository
-git remote add upstream https://github.com/HoshinoSuzumi/chronoframe.git
+cd lumamemo
 ```
 
 ### 2. Install Dependencies
@@ -53,9 +47,9 @@ nano .env  # Or use your preferred editor
 
 ```bash
 # === Admin Account ===
-CFRAME_ADMIN_EMAIL=dev@example.com
-CFRAME_ADMIN_NAME=Developer
-CFRAME_ADMIN_PASSWORD=dev123456
+LUMAMEMO_ADMIN_EMAIL=dev@example.com
+LUMAMEMO_ADMIN_NAME=Developer
+LUMAMEMO_ADMIN_PASSWORD=dev123456
 
 # === Authentication Settings ===
 NUXT_OAUTH_GITHUB_CLIENT_ID=your-dev-github-client-id
@@ -65,7 +59,7 @@ NUXT_SESSION_PASSWORD=your-32-character-development-key
 # === Storage Settings (can use MinIO for development) ===
 NUXT_STORAGE_PROVIDER=s3
 NUXT_PROVIDER_S3_ENDPOINT=http://localhost:9000
-NUXT_PROVIDER_S3_BUCKET=chronoframe-dev
+NUXT_PROVIDER_S3_BUCKET=lumamemo-dev
 NUXT_PROVIDER_S3_REGION=us-east-1
 NUXT_PROVIDER_S3_ACCESS_KEY_ID=minioadmin
 NUXT_PROVIDER_S3_SECRET_ACCESS_KEY=minioadmin
@@ -83,7 +77,7 @@ VITE_SHOW_DEBUG_INFO=true
 ### Directory Structure
 
 ```
-chronoframe/
+lumamemo/
 ├── app/                    # Nuxt 4 application directory
 │   ├── components/         # Vue components
 │   │   ├── ui/            # Common UI components
@@ -137,7 +131,7 @@ chronoframe/
 #### Backend Technologies
 
 - **Nitro**: Server-side framework
-- **SQLite**: Lightweight database
+- **PostgreSQL**: Default deployment database
 - **Drizzle ORM**: Type-safe ORM
 - **Sharp**: High-performance image processing
 - **ExifTool**: EXIF data extraction
@@ -176,6 +170,33 @@ pnpm build
 
 # Preview production build
 pnpm preview
+```
+
+### Local Docker Development
+
+Use the local build override when you want Docker Compose to build the application image from the current source tree:
+
+```bash
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.local-build.yml \
+  up -d --build
+```
+
+Optional AI and middleware sidecars stay explicit in development:
+
+```bash
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.local-build.yml \
+  -f third-party/ai/docker-compose.yml \
+  up -d --build
+
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.local-build.yml \
+  -f third-party/middleware/docker-compose.yml \
+  up -d --build
 ```
 
 ## Testing Environment
@@ -348,5 +369,4 @@ Look for Issues labeled with:
 
 ### Community Resources
 
-- [GitHub Issues](https://github.com/HoshinoSuzumi/chronoframe/issues)
-- [GitHub Discussions](https://github.com/HoshinoSuzumi/chronoframe/discussions)
+Use the issue tracker and discussions for the maintained repository you are working with.

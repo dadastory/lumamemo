@@ -133,15 +133,7 @@ const yearOptions = computed(() => {
 })
 
 const onShareSite = () => {
-  const discussionParams = new URLSearchParams({
-    category: 'showcases',
-    title: `Show: ${$t('title.gallery')}`,
-    body: `## URL\n\n[${window.location.origin}](${window.location.origin})`,
-  })
-  window.open(
-    `https://github.com/HoshinoSuzumi/chronoframe/discussions/new?${discussionParams}`,
-    '_blank',
-  )
+  navigator.clipboard?.writeText(window.location.origin)
 }
 </script>
 
@@ -201,14 +193,9 @@ const onShareSite = () => {
               <p class="text-sm text-neutral-500 dark:text-neutral-400">
                 {{ $t('dashboard.overview.section.runtimeInfo.version') }}
               </p>
-              <NuxtLink
-                class="text-lg font-bold hover:text-primary"
-                target="_blank"
-                external
-                :to="`https://github.com/HoshinoSuzumi/chronoframe/releases/tag/v${$config.public.VERSION}`"
-              >
+              <p class="text-lg font-bold">
                 v{{ $config.public.VERSION }}
-              </NuxtLink>
+              </p>
             </div>
             <div>
               <p class="text-sm text-neutral-500 dark:text-neutral-400">
@@ -258,11 +245,10 @@ const onShareSite = () => {
               </p>
               <p class="text-lg font-bold">
                 <UButton
-                  external
                   variant="subtle"
                   size="xs"
                   color="info"
-                  trailing-icon="tabler:external-link"
+                  trailing-icon="tabler:copy"
                   @click="onShareSite"
                 >
                   {{ $t('dashboard.overview.shareSite.button') }}

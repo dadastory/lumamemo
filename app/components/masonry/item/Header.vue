@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { motion, AnimatePresence } from 'motion-v'
+import { motion } from 'motion-v'
 
 interface HeaderProfile {
   title?: string | null
@@ -70,10 +70,8 @@ const totalSelectedFilters = computed(() => {
   )
 })
 
-const isRepoLinkHovering = ref(false)
-
 const displayTitle = computed(
-  () => props.profile?.title || getSetting('app:title') || 'ChronoFrame',
+  () => props.profile?.title || getSetting('app:title') || 'LumaMemo',
 )
 const displaySlogan = computed(
   () => props.profile?.slogan ?? getSetting('app:slogan'),
@@ -309,34 +307,14 @@ const displayAvatarUrl = computed(
         <div
           class="text-xs text-neutral-500/60 dark:text-neutral-500/80 font-medium inline-flex justify-center items-center gap-0.5"
         >
-          <a
-            ref="projectLink"
-            href="https://github.com/HoshinoSuzumi/chronoframe"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="hover:underline inline-flex items-center gap-0.5 group"
-            @mouseenter="isRepoLinkHovering = true"
-            @mouseleave="isRepoLinkHovering = false"
-          >
+          <span class="inline-flex items-center gap-0.5">
             <Icon
-              name="mdi:github"
+              name="tabler:camera"
               class="inline-block text-sm -mt-px"
               mode="svg"
             />
-            ChronoFrame
-            <AnimatePresence>
-              <motion.span
-                v-if="isRepoLinkHovering"
-                :initial="{ width: 0, opacity: 0 }"
-                :animate="{ width: 'auto', opacity: 1 }"
-                :exit="{ width: 0, opacity: 0 }"
-                :transition="{ duration: 0.3, ease: 'easeInOut' }"
-                style="overflow: hidden; white-space: nowrap"
-              >
-                ({{ $config.public.VERSION }})
-              </motion.span>
-            </AnimatePresence>
-          </a>
+            LumaMemo
+          </span>
         </div>
       </div>
     </div>

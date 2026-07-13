@@ -32,12 +32,12 @@ const mConsola = createConsola({
 mConsola.addReporter(logFileReporter)
 
 export const logger = {
-  chrono: mConsola.withTag('cframe/main'),
-  storage: mConsola.withTag('cframe/storage'),
-  fs: mConsola.withTag('cframe/fs'),
-  image: mConsola.withTag('cframe/image'),
-  location: mConsola.withTag('cframe/location'),
-  dynamic: (id: string) => mConsola.withTag(`cframe/${id}`),
+  app: mConsola.withTag('lumamemo/main'),
+  storage: mConsola.withTag('lumamemo/storage'),
+  fs: mConsola.withTag('lumamemo/fs'),
+  image: mConsola.withTag('lumamemo/image'),
+  location: mConsola.withTag('lumamemo/location'),
+  dynamic: (id: string) => mConsola.withTag(`lumamemo/${id}`),
 }
 
 export type Logger = Omit<typeof logger, 'dynamic'>

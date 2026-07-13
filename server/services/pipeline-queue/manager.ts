@@ -1278,7 +1278,7 @@ export class QueueManager {
 
         const tempRoot = tmpdir()
         await mkdir(tempRoot, { recursive: true })
-        const tempDir = await mkdtemp(path.join(tempRoot, 'cframe-location-'))
+        const tempDir = await mkdtemp(path.join(tempRoot, 'lumamemo-location-'))
         const ext = path.extname(photo.storageKey) || '.jpg'
         const tempFile = path.join(tempDir, `erase-location${ext}`)
 

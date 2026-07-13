@@ -62,7 +62,7 @@ export const extractRawPreview = async ({
 }) => {
   const tempRoot = tmpdir()
   await mkdir(tempRoot, { recursive: true })
-  const tempDir = await mkdtemp(path.join(tempRoot, 'cframe-raw-'))
+  const tempDir = await mkdtemp(path.join(tempRoot, 'lumamemo-raw-'))
   const rawExtension = path.extname(storageKey) || '.raw'
   const rawFile = path.join(tempDir, `original${rawExtension}`)
 

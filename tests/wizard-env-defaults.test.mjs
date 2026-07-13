@@ -12,12 +12,12 @@ describe('wizard environment defaults', () => {
     const env = {
       NUXT_STORAGE_PROVIDER: 's3',
       NUXT_PROVIDER_S3_ENDPOINT: 'http://minio:9000',
-      NUXT_PROVIDER_S3_BUCKET: 'chronoframe',
+      NUXT_PROVIDER_S3_BUCKET: 'lumamemo',
       NUXT_PROVIDER_S3_REGION: 'us-east-1',
-      NUXT_PROVIDER_S3_ACCESS_KEY_ID: 'chronoframe',
+      NUXT_PROVIDER_S3_ACCESS_KEY_ID: 'lumamemo',
       NUXT_PROVIDER_S3_SECRET_ACCESS_KEY: 'secret',
       NUXT_PROVIDER_S3_PREFIX: 'photos/',
-      NUXT_PROVIDER_S3_CDN_URL: 'http://localhost:9000/chronoframe',
+      NUXT_PROVIDER_S3_CDN_URL: 'http://localhost:9000/lumamemo',
       NUXT_PROVIDER_S3_FORCE_PATH_STYLE: 'true',
       NUXT_PROVIDER_LOCAL_PATH: '/app/data/storage',
       NUXT_PROVIDER_LOCAL_BASE_URL: '/storage',
@@ -27,12 +27,12 @@ describe('wizard environment defaults', () => {
 
     assert.equal(defaults.provider, 's3')
     assert.equal(defaults['s3.endpoint'], 'http://minio:9000')
-    assert.equal(defaults['s3.bucket'], 'chronoframe')
+    assert.equal(defaults['s3.bucket'], 'lumamemo')
     assert.equal(defaults['s3.region'], 'us-east-1')
-    assert.equal(defaults['s3.accessKeyId'], 'chronoframe')
+    assert.equal(defaults['s3.accessKeyId'], 'lumamemo')
     assert.equal(defaults['s3.secretAccessKey'], 'secret')
     assert.equal(defaults['s3.prefix'], 'photos/')
-    assert.equal(defaults['s3.cdnUrl'], 'http://localhost:9000/chronoframe')
+    assert.equal(defaults['s3.cdnUrl'], 'http://localhost:9000/lumamemo')
     assert.equal(defaults['s3.forcePathStyle'], true)
     assert.equal(defaults['local.basePath'], '/app/data/storage')
     assert.equal(defaults['local.baseUrl'], '/storage')
@@ -67,7 +67,7 @@ describe('wizard environment defaults', () => {
       {
         provider: 's3',
         's3.endpoint': 'http://minio:9000',
-        's3.bucket': 'chronoframe',
+        's3.bucket': 'lumamemo',
         's3.forcePathStyle': true,
       },
       {
@@ -81,7 +81,7 @@ describe('wizard environment defaults', () => {
     assert.deepEqual(merged, {
       provider: 'local',
       's3.endpoint': 'http://minio:9000',
-      's3.bucket': 'chronoframe',
+      's3.bucket': 'lumamemo',
       's3.forcePathStyle': false,
     })
   })

@@ -1,10 +1,10 @@
 const baseLocalMapStyle = {
   version: 8,
-  name: 'ChronoFrame Local PMTiles',
+  name: 'LumaMemo Local PMTiles',
   metadata: {
-    'chronoframe:tileset': 'global',
-    'chronoframe:source': 'local-pmtiles',
-    'chronoframe:bounds': [-180, -85.051129, 180, 85.051129],
+    'lumamemo:tileset': 'global',
+    'lumamemo:source': 'local-pmtiles',
+    'lumamemo:bounds': [-180, -85.051129, 180, 85.051129],
   },
   sources: {
     protomaps: {

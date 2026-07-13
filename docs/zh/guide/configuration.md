@@ -1,78 +1,111 @@
 # 配置项说明
 
-无论是使用 Docker 还是 Docker Compose (.env) 方式部署，均通过环境变量进行配置。
+配置通过 `.env` 提供。建议从 `.env.example` 复制后按部署环境调整。
 
-## 环境变量列表
+## 必需运行配置
 
-| 环境变量                                 | 说明                                                 | 默认值                                | 必需                                                                  |
-| ---------------------------------------- | ---------------------------------------------------- | ------------------------------------- | --------------------------------------------------------------------- |
-| CFRAME_ADMIN_EMAIL                       | 初始管理员用户的邮箱                                 | `admin@chronoframe.com`               | 是                                                                    |
-| CFRAME_ADMIN_NAME                        | 初始管理员用户的用户名                               | `Chronoframe`                         | 否                                                                    |
-| CFRAME_ADMIN_PASSWORD                    | 初始管理员用户的密码                                 | `CF1234@!`                            | 否                                                                    |
-| NUXT_PUBLIC_APP_TITLE                    | 应用标题                                             | `ChronoFrame`                         | 否                                                                    |
-| NUXT_PUBLIC_APP_SLOGAN                   | 应用口号                                             | 无                                    | 否                                                                    |
-| NUXT_PUBLIC_APP_AUTHOR                   | 应用作者                                             | 无                                    | 否                                                                    |
-| NUXT_PUBLIC_APP_AVATAR_URL               | 应用头像 URL                                         | 无                                    | 否                                                                    |
-| NUXT_PUBLIC_COLOR_MODE_PREFERENCE        | 颜色模式偏好，可选 `light`、`dark`、`system`         | system                                | 否                                                                    |
-| NUXT_PUBLIC_MAP_PROVIDER                 | 地图提供者，可选 `mapbox`、`maplibre`                | `mapbox`                              | 否                                                                    |
-| NUXT_PUBLIC_MAPBOX_ACCESS_TOKEN          | Mapbox 访问令牌(可限制 URL)，用于地图服务            | 无                                    | 当 `NUXT_PUBLIC_MAP_PROVIDER` 为 `mapbox` 时必需                      |
-| NUXT_NOMINATIM_BASE_URL                  | Nominatim 反向地理编码服务的基础 URL                 | `https://nominatim.openstreetmap.org` | 否                                                                    |
-| NUXT_MAPBOX_ACCESS_TOKEN                 | Mapbox 访问令牌(无 URL 限制)，用于位置信息服务       | 无                                    | 否                                                                    |
-| NUXT_STORAGE_PROVIDER                    | 存储提供者，支持 `local`、`s3`、`openlist`           | `local`                               | 是                                                                    |
-| NUXT_PROVIDER_LOCAL_PATH                 | 本地存储路径                                         | `/app/data/storage`                   | 否                                                                    |
-| NUXT_PROVIDER_LOCAL_BASE_URL             | 本地存储的访问 URL                                   | `/storage`                            | 否                                                                    |
-| NUXT_PROVIDER_S3_ENDPOINT                | S3 兼容存储服务的 Endpoint                           | 无                                    | 当 `NUXT_STORAGE_PROVIDER` 为 `s3` 时必需                             |
-| NUXT_PROVIDER_S3_BUCKET                  | S3 存储桶名称                                        | `chronoframe`                         | 当 `NUXT_STORAGE_PROVIDER` 为 `s3` 时必需                             |
-| NUXT_PROVIDER_S3_REGION                  | S3 存储桶区域                                        | `auto`                                | 当 `NUXT_STORAGE_PROVIDER` 为 `s3` 时必需                             |
-| NUXT_PROVIDER_S3_ACCESS_KEY_ID           | S3 访问密钥 ID                                       | 无                                    | 当 `NUXT_STORAGE_PROVIDER` 为 `s3` 时必需                             |
-| NUXT_PROVIDER_S3_SECRET_ACCESS_KEY       | S3 访问密钥                                          | 无                                    | 当 `NUXT_STORAGE_PROVIDER` 为 `s3` 时必需                             |
-| NUXT_PROVIDER_S3_PREFIX                  | S3 存储前缀                                          | `photos/`                             | 否                                                                    |
-| NUXT_PROVIDER_S3_CDN_URL                 | S3 存储的 CDN 地址                                   | 无                                    | 否                                                                    |
-| NUXT_PROVIDER_OPENLIST_BASE_URL          | OpenList 服务器 URL                                  | 无                                    | 当 `NUXT_STORAGE_PROVIDER` 为 `openlist` 时必需                       |
-| NUXT_PROVIDER_OPENLIST_ROOT_PATH         | OpenList 根路径                                      | 无                                    | 当 `NUXT_STORAGE_PROVIDER` 为 `openlist` 时必需                       |
-| NUXT_PROVIDER_OPENLIST_TOKEN             | OpenList API 令牌                                    | 无                                    | 当 `NUXT_STORAGE_PROVIDER` 为 `openlist` 时必需（用于 OpenList 认证） |
-| NUXT_PROVIDER_OPENLIST_ENDPOINT_UPLOAD   | OpenList 上传端点                                    | `/api/fs/put`                         | 否                                                                    |
-| NUXT_PROVIDER_OPENLIST_ENDPOINT_DOWNLOAD | OpenList 下载端点                                    | 无                                    | 否                                                                    |
-| NUXT_PROVIDER_OPENLIST_ENDPOINT_LIST     | OpenList 列表端点                                    | 无                                    | 否                                                                    |
-| NUXT_PROVIDER_OPENLIST_ENDPOINT_DELETE   | OpenList 删除端点                                    | `/api/fs/remove`                      | 否                                                                    |
-| NUXT_PROVIDER_OPENLIST_ENDPOINT_META     | OpenList 元数据端点                                  | `/api/fs/get`                         | 否                                                                    |
-| NUXT_PROVIDER_OPENLIST_PATH_FIELD        | OpenList 路径字段名                                  | `path`                                | 否                                                                    |
-| NUXT_PROVIDER_OPENLIST_CDN_URL           | OpenList CDN 地址                                    | 无                                    | 否                                                                    |
-| NUXT_PUBLIC_OAUTH_GITHUB_ENABLED         | 是否启用 GitHub OAuth 登录                           | `false`                               | 否                                                                    |
-| NUXT_OAUTH_GITHUB_CLIENT_ID              | GitHub OAuth 应用的 Client ID                        | 无                                    | 否(可选,用于 GitHub 登录)                                             |
-| NUXT_OAUTH_GITHUB_CLIENT_SECRET          | GitHub OAuth 应用的 Client Secret                    | 无                                    | 否(可选,用于 GitHub 登录)                                             |
-| NUXT_SESSION_PASSWORD                    | 用于加密会话的密码，32 位随机字符串                  | 无                                    | 是                                                                    |
-| NUXT_PUBLIC_GTAG_ID                      | Google Analytics 追踪 ID                             | 无                                    | 否                                                                    |
-| NUXT_PUBLIC_ANALYTICS_MATOMO_ENABLED     | 是否启用 Matomo 分析追踪                             | `false`                               | 否                                                                    |
-| NUXT_PUBLIC_ANALYTICS_MATOMO_URL         | Matomo 实例 URL 地址(如: https://matomo.example.com) | 无                                    | 否(启用 Matomo 时必需)                                                |
-| NUXT_PUBLIC_ANALYTICS_MATOMO_SITE_ID     | Matomo 站点 ID                                       | 无                                    | 否(启用 Matomo 时必需)                                                |
-| NUXT_UPLOAD_MIME_WHITELIST_ENABLED       | 是否启用上传文件 MIME 类型白名单验证                 | `true`                                | 否                                                                    |
-| NUXT_UPLOAD_MIME_WHITELIST               | 上传文件允许的 MIME 类型列表（逗号分隔）             | 见下方说明                            | 否                                                                    |
-| ALLOW_INSECURE_COOKIE                    | 是否允许非安全 Cookie（仅在开发环境使用）            | `false`                               | 否                                                                    |
+| 环境变量 | 说明 | 默认值 |
+| --- | --- | --- |
+| `NUXT_SESSION_PASSWORD` | 必填，32 位以上会话加密密钥 | 无 |
+| `LUMAMEMO_ADMIN_EMAIL` | 初始管理员邮箱 | `admin@lumamemo.local` |
+| `LUMAMEMO_ADMIN_NAME` | 初始管理员用户名 | `LumaMemo` |
+| `LUMAMEMO_ADMIN_PASSWORD` | 初始管理员密码 | `LM1234@!` |
+| `NUXT_PUBLIC_COLOR_MODE_PREFERENCE` | `light`、`dark` 或 `system` | `light` |
+| `NUXT_ALLOW_INSECURE_COOKIE` | 开发环境非 HTTPS Cookie 开关 | `false` |
 
-## 上传文件类型白名单
+## 数据库
 
-`NUXT_UPLOAD_MIME_WHITELIST` 的默认值包含以下 MIME 类型：
+| 环境变量 | 说明 | 默认值 |
+| --- | --- | --- |
+| `DATABASE_PROVIDER` | `postgres` 或 `sqlite`；Compose 默认使用 PostgreSQL | `postgres` |
+| `DATABASE_URL` | 应用数据库连接串 | PostgreSQL 侧车地址 |
+| `POSTGRES_IMAGE` | PostgreSQL 侧车镜像 | `postgres:17` |
+| `POSTGRES_DB` | PostgreSQL 数据库名 | `lumamemo` |
+| `POSTGRES_USER` | PostgreSQL 用户名 | `lumamemo` |
+| `POSTGRES_PASSWORD` | PostgreSQL 密码 | `lumamemo-postgres-password` |
 
-- `image/jpeg` - JPEG 图片
-- `image/png` - PNG 图片
-- `image/webp` - WebP 图片
-- `image/gif` - GIF 图片
-- `image/bmp` - BMP 图片
-- `image/tiff` - TIFF 图片
-- `image/heic` - HEIC 图片（Apple）
-- `image/heif` - HEIF 图片
-- `video/quicktime` - QuickTime 视频（MOV）
-- `video/mp4` - MP4 视频
+## 认证
 
-如需自定义白名单，请使用逗号分隔的 MIME 类型字符串，例如：
+| 环境变量 | 说明 | 默认值 |
+| --- | --- | --- |
+| `NUXT_PUBLIC_OAUTH_GITHUB_ENABLED` | 启用 GitHub 登录 | `false` |
+| `NUXT_OAUTH_GITHUB_CLIENT_ID` | GitHub OAuth Client ID | 无 |
+| `NUXT_OAUTH_GITHUB_CLIENT_SECRET` | GitHub OAuth Client Secret | 无 |
+| `NUXT_PUBLIC_OAUTH_OIDC_ENABLED` | 启用 OIDC 登录 | `false` |
+| `NUXT_PUBLIC_OAUTH_OIDC_LABEL` | OIDC 按钮显示名称 | `OIDC` |
+| `NUXT_OAUTH_OIDC_ISSUER` | OIDC issuer URL | 无 |
+| `NUXT_OAUTH_OIDC_CLIENT_ID` | OIDC Client ID | 无 |
+| `NUXT_OAUTH_OIDC_CLIENT_SECRET` | OIDC Client Secret | 无 |
+| `NUXT_OAUTH_OIDC_SCOPE` | OIDC scope | `openid email profile` |
+| `NUXT_OAUTH_OIDC_CLIENT_AUTH_METHOD` | OIDC 客户端认证方式 | `client_secret_post` |
 
-```
-NUXT_UPLOAD_MIME_WHITELIST=image/jpeg,image/png,video/mp4
-```
+## 地图与位置
 
-如需禁用白名单验证（允许任何文件类型），可设置：
+| 环境变量 | 说明 | 默认值 |
+| --- | --- | --- |
+| `NUXT_PUBLIC_MAP_PROVIDER` | `maplibre` 或 `mapbox` | `maplibre` |
+| `NUXT_PUBLIC_MAP_MAPLIBRE_STYLE` | MapLibre 样式地址 | `/maps/style.json?v=global` |
+| `NUXT_PUBLIC_MAP_MAPLIBRE_TOKEN` | 可选 MapLibre token | 无 |
+| `NUXT_PUBLIC_MAP_MAPBOX_STYLE` | Mapbox 样式地址 | `mapbox://styles/mapbox/standard` |
+| `NUXT_PUBLIC_MAPBOX_ACCESS_TOKEN` | 前端 Mapbox token | 无 |
+| `NUXT_MAPBOX_ACCESS_TOKEN` | 服务端 Mapbox 地理编码 token | 无 |
+| `NUXT_NOMINATIM_BASE_URL` | 可选 Nominatim 地址 | 无 |
 
-```
-NUXT_UPLOAD_MIME_WHITELIST_ENABLED=false
-```
+本地地图和地理编码侧车使用 `PMTILES_IMAGE`、`PMTILES_TILESET`、`PMTILES_FILENAME`、`MAPLIBRE_IMAGE` 和 `NOMINATIM_*`。
+
+## 存储
+
+| 环境变量 | 说明 | 默认值 |
+| --- | --- | --- |
+| `NUXT_STORAGE_PROVIDER` | `local`、`s3` 或 `openlist` | `s3` |
+| `NUXT_PROVIDER_LOCAL_PATH` | 应用容器内本地存储路径 | `/app/data/storage` |
+| `NUXT_PROVIDER_LOCAL_BASE_URL` | 本地存储公开路由 | `/storage` |
+| `NUXT_PROVIDER_S3_ENDPOINT` | S3 兼容 endpoint | `http://minio:9000` |
+| `NUXT_PROVIDER_S3_BUCKET` | S3 bucket | `lumamemo` |
+| `NUXT_PROVIDER_S3_REGION` | S3 region | `us-east-1` |
+| `NUXT_PROVIDER_S3_ACCESS_KEY_ID` | S3 access key | `lumamemo` |
+| `NUXT_PROVIDER_S3_SECRET_ACCESS_KEY` | S3 secret key | `lumamemo-minio-password` |
+| `NUXT_PROVIDER_S3_PREFIX` | S3 对象前缀 | `photos/` |
+| `NUXT_PROVIDER_S3_CDN_URL` | 可选 CDN 地址 | 无 |
+| `NUXT_PROVIDER_S3_FORCE_PATH_STYLE` | 强制 path-style S3 URL | `true` |
+| `NUXT_PROVIDER_OPENLIST_BASE_URL` | OpenList 基础地址 | 无 |
+| `NUXT_PROVIDER_OPENLIST_ROOT_PATH` | OpenList 根路径 | 无 |
+| `NUXT_PROVIDER_OPENLIST_TOKEN` | OpenList token | 无 |
+| `NUXT_PROVIDER_OPENLIST_ENDPOINT_UPLOAD` | OpenList 上传端点 | `/api/fs/put` |
+| `NUXT_PROVIDER_OPENLIST_ENDPOINT_DOWNLOAD` | OpenList 下载端点 | 无 |
+| `NUXT_PROVIDER_OPENLIST_ENDPOINT_LIST` | OpenList 列表端点 | 无 |
+| `NUXT_PROVIDER_OPENLIST_ENDPOINT_DELETE` | OpenList 删除端点 | `/api/fs/remove` |
+| `NUXT_PROVIDER_OPENLIST_ENDPOINT_META` | OpenList 元数据端点 | `/api/fs/get` |
+| `NUXT_PROVIDER_OPENLIST_PATH_FIELD` | OpenList 路径字段名 | `path` |
+| `NUXT_PROVIDER_OPENLIST_CDN_URL` | 可选 OpenList CDN 地址 | 无 |
+
+内置 MinIO 侧车使用 `MINIO_IMAGE`、`MINIO_MC_IMAGE`、`MINIO_ROOT_USER`、`MINIO_ROOT_PASSWORD` 和 `MINIO_BUCKET`。
+
+## AI 服务
+
+| 环境变量 | 说明 | 默认值 |
+| --- | --- | --- |
+| `ML_LOCALAI_BASE_URL` | 人脸提取使用的 LocalAI 地址 | `http://lumamemo-localai:8080` |
+| `ML_FACE_MODEL` | LocalAI 人脸模型名称 | 无 |
+| `ML_VLM_PROVIDER` | VLM 供应商类型 | `openai-compatible` |
+| `ML_VLM_BASE_URL` | VLM API 地址 | 无 |
+| `ML_VLM_API_KEY` | VLM API key | 无 |
+| `ML_VLM_MODEL` | VLM 模型名称 | 无 |
+| `ML_EMBEDDING_BASE_URL` | Jina 兼容图像 embedding 地址 | `https://api.jina.ai/v1` |
+| `ML_EMBEDDING_API_KEY` | embedding API key | 无 |
+| `ML_EMBEDDING_MODEL` | embedding 模型名称 | 无 |
+| `ML_VECTOR_PROVIDER` | 向量库供应商 | `qdrant` |
+| `ML_VECTOR_BASE_URL` | Qdrant 地址 | `http://lumamemo-qdrant:6333` |
+| `ML_VECTOR_API_KEY` | 可选 Qdrant API key | 无 |
+| `ML_VECTOR_COLLECTION_PREFIX` | Qdrant collection 前缀 | `lumamemo` |
+
+AI 侧车使用 `QDRANT_IMAGE`、`LOCALAI_IMAGE`、`LOCALAI_PORT`、`LOCALAI_DEBUG`、`LOCALAI_DISABLE_HARDWARE_DEFAULTS`、`LOCALAI_MAX_ACTIVE_BACKENDS`、`LOCALAI_WATCHDOG_*` 和 `HF_ENDPOINT`。
+
+## 上传校验
+
+| 环境变量 | 说明 | 默认值 |
+| --- | --- | --- |
+| `NUXT_UPLOAD_MIME_WHITELIST_ENABLED` | 启用 MIME 白名单校验 | `true` |
+| `NUXT_UPLOAD_MIME_WHITELIST` | 逗号分隔的 MIME 白名单 | 见 `.env.example` |
+
+默认白名单包含常见图片格式、RAW 相机格式、`video/quicktime` 和 `video/mp4`。

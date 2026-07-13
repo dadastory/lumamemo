@@ -1,11 +1,27 @@
-# ChronoFrame AI Services
+# LumaMemo AI Services
 
-This directory contains the optional AI-side Docker Compose file for Qdrant and
-LocalAI.
+This directory contains optional AI-side services used by LumaMemo.
 
-ChronoFrame does not install LocalAI models, download model files, edit model
-YAML, or poll LocalAI model jobs. It stores provider URLs and model names, then
-calls the configured services.
+LumaMemo does not install LocalAI models, download model files, edit model YAML,
+or manage model runtime jobs. It stores provider URLs, API keys, and model names,
+then performs lightweight health checks and inference requests.
+
+Start these services explicitly when AI features need local sidecars:
+
+```bash
+docker compose -f docker-compose.yml -f third-party/ai/docker-compose.yml up -d
+```
+
+## Services
+
+- **Qdrant** stores image vectors for semantic search.
+- **LocalAI** is used for face extraction when face albums are enabled.
+- **VLM providers** generate tags, descriptions, and photography critique.
+- **Jina-compatible image embedding providers** power text-to-image search.
+
+VLM, embedding, and face extraction can be enabled independently in the AI
+settings. Leaving a feature disabled or unconfigured keeps the related UI and
+tasks inactive.
 
 ## LocalAI Web UI
 
@@ -16,7 +32,8 @@ http://localhost:18080/browse
 ```
 
 Change the host port with `LOCALAI_PORT` in `.env`. Use the LocalAI web UI,
-LocalAI CLI, or another official LocalAI workflow to install and manage models.
+LocalAI CLI, or another official LocalAI workflow to install and manage face
+models.
 
 ## LocalAI Model Directory
 
@@ -26,16 +43,16 @@ LocalAI CLI, or another official LocalAI workflow to install and manage models.
 ./data/ai/localai/models:/models
 ```
 
-LocalAI owns the contents of that directory. After a model is installed and
-works in LocalAI, enter its model name in ChronoFrame AI settings.
+LocalAI owns the contents of that directory. After a face model is installed and
+works in LocalAI, enter its model name in LumaMemo AI settings.
 
-## ChronoFrame Settings
+## Application Settings
 
-ChronoFrame only performs lightweight health checks and inference requests:
+LumaMemo only calls configured services:
 
-- VLM and semantic embedding providers can use OpenAI-compatible, OpenAI,
-  LocalAI, or Ollama settings.
-- Face extraction remains a LocalAI integration and uses the configured LocalAI
-  base URL plus face model name.
-- Model downloads, YAML tuning, GPU/CPU settings, mirrors, and galleries are
-  handled outside ChronoFrame.
+- VLM: OpenAI-compatible or external provider configuration for visual analysis.
+- Embedding: Jina-compatible image embedding API configuration for semantic search.
+- Face extraction: LocalAI base URL plus face model name.
+
+Model downloads, GPU/CPU tuning, galleries, mirrors, and model startup behavior
+are handled outside LumaMemo.
