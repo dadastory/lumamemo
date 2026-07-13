@@ -15,6 +15,11 @@ on:
         required: false
         default: main
         type: string
+      publish_images:
+        description: 'Build and push Docker images before creating the release'
+        required: false
+        default: true
+        type: boolean
 
 env:
   GHCR_REGISTRY: ghcr.io
@@ -35,6 +40,7 @@ jobs:
       changelog: ${{ steps.changelog.outputs.changelog }}
       release_ref: ${{ steps.version.outputs.release_ref }}
       tag_name: ${{ steps.version.outputs.tag_name }}
+      publish_images: ${{ steps.version.outputs.publish_images }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -47,7 +53,9 @@ jobs:
         id: version
         run: |
           set -euo pipefail
+          PUBLISH_IMAGES=true
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            PUBLISH_IMAGES="${{ inputs.publish_images }}"
             VERSION="${{ inputs.version }}"
             VERSION="${VERSION#v}"
             if ! [[ "$VERSION" =~ ^[0-9]+(\.[0-9]+){1,2}([-.][0-9A-Za-z.-]+)?$ ]]; then
@@ -76,6 +84,7 @@ jobs:
           echo "release_ref=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "publish_images=$PUBLISH_IMAGES" >> $GITHUB_OUTPUT
           if [[ "$VERSION" == *"-"* ]]; then
             echo "prerelease=true" >> $GITHUB_OUTPUT
           else
@@ -118,6 +127,7 @@ jobs:
 
   build-and-push:
     needs: prepare
+    if: needs.prepare.outputs.publish_images == 'true'
     strategy:
       matrix:
         include:
@@ -207,6 +217,7 @@ jobs:
     needs:
       - prepare
       - build-and-push
+    if: needs.prepare.outputs.publish_images == 'true'
     runs-on: ubuntu-24.04
     permissions:
       packages: write
@@ -335,6 +346,7 @@ jobs:
     needs:
       - prepare
       - manifest
+    if: always() && needs.prepare.result == 'success' && (needs.prepare.outputs.publish_images != 'true' || needs.manifest.result == 'success')
     runs-on: ubuntu-24.04
     permissions:
       contents: write
