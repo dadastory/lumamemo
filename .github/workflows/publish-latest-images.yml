@@ -1,0 +1,131 @@
+name: Publish Latest Images
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Source image version without the v prefix, for example 0.1.0'
+        required: true
+        type: string
+      publish_ghcr:
+        description: 'Publish latest tags to GitHub Container Registry'
+        required: false
+        default: true
+        type: boolean
+      publish_dockerhub:
+        description: 'Publish latest tags to Docker Hub'
+        required: false
+        default: true
+        type: boolean
+
+env:
+  GHCR_REGISTRY: ghcr.io
+  GHCR_IMAGE_NAME: ${{ github.repository }}
+  DOCKERHUB_USERNAME: dadastory
+  DOCKERHUB_IMAGE_NAME: dadastory/${{ github.event.repository.name }}
+  TARGET_ARCHITECTURES: amd64 arm64
+
+jobs:
+  publish-latest:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    env:
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+    steps:
+      - name: Resolve source version
+        id: version
+        run: |
+          set -euo pipefail
+          VERSION="${{ inputs.version }}"
+          VERSION="${VERSION#v}"
+          if ! [[ "$VERSION" =~ ^[0-9]+(\.[0-9]+){1,2}([-.][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid version: $VERSION" >&2
+            exit 1
+          fi
+          if [ "${{ inputs.publish_dockerhub }}" = "true" ] && [ -z "${DOCKERHUB_TOKEN:-}" ]; then
+            echo "DOCKERHUB_TOKEN is required when publish_dockerhub is enabled." >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        if: inputs.publish_ghcr
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.GHCR_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to Docker Hub
+        if: inputs.publish_dockerhub && env.DOCKERHUB_TOKEN != ''
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
+
+      - name: Publish latest manifests
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          PUBLISH_GHCR: ${{ inputs.publish_ghcr }}
+          PUBLISH_DOCKERHUB: ${{ inputs.publish_dockerhub }}
+        run: |
+          set -euo pipefail
+          GHCR_BASE_RAW="${GHCR_REGISTRY}/${GHCR_IMAGE_NAME}"
+          DOCKERHUB_BASE_RAW="${DOCKERHUB_IMAGE_NAME}"
+          GHCR_BASE=$(echo "$GHCR_BASE_RAW" | tr '[:upper:]' '[:lower:]')
+          DOCKERHUB_BASE=$(echo "$DOCKERHUB_BASE_RAW" | tr '[:upper:]' '[:lower:]')
+          ARCHITECTURES=( $TARGET_ARCHITECTURES )
+
+          if [ "$PUBLISH_DOCKERHUB" = "true" ] && [ -z "${DOCKERHUB_TOKEN:-}" ]; then
+            echo "DOCKERHUB_TOKEN is required when publish_dockerhub is enabled." >&2
+            exit 1
+          fi
+
+          publish_latest() {
+            local registry_base=$1
+            local refs=()
+
+            for arch in "${ARCHITECTURES[@]}"; do
+              docker buildx imagetools inspect "${registry_base}:${VERSION}-${arch}" >/dev/null
+              docker buildx imagetools create \
+                --tag "${registry_base}:latest-${arch}" \
+                "${registry_base}:${VERSION}-${arch}"
+              refs+=("${registry_base}:${VERSION}-${arch}")
+            done
+
+            docker buildx imagetools create \
+              --tag "${registry_base}:latest" \
+              "${refs[@]}"
+          }
+
+          if [ "$PUBLISH_GHCR" = "true" ]; then
+            publish_latest "$GHCR_BASE"
+          fi
+
+          if [ "$PUBLISH_DOCKERHUB" = "true" ]; then
+            publish_latest "$DOCKERHUB_BASE"
+          fi
+
+      - name: Generate summary
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          GHCR_BASE=$(echo "${GHCR_REGISTRY}/${GHCR_IMAGE_NAME}" | tr '[:upper:]' '[:lower:]')
+          DOCKERHUB_BASE=$(echo "${DOCKERHUB_IMAGE_NAME}" | tr '[:upper:]' '[:lower:]')
+
+          echo "## Docker latest tags published" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Source version:** \`${VERSION}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ inputs.publish_ghcr }}" = "true" ]; then
+            echo "- \`${GHCR_BASE}:latest\`" >> "$GITHUB_STEP_SUMMARY"
+            echo "- \`${GHCR_BASE}:latest-amd64\`" >> "$GITHUB_STEP_SUMMARY"
+            echo "- \`${GHCR_BASE}:latest-arm64\`" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ "${{ inputs.publish_dockerhub }}" = "true" ]; then
+            echo "- \`${DOCKERHUB_BASE}:latest\`" >> "$GITHUB_STEP_SUMMARY"
+            echo "- \`${DOCKERHUB_BASE}:latest-amd64\`" >> "$GITHUB_STEP_SUMMARY"
+            echo "- \`${DOCKERHUB_BASE}:latest-arm64\`" >> "$GITHUB_STEP_SUMMARY"
+          fi
