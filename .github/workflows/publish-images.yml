@@ -82,6 +82,7 @@ jobs:
             arch: arm64
     runs-on: ${{ matrix.runner }}
     permissions:
+      contents: read
       packages: write
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
