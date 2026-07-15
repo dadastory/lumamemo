@@ -55,3 +55,12 @@ services:
       - '80'
     volumes:
       - ./data/middleware/maplibre/public:/usr/share/nginx/html:ro
+
+  qdrant:
+    image: ${QDRANT_IMAGE:-qdrant/qdrant:v1.18.2}
+    container_name: lumamemo_qdrant
+    restart: unless-stopped
+    expose:
+      - '6333'
+    volumes:
+      - ./data/middleware/qdrant:/qdrant/storage

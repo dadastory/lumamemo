@@ -14,7 +14,6 @@ docker compose -f docker-compose.yml -f third-party/ai/docker-compose.yml up -d
 
 ## Services
 
-- **Qdrant** stores image vectors for semantic search.
 - **LocalAI** is used for face extraction when face albums are enabled.
 - **VLM providers** generate tags, descriptions, and photography critique.
 - **Jina-compatible image embedding providers** power text-to-image search.
@@ -22,6 +21,9 @@ docker compose -f docker-compose.yml -f third-party/ai/docker-compose.yml up -d
 VLM, embedding, and face extraction can be enabled independently in the AI
 settings. Leaving a feature disabled or unconfigured keeps the related UI and
 tasks inactive.
+
+Vector storage is provided by Qdrant, which is configured in
+`third-party/middleware/docker-compose.yml` as part of the middleware stack.
 
 ## LocalAI Web UI
 

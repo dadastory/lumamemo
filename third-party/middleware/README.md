@@ -18,6 +18,8 @@ These services are optional. The default root Compose stack does not start them.
   files from `data/middleware/maplibre/public`; the gateway exposes those
   assets under `/maps/` and rewrites browser tile requests from
   `/tiles/{z}/{x}/{y}.mvt` to the PMTiles service.
+- `qdrant`: vector database for storing image embeddings used in semantic
+  search. Stores data in `data/middleware/qdrant`.
 
 ## Common commands
 
