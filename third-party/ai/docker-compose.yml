@@ -1,13 +1,4 @@
 services:
-  lumamemo-qdrant:
-    image: ${QDRANT_IMAGE:-qdrant/qdrant:v1.18.2}
-    container_name: lumamemo_qdrant
-    restart: unless-stopped
-    expose:
-      - '6333'
-    volumes:
-      - ./data/ai/qdrant:/qdrant/storage
-
   lumamemo-localai:
     image: ${LOCALAI_IMAGE:-localai/localai:v4.6.0-gpu-nvidia-cuda-12}
     container_name: lumamemo_localai
